@@ -10,7 +10,7 @@ Follow these steps to get the Viaggio.ai app running locally.
 - **Python** 3.10+ (use `pyenv` or your system’s package manager)  
 - **PostgreSQL** 14+ (or any compatible Postgres)  
 - **Git** (to clone the repo)  
-- An `.env` file (see below)  
+- An `.env` file   
 
 ### 1. Clone the Repository
 
