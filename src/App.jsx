@@ -27,6 +27,7 @@ export default function App() {
         "Hello! I'm your Viaggio travel expert. I'm excited to help you plan your perfect trip! Where would you like to go?",
     },
   ]);
+  const BACKEND_URL = 'https://viaggio-ai-backend-production.up.railway.app/'
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showItinerary, setShowItinerary] = useState(false);
