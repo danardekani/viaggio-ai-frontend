@@ -1,5 +1,5 @@
 ```
-viaggio-app/
+viaggio-ai/
 ├── src/
 │   ├── App.jsx          ← Your React code
 │   ├── main.jsx         ← Entry point
