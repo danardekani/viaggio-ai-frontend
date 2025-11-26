@@ -154,94 +154,64 @@ export default function App() {
   // CHAT HANDLER
   // ============================================================================
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+const handleSend = async () => {
+  if (!input.trim()) return;
 
-    const userMessage = { role: 'user', content: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
+  const userMessage = { role: 'user', content: input };
+  setMessages(prev => [...prev, userMessage]);
+  setInput('');
+  setLoading(true);
 
-    setTimeout(() => {
-      const response = generateResponse(input);
-      setMessages((prev) => [...prev, response]);
-      setLoading(false);
-    }, 800);
-  };
+  try {
+    // Call your backend API
+    const response = await fetch(`${BACKEND_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [...messages, userMessage],
+        context: conversationContext
+      })
+    });
 
-  const generateResponse = (userInput) => {
-    const lower = userInput.toLowerCase();
-    let response = '';
+    if (!response.ok) {
+      throw new Error('Failed to get response');
+    }
+
+    const data = await response.json();
+    
+    // Update context
+    setConversationContext(data.context);
+    
+    // Determine what options to show based on command
     let options = [];
-
-    if (
-      lower.includes('tour') ||
-      lower.includes('activity') ||
-      lower.includes('things to do') ||
-      lower.includes('experience')
-    ) {
-      response = 'Great! Here are some amazing tours and experiences in Florence:';
-      options = travelDatabase.destinations.florence.tours.map((t) => ({
-        type: 'tour',
-        data: t,
-      }));
-    } else if (
-      lower.includes('hotel') ||
-      lower.includes('stay') ||
-      lower.includes('accommodation')
-    ) {
-      response =
-        "Excellent! Now let's find you a perfect hotel in Florence's historic center:";
-      options = travelDatabase.destinations.florence.hotels.map((h) => ({
-        type: 'hotel',
-        data: h,
-      }));
-    } else if (lower.includes('flight') || lower.includes('fly')) {
-      response = 'Let me show you some great flight options:';
-      options = travelDatabase.destinations.florence.flights.map((f) => ({
-        type: 'flight',
-        data: f,
-      }));
-    } else if (lower.includes('florence') || lower.includes('italy')) {
-      setConversationContext((prev) => ({ ...prev, destination: 'florence' }));
-      response =
-        'Wonderful choice! Florence in September is absolutely magical. Let me show you some great flight options:';
-      options = travelDatabase.destinations.florence.flights.map((f) => ({
-        type: 'flight',
-        data: f,
-      }));
-    } else if (cart.flights.length > 0 && cart.hotels.length === 0) {
-      response =
-        "Great flight selections! Now let's find you some hotels. Would you like to see hotel options?";
-      options = travelDatabase.destinations.florence.hotels.map((h) => ({
-        type: 'hotel',
-        data: h,
-      }));
-    } else if (cart.hotels.length > 0 && cart.tours.length === 0) {
-      response =
-        "Perfect! You have your accommodations sorted. Now let's add some amazing experiences. Here are some top tours in Florence:";
-      options = travelDatabase.destinations.florence.tours.map((t) => ({
-        type: 'tour',
-        data: t,
-      }));
-    } else if (lower.includes('itinerary') || lower.includes('final')) {
-      setShowItinerary(true);
-      response =
-        "Perfect! I've put together your complete Florence itinerary. Click the button to review everything!";
-    } else {
-      response =
-        "I'd be happy to help you plan your trip! You can ask me for:\n\n• Flights to Florence\n• Hotels in Florence\n• Tours and activities\n\nOr just say 'I want to go to Florence, Italy'";
+    if (data.command === 'SHOW_FLIGHTS') {
+      const dest = data.context.destination || 'florence';
+      options = travelDatabase.destinations[dest]?.flights.map(f => ({ type: 'flight', data: f })) || [];
+    } else if (data.command === 'SHOW_HOTELS') {
+      const dest = data.context.destination || 'florence';
+      options = travelDatabase.destinations[dest]?.hotels.map(h => ({ type: 'hotel', data: h })) || [];
+    } else if (data.command === 'SHOW_TOURS') {
+      const dest = data.context.destination || 'florence';
+      options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
     }
 
-    return { role: 'assistant', content: response, options };
-  };
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: data.message,
+      options: options 
+    }]);
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  } catch (error) {
+    console.error('Chat error:', error);
+    // Fallback to local response
+    const fallbackResponse = generateResponse(input);
+    setMessages(prev => [...prev, fallbackResponse]);
+  }
+
+  setLoading(false);
+};
 
   // ============================================================================
   // CART MANAGEMENT
