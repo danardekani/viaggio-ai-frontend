@@ -228,7 +228,7 @@ export default function ViaggioApp() {
       }));
     } else if (cart.hotels.length > 0 && cart.tours.length === 0) {
       response =
-        'Perfect! You have your accommodations sorted. Now let's add some amazing experiences. Here are some top tours in Florence:';
+        "Perfect! You have your accommodations sorted. Now let's add some amazing experiences. Here are some top tours in Florence:";
       options = travelDatabase.destinations.florence.tours.map((t) => ({
         type: 'tour',
         data: t,
