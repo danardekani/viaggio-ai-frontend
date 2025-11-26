@@ -213,6 +213,14 @@ const handleSend = async () => {
   setLoading(false);
 };
 
+  // Handle Enter key press to send message
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   // ============================================================================
   // CART MANAGEMENT
   // ============================================================================
