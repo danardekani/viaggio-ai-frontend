@@ -1,3 +1,4 @@
+**
 viaggio-app/
 ├── src/
 │   ├── App.jsx          ← Your React code
@@ -7,3 +8,4 @@ viaggio-app/
 ├── package.json         ← Dependencies
 ├── vite.config.js       ← Build config
 └── .gitignore          ← Git ignore
+**
