@@ -199,14 +199,17 @@ const handleSend = async () => {
 
     setMessages(prev => [...prev, { 
       role: 'assistant', 
-      content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
+      content: data.message,
+      options: options 
     }]);
 
   } catch (error) {
     console.error('Chat error:', error);
-    // Fallback to local response
-    const fallbackResponse = generateResponse(input);
-    setMessages(prev => [...prev, fallbackResponse]);
+    // Fallback error message when API fails
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
+    }]);
   }
 
   setLoading(false);
