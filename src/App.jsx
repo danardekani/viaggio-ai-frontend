@@ -2,18 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Send,
   Plane,
-  Hotel,
   Calendar,
-  MapPin,
-  X,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  CheckCircle,
-  Share2,
 } from 'lucide-react';
+
+// Import new components
+import ChatMessage from './components/ChatMessage';
+import Sidebar from './components/Sidebar';
+import BookingPage from './components/BookingPage';
+import ItineraryModal from './components/ItineraryModal';
+import MobileTripSheet from './components/MobileTripSheet';
 
 export default function App() {
   // ============================================================================
@@ -154,66 +153,66 @@ export default function App() {
   // CHAT HANDLER
   // ============================================================================
 
-const handleSend = async () => {
-  if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim()) return;
 
-  const userMessage = { role: 'user', content: input };
-  setMessages(prev => [...prev, userMessage]);
-  setInput('');
-  setLoading(true);
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
 
-  try {
-    // Call your backend API
-    const response = await fetch(`${BACKEND_URL}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [...messages, userMessage],
-        context: conversationContext
-      })
-    });
+    try {
+      // Call your backend API
+      const response = await fetch(`${BACKEND_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          context: conversationContext
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to get response');
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+
+      const data = await response.json();
+
+      // Update context
+      setConversationContext(data.context);
+
+      // Determine what options to show based on command
+      let options = [];
+      if (data.command === 'SHOW_FLIGHTS') {
+        const dest = data.context.destination || 'florence';
+        options = travelDatabase.destinations[dest]?.flights.map(f => ({ type: 'flight', data: f })) || [];
+      } else if (data.command === 'SHOW_HOTELS') {
+        const dest = data.context.destination || 'florence';
+        options = travelDatabase.destinations[dest]?.hotels.map(h => ({ type: 'hotel', data: h })) || [];
+      } else if (data.command === 'SHOW_TOURS') {
+        const dest = data.context.destination || 'florence';
+        options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
+      }
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.message,
+        options: options
+      }]);
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      // Fallback error message when API fails
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
+      }]);
     }
 
-    const data = await response.json();
-    
-    // Update context
-    setConversationContext(data.context);
-    
-    // Determine what options to show based on command
-    let options = [];
-    if (data.command === 'SHOW_FLIGHTS') {
-      const dest = data.context.destination || 'florence';
-      options = travelDatabase.destinations[dest]?.flights.map(f => ({ type: 'flight', data: f })) || [];
-    } else if (data.command === 'SHOW_HOTELS') {
-      const dest = data.context.destination || 'florence';
-      options = travelDatabase.destinations[dest]?.hotels.map(h => ({ type: 'hotel', data: h })) || [];
-    } else if (data.command === 'SHOW_TOURS') {
-      const dest = data.context.destination || 'florence';
-      options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
-    }
-
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: data.message,
-      options: options 
-    }]);
-
-  } catch (error) {
-    console.error('Chat error:', error);
-    // Fallback error message when API fails
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
-    }]);
-  }
-
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   // Handle Enter key press to send message
   const handleKeyPress = (e) => {
@@ -353,368 +352,16 @@ const handleSend = async () => {
   };
 
   // ============================================================================
-  // SIDEBAR CONTENT (shared desktop + mobile)
-  // ============================================================================
-
-  const renderSidebarContent = () => {
-    if (
-      cart.flights.length === 0 &&
-      cart.hotels.length === 0 &&
-      cart.tours.length === 0
-    ) {
-      return (
-        <div className="text-center text-gray-500 text-sm mt-8">
-          <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p>No items selected yet</p>
-          <p className="text-xs mt-2">Start planning!</p>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {/* Flights */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <button
-            onClick={() => toggleSection('flights')}
-            className="w-full px-4 py-3 flex items-center justify-between bg-blue-50 hover:bg-blue-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Plane className="w-4 h-4 text-blue-600" />
-              <span className="font-semibold text-gray-900 text-sm">
-                Flights ({cart.flights.length})
-              </span>
-            </div>
-            {expandedSections.flights ? (
-              <ChevronUp className="w-4 h-4 text-gray-600" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-gray-600" />
-            )}
-          </button>
-
-          {expandedSections.flights && cart.flights.length > 0 && (
-            <div className="p-3 space-y-2">
-              {cart.flights.map((flight) => (
-                <div
-                  key={flight.id}
-                  className="bg-blue-50 rounded-lg p-3 border border-blue-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {flight.airline}
-                      </p>
-                      <p className="text-xs text-gray-600">{flight.route}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {flight.departure}
-                      </p>
-                      <p className="text-xs font-semibold text-blue-600 mt-2">
-                        {formatCurrency(flight.price)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart('flight', flight.id)}
-                      className="text-red-600 hover:text-red-700 ml-2"
-                      title="Remove flight"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Hotels */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <button
-            onClick={() => toggleSection('hotels')}
-            className="w-full px-4 py-3 flex items-center justify-between bg-purple-50 hover:bg-purple-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Hotel className="w-4 h-4 text-purple-600" />
-              <span className="font-semibold text-gray-900 text-sm">
-                Hotels ({cart.hotels.length})
-              </span>
-            </div>
-            {expandedSections.hotels ? (
-              <ChevronUp className="w-4 h-4 text-gray-600" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-gray-600" />
-            )}
-          </button>
-
-          {expandedSections.hotels && cart.hotels.length > 0 && (
-            <div className="p-3 space-y-2">
-              {cart.hotels.map((hotel) => (
-                <div
-                  key={hotel.id}
-                  className="bg-purple-50 rounded-lg p-3 border border-purple-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {hotel.name}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        {hotel.location}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        ⭐ {hotel.rating}/5
-                      </p>
-                      <p className="text-xs font-semibold text-purple-600 mt-2">
-                        {formatCurrency(hotel.price)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart('hotel', hotel.id)}
-                      className="text-red-600 hover:text-red-700 ml-2"
-                      title="Remove hotel"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Tours */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <button
-            onClick={() => toggleSection('tours')}
-            className="w-full px-4 py-3 flex items-center justify-between bg-green-50 hover:bg-green-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-green-600" />
-              <span className="font-semibold text-gray-900 text-sm">
-                Tours & Experiences ({cart.tours.length})
-              </span>
-            </div>
-            {expandedSections.tours ? (
-              <ChevronUp className="w-4 h-4 text-gray-600" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-gray-600" />
-            )}
-          </button>
-
-          {expandedSections.tours && cart.tours.length > 0 && (
-            <div className="p-3 space-y-2">
-              {cart.tours.map((tour) => (
-                <div
-                  key={tour.id}
-                  className="bg-green-50 rounded-lg p-3 border border-green-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {tour.name}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        {tour.date} at {tour.time}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {tour.duration}
-                      </p>
-                      <p className="text-xs font-semibold text-green-600 mt-2">
-                        {formatCurrency(tour.price * 2)} (2 people)
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart('tour', tour.id)}
-                      className="text-red-600 hover:text-red-700 ml-2"
-                      title="Remove tour"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Total + actions */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-3 text-white">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold">Total Cost</span>
-            <span className="text-xl font-bold">
-              {formatCurrency(totalCost())}
-            </span>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setShowItinerary(true)}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
-        >
-          <Calendar className="w-4 h-4" />
-          View Full Itinerary
-        </button>
-
-        <button
-          onClick={shareItinerary}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
-        >
-          <Share2 className="w-4 h-4" />
-          Share Trip
-        </button>
-      </>
-    );
-  };
-
-  // ============================================================================
-  // BOOKING PAGE
+  // RENDER BOOKING PAGE
   // ============================================================================
 
   if (showBookingPage) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <header className="bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Plane className="w-8 h-8 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Complete Your Booking
-                </h1>
-              </div>
-              <button
-                onClick={() => setShowBookingPage(false)}
-                className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
-              >
-                ← Back to Chat
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-              <div>
-                <h2 className="text-xl font-bold text-green-900 mb-2">
-                  Your Itinerary is Ready!
-                </h2>
-                <p className="text-green-700">
-                  Click the booking links below to complete your reservations.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            {cart.flights.map((flight) => (
-              <div
-                key={flight.id}
-                className="bg-white rounded-lg shadow-md border border-gray-200 p-6"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <Plane className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-lg">
-                        Flight
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {flight.airline}
-                      </p>
-                      <p className="text-sm text-gray-600">{flight.route}</p>
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(flight.price)}
-                  </p>
-                </div>
-                <a
-                  href={flight.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  Book Flight
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            ))}
-
-            {cart.hotels.map((hotel) => (
-              <div
-                key={hotel.id}
-                className="bg-white rounded-lg shadow-md border border-gray-200 p-6"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <Hotel className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-lg">
-                        Hotel
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {hotel.name}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {formatCurrency(hotel.price)}
-                  </p>
-                </div>
-                <a
-                  href={hotel.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  Book Hotel
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            ))}
-
-            {cart.tours.map((tour) => (
-              <div
-                key={tour.id}
-                className="bg-white rounded-lg shadow-md border border-gray-200 p-6"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <MapPin className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-lg">
-                        {tour.name}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {tour.date} at {tour.time}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(tour.price * 2)}
-                  </p>
-                </div>
-                <a
-                  href={tour.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  Book Tour
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <BookingPage
+        cart={cart}
+        formatCurrency={formatCurrency}
+        onBack={() => setShowBookingPage(false)}
+      />
     );
   }
 
@@ -744,7 +391,16 @@ const handleSend = async () => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {renderSidebarContent()}
+            <Sidebar
+              cart={cart}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              removeFromCart={removeFromCart}
+              formatCurrency={formatCurrency}
+              totalCost={totalCost}
+              setShowItinerary={setShowItinerary}
+              shareItinerary={shareItinerary}
+            />
           </div>
         </div>
       )}
@@ -776,162 +432,14 @@ const handleSend = async () => {
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-3xl mx-auto space-y-4">
             {messages.map((msg, idx) => (
-              <div
+              <ChatMessage
                 key={idx}
-                className={`flex ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-2xl ${
-                    msg.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-2xl px-5 py-3'
-                      : ''
-                  }`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="space-y-3">
-                      <div className="bg-white text-gray-800 shadow-md border border-gray-100 rounded-2xl px-5 py-3">
-                        <p className="leading-relaxed whitespace-pre-line">
-                          {msg.content}
-                        </p>
-                      </div>
-
-                      {msg.options && msg.options.length > 0 && (
-                        <div className="space-y-3">
-                          {msg.options.map((option, optIdx) => {
-                            const selected = isInCart(
-                              option.type,
-                              option.data.id
-                            );
-                            const colors = {
-                              flight: {
-                                border: 'border-blue-600',
-                                bg: 'bg-blue-50',
-                                icon: 'text-blue-600',
-                                button: 'bg-blue-600 hover:bg-blue-700',
-                              },
-                              hotel: {
-                                border: 'border-purple-600',
-                                bg: 'bg-purple-50',
-                                icon: 'text-purple-600',
-                                button: 'bg-purple-600 hover:bg-purple-700',
-                              },
-                              tour: {
-                                border: 'border-green-600',
-                                bg: 'bg-green-50',
-                                icon: 'text-green-600',
-                                button: 'bg-green-600 hover:bg-green-700',
-                              },
-                            }[option.type];
-
-                            return (
-                              <div
-                                key={optIdx}
-                                className={`bg-white rounded-lg shadow-md border-2 p-4 transition-all ${
-                                  selected
-                                    ? `${colors.border} ${colors.bg}`
-                                    : 'border-gray-200'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-start gap-3 flex-1">
-                                    {option.type === 'flight' && (
-                                      <Plane
-                                        className={`w-5 h-5 ${colors.icon} mt-1`}
-                                      />
-                                    )}
-                                    {option.type === 'hotel' && (
-                                      <Hotel
-                                        className={`w-5 h-5 ${colors.icon} mt-1`}
-                                      />
-                                    )}
-                                    {option.type === 'tour' && (
-                                      <MapPin
-                                        className={`w-5 h-5 ${colors.icon} mt-1`}
-                                      />
-                                    )}
-                                    <div className="flex-1">
-                                      <h4 className="font-bold text-gray-900">
-                                        {option.data.airline ||
-                                          option.data.name}
-                                      </h4>
-                                      {option.data.route && (
-                                        <p className="text-sm text-gray-600">
-                                          {option.data.route}
-                                        </p>
-                                      )}
-                                      {option.data.location && (
-                                        <p className="text-sm text-gray-600">
-                                          ⭐ {option.data.rating}/5 ·{' '}
-                                          {option.data.location}
-                                        </p>
-                                      )}
-                                      {option.data.date && (
-                                        <p className="text-sm text-gray-600">
-                                          {option.data.date} at{' '}
-                                          {option.data.time}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-right ml-4">
-                                    <p
-                                      className={`text-xl font-bold ${colors.icon}`}
-                                    >
-                                      {formatCurrency(
-                                        option.type === 'tour'
-                                          ? option.data.price * 2
-                                          : option.data.price
-                                      )}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <a
-                                    href={option.data.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors font-medium text-center flex items-center justify-center gap-1"
-                                  >
-                                    View Details
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                  <button
-                                    onClick={() =>
-                                      selected
-                                        ? removeFromCart(
-                                            option.type,
-                                            option.data.id
-                                          )
-                                        : addToCart(
-                                            option.type,
-                                            option.data
-                                          )
-                                    }
-                                    className={`flex-1 px-3 py-2 text-sm rounded-lg font-medium transition-colors text-white ${
-                                      selected
-                                        ? 'bg-red-600 hover:bg-red-700'
-                                        : colors.button
-                                    }`}
-                                  >
-                                    {selected
-                                      ? 'Remove'
-                                      : option.type === 'tour'
-                                      ? 'Add to Trip'
-                                      : 'Select'}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {msg.role === 'user' && <p>{msg.content}</p>}
-                </div>
-              </div>
+                message={msg}
+                isInCart={isInCart}
+                addToCart={addToCart}
+                removeFromCart={removeFromCart}
+                formatCurrency={formatCurrency}
+              />
             ))}
             {loading && (
               <div className="flex justify-start">
@@ -992,160 +500,29 @@ const handleSend = async () => {
 
       {/* Mobile bottom sheet */}
       {showMobileTrip && (
-        <div className="md:hidden fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setShowMobileTrip(false)}
-          />
-          <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-xl">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-semibold text-gray-900">
-                  Trip Details
-                </span>
-              </div>
-              <button
-                onClick={() => setShowMobileTrip(false)}
-                className="p-1 rounded-full hover:bg-gray-100"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-              {renderSidebarContent()}
-            </div>
-          </div>
-        </div>
+        <MobileTripSheet
+          cart={cart}
+          expandedSections={expandedSections}
+          toggleSection={toggleSection}
+          removeFromCart={removeFromCart}
+          formatCurrency={formatCurrency}
+          totalCost={totalCost}
+          setShowItinerary={setShowItinerary}
+          shareItinerary={shareItinerary}
+          onClose={() => setShowMobileTrip(false)}
+        />
       )}
 
       {/* Full Itinerary Modal */}
       {showItinerary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 shadow-xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-semibold text-gray-900">
-                  Your Florence Itinerary
-                </span>
-              </div>
-              <button
-                onClick={() => setShowItinerary(false)}
-                className="p-1 rounded-full hover:bg-gray-100"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-              {cart.flights.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Plane className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Flights
-                    </h3>
-                  </div>
-                  <div className="space-y-2">
-                    {cart.flights.map((f) => (
-                      <div key={f.id} className="text-sm text-gray-700">
-                        <div className="font-medium">{f.airline}</div>
-                        <div className="text-xs text-gray-500">
-                          {f.route}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {f.departure}
-                        </div>
-                        <div className="text-xs font-semibold text-blue-600 mt-1">
-                          {formatCurrency(f.price)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {cart.hotels.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Hotel className="w-4 h-4 text-purple-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Hotels
-                    </h3>
-                  </div>
-                  <div className="space-y-2">
-                    {cart.hotels.map((h) => (
-                      <div key={h.id} className="text-sm text-gray-700">
-                        <div className="font-medium">{h.name}</div>
-                        <div className="text-xs text-gray-500">
-                          ⭐ {h.rating}/5 · {h.location}
-                        </div>
-                        <div className="text-xs font-semibold text-purple-600 mt-1">
-                          {formatCurrency(h.price)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {cart.tours.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4 text-green-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Tours & Experiences
-                    </h3>
-                  </div>
-                  <div className="space-y-2">
-                    {cart.tours.map((t) => (
-                      <div key={t.id} className="text-sm text-gray-700">
-                        <div className="font-medium">{t.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {t.date} at {t.time} · {t.duration}
-                        </div>
-                        <div className="text-xs font-semibold text-green-600 mt-1">
-                          {formatCurrency(t.price * 2)} (2 people)
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-800">
-                  Total Trip Cost
-                </span>
-                <span className="text-lg font-bold text-gray-900">
-                  {formatCurrency(totalCost())}
-                </span>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2">
-              <button
-                onClick={handleBookTrip}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Continue to Booking
-              </button>
-              <button
-                onClick={() => {
-                  shareItinerary();
-                  setShowItinerary(false);
-                }}
-                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-800 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-              >
-                <Share2 className="w-4 h-4" />
-                Copy & Share
-              </button>
-            </div>
-          </div>
-        </div>
+        <ItineraryModal
+          cart={cart}
+          formatCurrency={formatCurrency}
+          totalCost={totalCost}
+          onClose={() => setShowItinerary(false)}
+          onBookTrip={handleBookTrip}
+          onShare={shareItinerary}
+        />
       )}
     </div>
   );
