@@ -156,7 +156,6 @@ export default function App() {
 // ============================================================================
 // UPDATED handleSend FUNCTION FOR App.jsx
 // ============================================================================
-// Replace your existing handleSend function with this one.
 // This version fetches REAL tour data from Viator API.
 // ============================================================================
 
@@ -258,6 +257,13 @@ const handleSend = async () => {
   }
 
   setLoading(false);
+};
+
+const handleKeyPress = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
 };
 
   // ============================================================================
