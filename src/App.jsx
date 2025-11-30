@@ -153,74 +153,112 @@ export default function App() {
   // CHAT HANDLER
   // ============================================================================
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+// ============================================================================
+// UPDATED handleSend FUNCTION FOR App.jsx
+// ============================================================================
+// Replace your existing handleSend function with this one.
+// This version fetches REAL tour data from Viator API.
+// ============================================================================
 
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
+const handleSend = async () => {
+  if (!input.trim()) return;
 
-    try {
-      // Call your backend API
-      const response = await fetch(`${BACKEND_URL}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          context: conversationContext
-        })
-      });
+  const userMessage = { role: 'user', content: input };
+  setMessages(prev => [...prev, userMessage]);
+  setInput('');
+  setLoading(true);
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
+  try {
+    // Call your backend API
+    const response = await fetch(`${BACKEND_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [...messages, userMessage],
+        context: conversationContext
+      })
+    });
 
-      const data = await response.json();
+    if (!response.ok) {
+      throw new Error('Failed to get response');
+    }
 
-      // Update context
-      setConversationContext(data.context);
+    const data = await response.json();
 
-      // Determine what options to show based on command
-      let options = [];
-      if (data.command === 'SHOW_FLIGHTS') {
-        const dest = data.context.destination || 'florence';
-        options = travelDatabase.destinations[dest]?.flights.map(f => ({ type: 'flight', data: f })) || [];
-      } else if (data.command === 'SHOW_HOTELS') {
-        const dest = data.context.destination || 'florence';
-        options = travelDatabase.destinations[dest]?.hotels.map(h => ({ type: 'hotel', data: h })) || [];
-      } else if (data.command === 'SHOW_TOURS') {
+    // Update context
+    setConversationContext(data.context);
+
+    // Determine what options to show based on command
+    let options = [];
+    
+    if (data.command === 'SHOW_FLIGHTS') {
+      // Still using static data for flights (until Skyscanner is integrated)
+      const dest = data.context.destination || 'florence';
+      options = travelDatabase.destinations[dest]?.flights.map(f => ({ type: 'flight', data: f })) || [];
+    
+    } else if (data.command === 'SHOW_HOTELS') {
+      // Still using static data for hotels (until Booking.com is integrated)
+      const dest = data.context.destination || 'florence';
+      options = travelDatabase.destinations[dest]?.hotels.map(h => ({ type: 'hotel', data: h })) || [];
+    
+    } else if (data.command === 'SHOW_TOURS') {
+      // =========================================================
+      // NEW: Fetch REAL tours from Viator API
+      // =========================================================
+      try {
+        const destination = data.context.destination || 'Florence';
+        
+        const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            destination: destination,
+            // You can add dates from context if available
+            // startDate: data.context.startDate,
+            // endDate: data.context.endDate,
+            adults: data.context.travelers || 2
+          })
+        });
+
+        if (toursResponse.ok) {
+          const toursData = await toursResponse.json();
+          options = toursData.tours.map(t => ({ type: 'tour', data: t }));
+          console.log(`Fetched ${options.length} real tours from Viator`);
+        } else {
+          // Fallback to static data if API fails
+          console.warn('Viator API failed, using static data');
+          const dest = data.context.destination || 'florence';
+          options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
+        }
+      } catch (tourError) {
+        // Fallback to static data if API fails
+        console.error('Tour fetch error:', tourError);
         const dest = data.context.destination || 'florence';
         options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
       }
-
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.message,
-        options: options
-      }]);
-
-    } catch (error) {
-      console.error('Chat error:', error);
-      // Fallback error message when API fails
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
-      }]);
     }
 
-    setLoading(false);
-  };
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: data.message,
+      options: options
+    }]);
 
-  // Handle Enter key press to send message
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  } catch (error) {
+    console.error('Chat error:', error);
+    // Fallback error message when API fails
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
+    }]);
+  }
+
+  setLoading(false);
+};
 
   // ============================================================================
   // CART MANAGEMENT
