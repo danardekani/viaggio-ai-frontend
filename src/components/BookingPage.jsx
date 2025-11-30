@@ -62,7 +62,7 @@ export default function BookingPage({ cart, formatCurrency, onBack }) {
                 </p>
               </div>
               <a
-                href={flight.link}
+                href={flight.bookingLink || flight.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
@@ -93,7 +93,7 @@ export default function BookingPage({ cart, formatCurrency, onBack }) {
                 </p>
               </div>
               <a
-                href={hotel.link}
+                href={hotel.bookingLink || hotel.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
@@ -111,16 +111,30 @@ export default function BookingPage({ cart, formatCurrency, onBack }) {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <MapPin className="w-6 h-6 text-green-600" />
-                  </div>
+                  {tour.image && (
+                    <img 
+                      src={tour.image} 
+                      alt={tour.name}
+                      className="w-24 h-24 object-cover rounded-lg"
+                    />
+                  )}
+                  {!tour.image && (
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <MapPin className="w-6 h-6 text-green-600" />
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-bold text-gray-900 text-lg">
                       {tour.name}
                     </h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      {tour.date} at {tour.time}
+                      {tour.duration}
                     </p>
+                    {tour.rating && tour.rating !== 'New' && (
+                      <p className="text-sm text-gray-500">
+                        ⭐ {tour.rating}/5 ({tour.reviewCount?.toLocaleString()} reviews)
+                      </p>
+                    )}
                   </div>
                 </div>
                 <p className="text-2xl font-bold text-green-600">
@@ -128,7 +142,7 @@ export default function BookingPage({ cart, formatCurrency, onBack }) {
                 </p>
               </div>
               <a
-                href={tour.link}
+                href={tour.bookingLink || tour.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
