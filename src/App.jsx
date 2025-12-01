@@ -23,7 +23,7 @@ export default function App() {
     {
       role: 'assistant',
       content:
-        "Hello! I'm your Viaggio travel expert. I'm excited to help you plan your perfect trip! Tell me:\n\n• Where would you like to go?\n• When are you planning to travel?\n• How many people will be traveling?",
+        "Hello! Ardo, your personal travel expert. I'm excited to help you plan your perfect trip! Tell me:\n\n• Where would you like to go?\n• When are you planning to travel?\n• How many people will be traveling?",
     },
   ]);
   
