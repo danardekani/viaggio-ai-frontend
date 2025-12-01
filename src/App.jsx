@@ -7,7 +7,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-// Import new components
+// Import components
 import ChatMessage from './components/ChatMessage';
 import Sidebar from './components/Sidebar';
 import BookingPage from './components/BookingPage';
@@ -23,10 +23,12 @@ export default function App() {
     {
       role: 'assistant',
       content:
-        "Hello! I'm your Viaggio travel expert. I'm excited to help you plan your perfect trip! Where would you like to go?",
+        "Hello! I'm your Viaggio travel expert. I'm excited to help you plan your perfect trip! Tell me:\n\n• Where would you like to go?\n• When are you planning to travel?\n• How many people will be traveling?",
     },
   ]);
-  const BACKEND_URL = 'https://viaggio-ai-backend-production.up.railway.app'
+  
+  const BACKEND_URL = 'https://viaggio-ai-backend-production.up.railway.app';
+  
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showItinerary, setShowItinerary] = useState(false);
@@ -48,7 +50,9 @@ export default function App() {
 
   const [conversationContext, setConversationContext] = useState({
     destination: null,
-    travelers: 2,
+    travelers: null,
+    startDate: null,
+    endDate: null,
   });
 
   const messagesEndRef = useRef(null);
@@ -66,205 +70,106 @@ export default function App() {
   }, [messages]);
 
   // ============================================================================
-  // STATIC TRAVEL DATA
-  // ============================================================================
-
-  const travelDatabase = {
-    destinations: {
-      florence: {
-        flights: [
-          {
-            id: 'f1',
-            airline: 'United Airlines',
-            price: 1850,
-            route: 'JFK → FLR',
-            departure: 'Sep 15, 6:30 PM',
-            arrival: 'Sep 16, 10:45 AM',
-            duration: '10h 15m',
-            stops: '1 stop (Frankfurt)',
-            link: 'https://www.united.com/en/us/fsr/choose-flights',
-          },
-          {
-            id: 'f2',
-            airline: 'Delta',
-            price: 1950,
-            route: 'JFK → FLR',
-            departure: 'Sep 15, 8:00 PM',
-            arrival: 'Sep 16, 12:30 PM',
-            duration: '10h 30m',
-            stops: '1 stop (Paris)',
-            link: 'https://www.delta.com/flight-search/search',
-          },
-        ],
-        hotels: [
-          {
-            id: 'h1',
-            name: 'Hotel Brunelleschi',
-            price: 980,
-            location: 'Historic Center',
-            rating: 4.5,
-            amenities: ['Breakfast included', 'Free WiFi', 'Rooftop terrace'],
-            link: 'https://www.booking.com/hotel/it/brunelleschi.html',
-          },
-          {
-            id: 'h2',
-            name: 'Grand Hotel Cavour',
-            price: 875,
-            location: 'Near Duomo',
-            rating: 4.3,
-            amenities: ['Breakfast included', 'Free WiFi', 'Bar'],
-            link: 'https://www.booking.com/hotel/it/grand-cavour.html',
-          },
-        ],
-        tours: [
-          {
-            id: 't1',
-            name: 'Uffizi Gallery Skip-the-Line Tour',
-            price: 65,
-            duration: '3 hours',
-            date: 'Sep 17',
-            time: '10:00 AM',
-            link: 'https://www.viator.com/tours/Florence/Skip-the-Line-Uffizi-Gallery-Tour',
-          },
-          {
-            id: 't2',
-            name: 'Tuscan Cooking Class & Wine Tasting',
-            price: 120,
-            duration: '5 hours',
-            date: 'Sep 18',
-            time: '2:00 PM',
-            link: 'https://www.viator.com/tours/Florence/Tuscan-Cooking-Class-and-Wine-Tasting',
-          },
-          {
-            id: 't3',
-            name: 'Day Trip to Siena & San Gimignano',
-            price: 95,
-            duration: '10 hours',
-            date: 'Sep 20',
-            time: '8:00 AM',
-            link: 'https://www.viator.com/tours/Florence/Siena-San-Gimignano-Day-Trip',
-          },
-        ],
-      },
-    },
-  };
-
-  // ============================================================================
   // CHAT HANDLER
   // ============================================================================
 
-// ============================================================================
-// UPDATED handleSend FUNCTION FOR App.jsx
-// ============================================================================
-// This version fetches REAL tour data from Viator API.
-// ============================================================================
+  const handleSend = async () => {
+    if (!input.trim()) return;
 
-const handleSend = async () => {
-  if (!input.trim()) return;
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
 
-  const userMessage = { role: 'user', content: input };
-  setMessages(prev => [...prev, userMessage]);
-  setInput('');
-  setLoading(true);
+    try {
+      // Call backend chat API
+      const response = await fetch(`${BACKEND_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          context: conversationContext
+        })
+      });
 
-  try {
-    // Call your backend API
-    const response = await fetch(`${BACKEND_URL}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [...messages, userMessage],
-        context: conversationContext
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to get response');
-    }
-
-    const data = await response.json();
-
-    // Update context
-    setConversationContext(data.context);
-
-    // Determine what options to show based on command
-    let options = [];
-    
-    if (data.command === 'SHOW_FLIGHTS') {
-      // Still using static data for flights (until Skyscanner is integrated)
-      const dest = data.context.destination || 'florence';
-      options = travelDatabase.destinations[dest]?.flights.map(f => ({ type: 'flight', data: f })) || [];
-    
-    } else if (data.command === 'SHOW_HOTELS') {
-      // Still using static data for hotels (until Booking.com is integrated)
-      const dest = data.context.destination || 'florence';
-      options = travelDatabase.destinations[dest]?.hotels.map(h => ({ type: 'hotel', data: h })) || [];
-    
-    } else if (data.command === 'SHOW_TOURS') {
-      // =========================================================
-      // NEW: Fetch REAL tours from Viator API
-      // =========================================================
-      try {
-        const destination = data.context.destination || 'Florence';
-        
-        const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            destination: destination,
-            // You can add dates from context if available
-            // startDate: data.context.startDate,
-            // endDate: data.context.endDate,
-            adults: data.context.travelers || 2
-          })
-        });
-
-        if (toursResponse.ok) {
-          const toursData = await toursResponse.json();
-          options = toursData.tours.map(t => ({ type: 'tour', data: t }));
-          console.log(`Fetched ${options.length} real tours from Viator`);
-        } else {
-          // Fallback to static data if API fails
-          console.warn('Viator API failed, using static data');
-          const dest = data.context.destination || 'florence';
-          options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
-        }
-      } catch (tourError) {
-        // Fallback to static data if API fails
-        console.error('Tour fetch error:', tourError);
-        const dest = data.context.destination || 'florence';
-        options = travelDatabase.destinations[dest]?.tours.map(t => ({ type: 'tour', data: t })) || [];
+      if (!response.ok) {
+        throw new Error('Failed to get response');
       }
+
+      const data = await response.json();
+
+      // Update context from backend
+      setConversationContext(data.context);
+
+      // Determine what options to show based on command
+      let options = [];
+      
+      if (data.command === 'SHOW_TOURS') {
+        // Fetch real tours from Viator API
+        const destination = data.context?.destination || conversationContext.destination;
+        
+        if (destination) {
+          try {
+            console.log(`Fetching tours for: ${destination}`);
+            
+            const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                destination: destination,
+                startDate: data.context?.startDate,
+                endDate: data.context?.endDate,
+                adults: data.context?.travelers || 2
+              })
+            });
+
+            if (toursResponse.ok) {
+              const toursData = await toursResponse.json();
+              options = toursData.tours.map(t => ({ type: 'tour', data: t }));
+              console.log(`Fetched ${options.length} real tours from Viator`);
+            } else {
+              console.error('Tours API error:', toursResponse.status);
+            }
+          } catch (tourError) {
+            console.error('Tour fetch error:', tourError);
+          }
+        }
+      } else if (data.command === 'SHOW_FLIGHTS') {
+        // Flights API not yet integrated
+        console.log('Flights requested - API not yet integrated');
+      } else if (data.command === 'SHOW_HOTELS') {
+        // Hotels API not yet integrated
+        console.log('Hotels requested - API not yet integrated');
+      }
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.message,
+        options: options
+      }]);
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
+      }]);
     }
 
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: data.message,
-      options: options
-    }]);
+    setLoading(false);
+  };
 
-  } catch (error) {
-    console.error('Chat error:', error);
-    // Fallback error message when API fails
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: "I'm sorry, I'm having trouble connecting to the server right now. Please try again in a moment."
-    }]);
-  }
-
-  setLoading(false);
-};
-
-const handleKeyPress = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
-  }
-};
+  // Handle Enter key press to send message
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   // ============================================================================
   // CART MANAGEMENT
@@ -295,29 +200,29 @@ const handleKeyPress = (e) => {
     }
   };
 
-  const removeFromCart = (type, itemId) => {
+  const removeFromCart = (type, id) => {
     if (type === 'flight') {
       setCart((prev) => ({
         ...prev,
-        flights: prev.flights.filter((f) => f.id !== itemId),
+        flights: prev.flights.filter((f) => f.id !== id),
       }));
     } else if (type === 'hotel') {
       setCart((prev) => ({
         ...prev,
-        hotels: prev.hotels.filter((h) => h.id !== itemId),
+        hotels: prev.hotels.filter((h) => h.id !== id),
       }));
     } else if (type === 'tour') {
       setCart((prev) => ({
         ...prev,
-        tours: prev.tours.filter((t) => t.id !== itemId),
+        tours: prev.tours.filter((t) => t.id !== id),
       }));
     }
   };
 
-  const isInCart = (type, itemId) => {
-    if (type === 'flight') return cart.flights.some((f) => f.id === itemId);
-    if (type === 'hotel') return cart.hotels.some((h) => h.id === itemId);
-    if (type === 'tour') return cart.tours.some((t) => t.id === itemId);
+  const isInCart = (type, id) => {
+    if (type === 'flight') return cart.flights.some((f) => f.id === id);
+    if (type === 'hotel') return cart.hotels.some((h) => h.id === id);
+    if (type === 'tour') return cart.tours.some((t) => t.id === id);
     return false;
   };
 
@@ -328,15 +233,12 @@ const handleKeyPress = (e) => {
     }));
   };
 
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
-
   const totalCost = () => {
     let total = 0;
+    const travelers = conversationContext.travelers || 2;
     cart.flights.forEach((flight) => (total += flight.price));
     cart.hotels.forEach((hotel) => (total += hotel.price));
-    cart.tours.forEach((tour) => (total += tour.price * 2));
+    cart.tours.forEach((tour) => (total += tour.price * travelers));
     return total;
   };
 
@@ -358,9 +260,15 @@ const handleKeyPress = (e) => {
       return;
     }
 
-    let shareText = '🌍 Florence, Italy Trip Itinerary\n\n';
-    shareText += '📅 Dates: September 15-22, 2025\n';
-    shareText += '👥 Travelers: 2 adults\n\n';
+    const destination = conversationContext.destination || 'your destination';
+    const travelers = conversationContext.travelers || 2;
+    const dates = conversationContext.startDate && conversationContext.endDate 
+      ? `${conversationContext.startDate} to ${conversationContext.endDate}`
+      : 'Dates TBD';
+
+    let shareText = `🌍 ${destination} Trip Itinerary\n\n`;
+    shareText += `📅 Dates: ${dates}\n`;
+    shareText += `👥 Travelers: ${travelers} ${travelers === 1 ? 'person' : 'people'}\n\n`;
 
     if (cart.flights.length > 0) {
       shareText += '✈️ FLIGHTS\n';
@@ -381,7 +289,7 @@ const handleKeyPress = (e) => {
     if (cart.tours.length > 0) {
       shareText += '🎨 TOURS & EXPERIENCES\n';
       cart.tours.forEach((tour) => {
-        shareText += `• ${tour.name} - ${formatCurrency(tour.price * 2)}\n`;
+        shareText += `• ${tour.name} - ${formatCurrency(tour.price * travelers)}\n`;
       });
       shareText += '\n';
     }
@@ -424,7 +332,14 @@ const handleKeyPress = (e) => {
                 <Calendar className="w-5 h-5" />
                 Trip Details
               </h2>
-              <p className="text-xs text-blue-100 mt-1">Your selections</p>
+              {conversationContext.destination && (
+                <p className="text-xs text-blue-100 mt-1">
+                  {conversationContext.destination} • {conversationContext.travelers || 2} travelers
+                </p>
+              )}
+              {!conversationContext.destination && (
+                <p className="text-xs text-blue-100 mt-1">Your selections</p>
+              )}
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -514,7 +429,7 @@ const handleKeyPress = (e) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message... (e.g., 'I want to go to Florence, Italy')"
+                placeholder="Tell me about your trip plans..."
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
