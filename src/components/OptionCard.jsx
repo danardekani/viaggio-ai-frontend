@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plane, Hotel, MapPin, ExternalLink, Star, Clock } from 'lucide-react';
 
-export default function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency }) {
+export default function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency, travelers = 2 }) {
   const colors = {
     flight: {
       border: 'border-blue-600',
@@ -108,12 +108,12 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
           <p className={`text-xl font-bold ${colors.icon}`}>
             {formatCurrency(
               option.type === 'tour'
-                ? option.data.price * 2
+                ? option.data.price * travelers
                 : option.data.price
             )}
           </p>
           {option.type === 'tour' && (
-            <p className="text-xs text-gray-500">for 2 people</p>
+            <p className="text-xs text-gray-500">for {travelers} {travelers === 1 ? 'person' : 'people'}</p>
           )}
         </div>
       </div>
