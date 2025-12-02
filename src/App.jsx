@@ -18,7 +18,7 @@ export default function App() {
     {
       role: 'assistant',
       content:
-        "Hello! I'm Ardo your personal travel expert. Tell me about your dream trip!\n\n• Where would you like to go?\n• When are you planning to travel?\n• How many people will be traveling?\n• What are you interested in? (history, food, adventure, etc.)",
+        "Hello! I'm your Viaggio travel expert. Tell me about your dream trip!\n\n• Where would you like to go?\n• When are you planning to travel?\n• How many people will be traveling?\n• What are you interested in? (history, food, adventure, etc.)",
     },
   ]);
   
@@ -48,6 +48,7 @@ export default function App() {
     travelers: null,
     month: null,
     searchTerms: null,
+    sortBy: null,
     resultCount: 10,
   });
 
@@ -105,7 +106,8 @@ export default function App() {
             console.log('Fetching tours:', {
               destination,
               searchTerms: newContext.searchTerms,
-              resultCount: newContext.resultCount
+              resultCount: newContext.resultCount,
+              sortBy: newContext.sortBy
             });
             
             const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
@@ -115,6 +117,7 @@ export default function App() {
                 destination: destination,
                 searchTerms: newContext.searchTerms || '',
                 resultCount: newContext.resultCount || 10,
+                sortBy: newContext.sortBy || 'popular',
                 startDate: newContext.startDate,
                 endDate: newContext.endDate
               })
