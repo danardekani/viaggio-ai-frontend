@@ -322,6 +322,7 @@ export default function App() {
                 addToCart={addToCart}
                 removeFromCart={removeFromCart}
                 formatCurrency={formatCurrency}
+                travelers={conversationContext.travelers || 2}
               />
             ))}
             {loading && (
