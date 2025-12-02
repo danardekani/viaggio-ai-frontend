@@ -6,7 +6,8 @@ export default function ChatMessage({
   isInCart,
   addToCart,
   removeFromCart,
-  formatCurrency
+  formatCurrency,
+  travelers = 1
 }) {
   if (message.role === 'user') {
     return (
@@ -39,6 +40,7 @@ export default function ChatMessage({
                   onAdd={addToCart}
                   onRemove={removeFromCart}
                   formatCurrency={formatCurrency}
+                  travelers={travelers}
                 />
               ))}
             </div>
