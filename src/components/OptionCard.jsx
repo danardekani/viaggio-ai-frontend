@@ -1,7 +1,10 @@
-import React from 'react';
-import { Plane, Hotel, MapPin, ExternalLink, Star, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plane, Hotel, MapPin, ExternalLink, Star, Clock, Eye } from 'lucide-react';
+import QuickViewModal from './QuickViewModal';
 
 export default function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency, travelers = 2 }) {
+  const [showQuickView, setShowQuickView] = useState(false);
+  
   const colors = {
     flight: {
       border: 'border-blue-600',
@@ -23,125 +26,137 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
     },
   }[option.type];
 
-  // Handle both 'link' (static data) and 'bookingLink' (Viator API)
   const bookingUrl = option.data.bookingLink || option.data.link;
 
+  const handleAddRemove = () => {
+    isSelected ? onRemove(option.type, option.data.id) : onAdd(option.type, option.data);
+  };
+
   return (
-    <div
-      className={`bg-white rounded-lg shadow-md border-2 p-4 transition-all ${
-        isSelected ? `${colors.border} ${colors.bg}` : 'border-gray-200'
-      }`}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-start gap-3 flex-1">
-          {option.type === 'flight' && (
-            <Plane className={`w-5 h-5 ${colors.icon} mt-1`} />
+    <>
+      <div
+        className={`bg-white rounded-lg shadow-sm border transition-all hover:shadow-md ${
+          isSelected ? `${colors.border} ${colors.bg} border-2` : 'border-gray-200'
+        }`}
+      >
+        <div className="flex items-center gap-3 p-3">
+          {/* Image - Compact Square */}
+          {option.type === 'tour' && option.data.image ? (
+            <img 
+              src={option.data.image} 
+              alt={option.data.name}
+              className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+            />
+          ) : (
+            <div className={`w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
+              {option.type === 'flight' && <Plane className={`w-6 h-6 ${colors.icon}`} />}
+              {option.type === 'hotel' && <Hotel className={`w-6 h-6 ${colors.icon}`} />}
+              {option.type === 'tour' && <MapPin className={`w-6 h-6 ${colors.icon}`} />}
+            </div>
           )}
-          {option.type === 'hotel' && (
-            <Hotel className={`w-5 h-5 ${colors.icon} mt-1`} />
-          )}
-          {option.type === 'tour' && (
-            <MapPin className={`w-5 h-5 ${colors.icon} mt-1`} />
-          )}
-          <div className="flex-1">
-            <h4 className="font-bold text-gray-900">
+
+          {/* Content - Middle Section */}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
               {option.data.airline || option.data.name}
             </h4>
             
             {/* Flight info */}
             {option.data.route && (
-              <p className="text-sm text-gray-600">{option.data.route}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{option.data.route}</p>
             )}
             
             {/* Hotel info */}
             {option.data.location && (
-              <p className="text-sm text-gray-600">
+              <p className="text-xs text-gray-500 mt-0.5">
                 ⭐ {option.data.rating}/5 · {option.data.location}
               </p>
             )}
             
-            {/* Tour info - enhanced for Viator data */}
+            {/* Tour info - compact */}
             {option.type === 'tour' && (
-              <>
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                 {option.data.duration && (
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
+                  <span className="flex items-center gap-0.5">
                     <Clock className="w-3 h-3" />
                     {option.data.duration}
-                  </p>
+                  </span>
                 )}
                 {option.data.rating && option.data.rating !== 'New' && (
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
+                  <span className="flex items-center gap-0.5">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                    {option.data.rating}/5
+                    {option.data.rating}
                     {option.data.reviewCount > 0 && (
-                      <span className="text-gray-400">
-                        ({option.data.reviewCount.toLocaleString()} reviews)
-                      </span>
+                      <span className="text-gray-400">({option.data.reviewCount.toLocaleString()})</span>
                     )}
-                  </p>
+                  </span>
                 )}
-                {option.data.description && (
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                    {option.data.description}
-                  </p>
-                )}
-              </>
-            )}
-            
-            {/* Date/time for static tour data */}
-            {option.data.date && option.data.time && option.type === 'tour' && !option.data.description && (
-              <p className="text-sm text-gray-600">
-                {option.data.date} at {option.data.time}
-              </p>
+              </div>
             )}
           </div>
-        </div>
-        <div className="text-right ml-4">
-          {/* Tour image from Viator */}
-          {option.type === 'tour' && option.data.image && (
-            <img 
-              src={option.data.image} 
-              alt={option.data.name}
-              className="w-20 h-20 object-cover rounded-lg mb-2"
-            />
-          )}
-          <p className={`text-xl font-bold ${colors.icon}`}>
-            {formatCurrency(
-              option.type === 'tour'
-                ? option.data.price * travelers
-                : option.data.price
+
+          {/* Price - Right Side */}
+          <div className="text-right flex-shrink-0">
+            <p className={`text-lg font-bold ${colors.icon}`}>
+              {formatCurrency(
+                option.type === 'tour'
+                  ? option.data.price * travelers
+                  : option.data.price
+              )}
+            </p>
+            {option.type === 'tour' && (
+              <p className="text-[10px] text-gray-400">{travelers} {travelers === 1 ? 'person' : 'people'}</p>
             )}
-          </p>
-          {option.type === 'tour' && (
-            <p className="text-xs text-gray-500">for {travelers} {travelers === 1 ? 'person' : 'people'}</p>
-          )}
+          </div>
+
+          {/* Action Buttons - Compact */}
+          <div className="flex gap-1.5 flex-shrink-0">
+            {/* Quick View - Tour only */}
+            {option.type === 'tour' && (
+              <button
+                onClick={() => setShowQuickView(true)}
+                className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Quick View"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            )}
+            
+            {/* View Details */}
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+              title="View Details"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            
+            {/* Add/Remove */}
+            <button
+              onClick={handleAddRemove}
+              className={`px-3 py-2 text-xs rounded-lg font-medium transition-colors text-white whitespace-nowrap ${
+                isSelected ? 'bg-red-600 hover:bg-red-700' : colors.button
+              }`}
+            >
+              {isSelected ? 'Remove' : 'Add'}
+            </button>
+          </div>
         </div>
       </div>
-      <div className="flex gap-2">
-        <a
-          href={bookingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors font-medium text-center flex items-center justify-center gap-1"
-        >
-          View Details
-          <ExternalLink className="w-3 h-3" />
-        </a>
-        <button
-          onClick={() =>
-            isSelected ? onRemove(option.type, option.data.id) : onAdd(option.type, option.data)
-          }
-          className={`flex-1 px-3 py-2 text-sm rounded-lg font-medium transition-colors text-white ${
-            isSelected ? 'bg-red-600 hover:bg-red-700' : colors.button
-          }`}
-        >
-          {isSelected
-            ? 'Remove'
-            : option.type === 'tour'
-            ? 'Add to Trip'
-            : 'Select'}
-        </button>
-      </div>
-    </div>
+
+      {/* Quick View Modal */}
+      {showQuickView && option.type === 'tour' && (
+        <QuickViewModal
+          tour={option.data}
+          onClose={() => setShowQuickView(false)}
+          formatCurrency={formatCurrency}
+          travelers={travelers}
+          onAddToTrip={handleAddRemove}
+          isInCart={isSelected}
+        />
+      )}
+    </>
   );
 }
