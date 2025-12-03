@@ -107,7 +107,13 @@ export default function App() {
               destination,
               searchTerms: newContext.searchTerms,
               resultCount: newContext.resultCount,
-              sortBy: newContext.sortBy
+              sortBy: newContext.sortBy,
+              flags: newContext.flags,
+              minPrice: newContext.minPrice,
+              maxPrice: newContext.maxPrice,
+              minDuration: newContext.minDuration,
+              maxDuration: newContext.maxDuration,
+              minRating: newContext.minRating
             });
             
             const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
@@ -119,7 +125,13 @@ export default function App() {
                 resultCount: newContext.resultCount || 10,
                 sortBy: newContext.sortBy || 'popular',
                 startDate: newContext.startDate,
-                endDate: newContext.endDate
+                endDate: newContext.endDate,
+                flags: newContext.flags || [],
+                minPrice: newContext.minPrice,
+                maxPrice: newContext.maxPrice,
+                minDuration: newContext.minDuration,
+                maxDuration: newContext.maxDuration,
+                minRating: newContext.minRating
               })
             });
 
