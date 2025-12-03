@@ -12,6 +12,7 @@ import Sidebar from './components/Sidebar';
 import BookingPage from './components/BookingPage';
 import ItineraryModal from './components/ItineraryModal';
 import MobileTripSheet from './components/MobileTripSheet';
+import SearchPanel from './components/SearchPanel';
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -61,6 +62,144 @@ export default function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // ============================================================================
+  // SEARCH PANEL HANDLER
+  // ============================================================================
+
+  const handlePanelSearch = async (searchParams) => {
+    setLoading(true);
+    
+    try {
+      if (searchParams.type === 'tours') {
+        // Update conversation context with the search params
+        const newContext = {
+          ...conversationContext,
+          destination: searchParams.destination,
+          travelers: searchParams.travelers,
+          startDate: searchParams.startDate,
+          endDate: searchParams.endDate,
+          searchTerms: searchParams.searchTerms,
+          sortBy: searchParams.sortBy,
+          minPrice: searchParams.minPrice,
+          maxPrice: searchParams.maxPrice,
+          minDuration: searchParams.minDuration,
+          maxDuration: searchParams.maxDuration,
+          minRating: searchParams.minRating,
+          flags: searchParams.flags
+        };
+        setConversationContext(newContext);
+
+        // Add a user message to show what was searched
+        const searchDescription = buildSearchDescription(searchParams);
+        setMessages(prev => [...prev, { 
+          role: 'user', 
+          content: searchDescription 
+        }]);
+
+        // Call the tours API
+        const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: searchParams.destination,
+            searchTerms: searchParams.searchTerms || '',
+            resultCount: 10,
+            sortBy: searchParams.sortBy || 'popular',
+            startDate: searchParams.startDate,
+            endDate: searchParams.endDate,
+            flags: searchParams.flags || [],
+            minPrice: searchParams.minPrice,
+            maxPrice: searchParams.maxPrice,
+            minDuration: searchParams.minDuration,
+            maxDuration: searchParams.maxDuration,
+            minRating: searchParams.minRating
+          })
+        });
+
+        if (toursResponse.ok) {
+          const toursData = await toursResponse.json();
+          const options = toursData.tours.map(t => ({ type: 'tour', data: t }));
+          
+          // Add assistant response with tour options
+          const responseMessage = options.length > 0
+            ? `Here are ${options.length} tours in ${searchParams.destination}${searchParams.searchTerms ? ` for "${searchParams.searchTerms}"` : ''}:`
+            : `No tours found matching your criteria in ${searchParams.destination}. Try adjusting your filters.`;
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: responseMessage,
+            options: options
+          }]);
+        } else {
+          throw new Error('Failed to fetch tours');
+        }
+      } else if (searchParams.type === 'flights') {
+        // Placeholder for flights - add user message and AI response
+        setMessages(prev => [...prev, 
+          { role: 'user', content: searchParams.message },
+          { role: 'assistant', content: `I'd be happy to help you find flights from ${searchParams.from} to ${searchParams.to}! Flight search is coming soon. For now, I can provide general flight information and recommendations. What else would you like to know?` }
+        ]);
+      } else if (searchParams.type === 'hotels') {
+        // Placeholder for hotels - add user message and AI response
+        setMessages(prev => [...prev,
+          { role: 'user', content: searchParams.message },
+          { role: 'assistant', content: `I'd love to help you find hotels in ${searchParams.destination}! Hotel search is coming soon. For now, I can provide general recommendations and information about accommodations. What else would you like to know?` }
+        ]);
+      }
+    } catch (error) {
+      console.error('Panel search error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error while searching. Please try again or use the chat to describe what you\'re looking for.'
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Build a human-readable search description
+  const buildSearchDescription = (params) => {
+    let description = `Search for tours in ${params.destination}`;
+    
+    if (params.searchTerms) {
+      description += ` - ${params.searchTerms}`;
+    }
+    
+    const details = [];
+    if (params.startDate && params.endDate) {
+      details.push(`${params.startDate} to ${params.endDate}`);
+    }
+    if (params.travelers && params.travelers !== 2) {
+      details.push(`${params.travelers} travelers`);
+    }
+    if (params.minPrice || params.maxPrice) {
+      if (params.minPrice && params.maxPrice) {
+        details.push(`$${params.minPrice}-$${params.maxPrice}`);
+      } else if (params.maxPrice) {
+        details.push(`under $${params.maxPrice}`);
+      } else {
+        details.push(`over $${params.minPrice}`);
+      }
+    }
+    if (params.flags && params.flags.length > 0) {
+      const flagLabels = {
+        'FREE_CANCELLATION': 'free cancellation',
+        'SKIP_THE_LINE': 'skip the line',
+        'PRIVATE_TOUR': 'private',
+        'LIKELY_TO_SELL_OUT': 'popular',
+        'SPECIAL_OFFER': 'deals'
+      };
+      const flagNames = params.flags.map(f => flagLabels[f] || f).join(', ');
+      details.push(flagNames);
+    }
+    
+    if (details.length > 0) {
+      description += ` (${details.join(', ')})`;
+    }
+    
+    return description;
+  };
 
   // ============================================================================
   // CHAT HANDLER
@@ -323,6 +462,9 @@ export default function App() {
             </div>
           </div>
         </header>
+
+        {/* Search Panel */}
+        <SearchPanel onSearch={handlePanelSearch} isLoading={loading} />
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-3xl mx-auto space-y-4">
