@@ -2,28 +2,43 @@ import React, { useState } from 'react';
 import { X, Star, Clock, MapPin, Users, CheckCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 export default function QuickViewModal({ tour, onClose, formatCurrency, travelers = 2, onAddToTrip, isInCart }) {
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   
   if (!tour) return null;
+
+  const description = tour.description || '';
+  const isLongDescription = description.length > 200;
+  
+  // Get display text based on expanded state
+  const displayDescription = expanded || !isLongDescription
+    ? description
+    : description.substring(0, 200) + '...';
 
   // Parse highlights from description if available
   const getHighlights = () => {
     if (tour.highlights && Array.isArray(tour.highlights)) {
       return tour.highlights;
     }
-    // Extract key points from description
-    if (tour.description) {
-      const sentences = tour.description.split(/[.!]/).filter(s => s.trim().length > 20);
+    if (description) {
+      const sentences = description.split(/[.!]/).filter(s => s.trim().length > 20);
       return sentences.slice(0, 4).map(s => s.trim());
     }
     return [];
   };
 
   const highlights = getHighlights();
-  const descriptionIsLong = tour.description && tour.description.length > 200;
+
+  const handleToggleExpand = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpanded(prev => !prev);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" 
+      onClick={onClose}
+    >
       <div 
         className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -89,38 +104,27 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
             </div>
 
             {/* Description - Expandable */}
-            {tour.description && (
+            {description && (
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">About this experience</h3>
                 
-                {/* Show truncated or full description based on state */}
-                {isDescriptionExpanded ? (
-                  // Full description
+                <div className="relative">
                   <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                    {tour.description}
+                    {displayDescription}
                   </p>
-                ) : (
-                  // Truncated description
-                  <div className="relative">
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {descriptionIsLong 
-                        ? tour.description.substring(0, 200) + '...'
-                        : tour.description
-                      }
-                    </p>
-                    {descriptionIsLong && (
-                      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent" />
-                    )}
-                  </div>
-                )}
+                  {!expanded && isLongDescription && (
+                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  )}
+                </div>
                 
                 {/* Read More / Read Less Toggle */}
-                {descriptionIsLong && (
+                {isLongDescription && (
                   <button
-                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                    className="mt-2 text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1 transition-colors"
+                    type="button"
+                    onClick={handleToggleExpand}
+                    className="mt-2 text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    {isDescriptionExpanded ? (
+                    {expanded ? (
                       <>
                         <span>Show less</span>
                         <ChevronUp className="w-4 h-4" />
@@ -229,7 +233,9 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
               <ExternalLink className="w-4 h-4" />
             </a>
             <button
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
                 onAddToTrip();
                 onClose();
               }}
