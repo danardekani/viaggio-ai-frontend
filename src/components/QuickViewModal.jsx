@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { X, Star, Clock, MapPin, Users, CheckCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
-export default function QuickViewModal({ tour, onClose, formatCurrency, travelers = 2, onAddToTrip, isInCart }) {
-  const [expanded, setExpanded] = useState(false);
-  
+export default function QuickViewModal({ 
+  tour, 
+  onClose, 
+  formatCurrency, 
+  travelers = 2, 
+  onAddToTrip, 
+  isInCart,
+  descriptionExpanded,
+  onToggleDescription
+}) {
   if (!tour) return null;
 
   const description = tour.description || '';
   const isLongDescription = description.length > 200;
   
   // Get display text based on expanded state
-  const displayDescription = expanded || !isLongDescription
+  const displayDescription = descriptionExpanded || !isLongDescription
     ? description
     : description.substring(0, 200) + '...';
 
@@ -27,12 +34,6 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
   };
 
   const highlights = getHighlights();
-
-  const handleToggleExpand = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setExpanded(prev => !prev);
-  };
 
   return (
     <div 
@@ -112,7 +113,7 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
                   <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                     {displayDescription}
                   </p>
-                  {!expanded && isLongDescription && (
+                  {!descriptionExpanded && isLongDescription && (
                     <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
                   )}
                 </div>
@@ -121,10 +122,10 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
                 {isLongDescription && (
                   <button
                     type="button"
-                    onClick={handleToggleExpand}
+                    onClick={onToggleDescription}
                     className="mt-2 text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    {expanded ? (
+                    {descriptionExpanded ? (
                       <>
                         <span>Show less</span>
                         <ChevronUp className="w-4 h-4" />
