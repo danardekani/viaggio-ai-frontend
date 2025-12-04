@@ -197,7 +197,10 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
+                      id="tours-destination"
+                      name="tours-destination"
                       placeholder="Where to?"
+                      autoComplete="off"
                       value={toursFilters.destination}
                       onChange={(e) => setToursFilters(prev => ({ ...prev, destination: e.target.value }))}
                       className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -208,6 +211,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="date"
+                      id="tours-start-date"
+                      name="tours-start-date"
                       value={toursFilters.startDate}
                       onChange={(e) => setToursFilters(prev => ({ ...prev, startDate: e.target.value }))}
                       className="pl-8 pr-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[130px]"
@@ -220,6 +225,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="date"
+                      id="tours-end-date"
+                      name="tours-end-date"
                       value={toursFilters.endDate}
                       onChange={(e) => setToursFilters(prev => ({ ...prev, endDate: e.target.value }))}
                       className="pl-8 pr-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[130px]"
@@ -229,6 +236,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                   <div className="relative">
                     <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <select
+                      id="tours-travelers"
+                      name="tours-travelers"
                       value={toursFilters.travelers}
                       onChange={(e) => setToursFilters(prev => ({ ...prev, travelers: parseInt(e.target.value) }))}
                       className="pl-8 pr-6 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
@@ -272,7 +281,10 @@ export default function SearchPanel({ onSearch, isLoading }) {
                       {/* Activity Type */}
                       <input
                         type="text"
+                        id="tours-activity"
+                        name="tours-activity"
                         placeholder="Activity (food, history...)"
+                        autoComplete="off"
                         value={toursFilters.searchTerms}
                         onChange={(e) => setToursFilters(prev => ({ ...prev, searchTerms: e.target.value }))}
                         className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[160px]"
@@ -280,6 +292,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                       {/* Sort */}
                       <select
+                        id="tours-sort"
+                        name="tours-sort"
                         value={toursFilters.sortBy}
                         onChange={(e) => setToursFilters(prev => ({ ...prev, sortBy: e.target.value }))}
                         className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
@@ -299,6 +313,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                         <span className="text-gray-500 text-sm">$</span>
                         <input
                           type="number"
+                          id="tours-min-price"
+                          name="tours-min-price"
                           placeholder="Min"
                           value={toursFilters.minPrice}
                           onChange={(e) => setToursFilters(prev => ({ ...prev, minPrice: e.target.value }))}
@@ -307,6 +323,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                         <span className="text-gray-400">-</span>
                         <input
                           type="number"
+                          id="tours-max-price"
+                          name="tours-max-price"
                           placeholder="Max"
                           value={toursFilters.maxPrice}
                           onChange={(e) => setToursFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
@@ -316,6 +334,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                       {/* Duration */}
                       <select
+                        id="tours-duration"
+                        name="tours-duration"
                         value={toursFilters.maxDuration}
                         onChange={(e) => setToursFilters(prev => ({ ...prev, maxDuration: e.target.value }))}
                         className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
@@ -329,6 +349,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                       {/* Rating */}
                       <select
+                        id="tours-rating"
+                        name="tours-rating"
                         value={toursFilters.minRating}
                         onChange={(e) => setToursFilters(prev => ({ ...prev, minRating: e.target.value }))}
                         className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
@@ -404,7 +426,10 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     <Plane className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
+                      id="flights-from"
+                      name="flights-from"
                       placeholder="From"
+                      autoComplete="off"
                       value={flightsFilters.from}
                       onChange={(e) => setFlightsFilters(prev => ({ ...prev, from: e.target.value }))}
                       className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -415,7 +440,10 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     <Plane className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90" />
                     <input
                       type="text"
+                      id="flights-to"
+                      name="flights-to"
                       placeholder="To"
+                      autoComplete="off"
                       value={flightsFilters.to}
                       onChange={(e) => setFlightsFilters(prev => ({ ...prev, to: e.target.value }))}
                       className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -424,6 +452,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                   <input
                     type="date"
+                    id="flights-depart"
+                    name="flights-depart"
                     value={flightsFilters.departDate}
                     onChange={(e) => setFlightsFilters(prev => ({ ...prev, departDate: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[130px]"
@@ -432,6 +462,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                   {flightsFilters.tripType === 'roundtrip' && (
                     <input
                       type="date"
+                      id="flights-return"
+                      name="flights-return"
                       value={flightsFilters.returnDate}
                       onChange={(e) => setFlightsFilters(prev => ({ ...prev, returnDate: e.target.value }))}
                       className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[130px]"
@@ -439,6 +471,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                   )}
 
                   <select
+                    id="flights-passengers"
+                    name="flights-passengers"
                     value={flightsFilters.passengers}
                     onChange={(e) => setFlightsFilters(prev => ({ ...prev, passengers: parseInt(e.target.value) }))}
                     className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
@@ -472,7 +506,10 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     <Hotel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
+                      id="hotels-destination"
+                      name="hotels-destination"
                       placeholder="City or hotel name"
+                      autoComplete="off"
                       value={hotelsFilters.destination}
                       onChange={(e) => setHotelsFilters(prev => ({ ...prev, destination: e.target.value }))}
                       className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -481,6 +518,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                   <input
                     type="date"
+                    id="hotels-checkin"
+                    name="hotels-checkin"
                     value={hotelsFilters.checkIn}
                     onChange={(e) => setHotelsFilters(prev => ({ ...prev, checkIn: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-[130px]"
@@ -489,6 +528,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                   <input
                     type="date"
+                    id="hotels-checkout"
+                    name="hotels-checkout"
                     value={hotelsFilters.checkOut}
                     onChange={(e) => setHotelsFilters(prev => ({ ...prev, checkOut: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-[130px]"
@@ -496,6 +537,8 @@ export default function SearchPanel({ onSearch, isLoading }) {
                   />
 
                   <select
+                    id="hotels-guests"
+                    name="hotels-guests"
                     value={hotelsFilters.guests}
                     onChange={(e) => setHotelsFilters(prev => ({ ...prev, guests: parseInt(e.target.value) }))}
                     className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none bg-white"
