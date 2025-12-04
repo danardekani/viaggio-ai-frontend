@@ -14,15 +14,24 @@ export default function QuickViewModal({
   if (!tour) return null;
 
   const description = tour.description || '';
-  const isLongDescription = description.length > 300; // Only truncate if over 300 chars
+  const isLongDescription = description.length > 150; // Show "Read more" if over 150 chars
   
   // Get display text based on expanded state
   let displayDescription;
   if (descriptionExpanded || !isLongDescription) {
     displayDescription = description;
   } else {
-    // Truncate to 150 chars for a more noticeable difference
-    displayDescription = description.substring(0, 150) + '...';
+    // Truncate to ~100 chars, but find a good break point (space or punctuation)
+    const truncateAt = 100;
+    let cutPoint = truncateAt;
+    
+    // Find the last space before the truncate point to avoid cutting mid-word
+    const lastSpace = description.lastIndexOf(' ', truncateAt);
+    if (lastSpace > 50) {
+      cutPoint = lastSpace;
+    }
+    
+    displayDescription = description.substring(0, cutPoint) + '...';
   }
 
   // Parse highlights from description if available
