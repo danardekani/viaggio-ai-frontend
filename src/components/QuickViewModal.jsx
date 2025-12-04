@@ -16,10 +16,25 @@ export default function QuickViewModal({
   const description = tour.description || '';
   const isLongDescription = description.length > 200;
   
+  // DEBUG: Log state on every render
+  console.log('QuickViewModal render:', { 
+    descriptionExpanded, 
+    isLongDescription,
+    descriptionLength: description.length 
+  });
+  
   // Get display text based on expanded state
-  const displayDescription = descriptionExpanded || !isLongDescription
-    ? description
-    : description.substring(0, 200) + '...';
+  let displayDescription;
+  if (descriptionExpanded) {
+    displayDescription = description;
+    console.log('Showing FULL description:', description.length, 'chars');
+  } else if (isLongDescription) {
+    displayDescription = description.substring(0, 200) + '...';
+    console.log('Showing TRUNCATED description:', displayDescription.length, 'chars');
+  } else {
+    displayDescription = description;
+    console.log('Description is short, showing all:', description.length, 'chars');
+  }
 
   // Parse highlights from description if available
   const getHighlights = () => {
@@ -107,9 +122,12 @@ export default function QuickViewModal({
             {/* Description - Expandable */}
             {description && (
               <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">About this experience</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                  About this experience 
+                  <span className="text-xs text-gray-400 ml-2">(expanded: {descriptionExpanded ? 'true' : 'false'})</span>
+                </h3>
                 
-                <div className="relative">
+                <div className="relative" key={descriptionExpanded ? 'expanded' : 'collapsed'}>
                   <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                     {displayDescription}
                   </p>
