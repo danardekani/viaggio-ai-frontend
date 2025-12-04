@@ -44,11 +44,7 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
   };
 
   const handleToggleDescription = () => {
-    console.log('Toggle clicked! Current state:', descriptionExpanded);
-    setDescriptionExpanded(prev => {
-      console.log('Setting new state:', !prev);
-      return !prev;
-    });
+    setDescriptionExpanded(prev => !prev);
   };
 
   return (
