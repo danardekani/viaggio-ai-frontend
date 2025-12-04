@@ -4,6 +4,7 @@ import QuickViewModal from './QuickViewModal';
 
 export default function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency, travelers = 2 }) {
   const [showQuickView, setShowQuickView] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   
   const colors = {
     flight: {
@@ -30,6 +31,16 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
 
   const handleAddRemove = () => {
     isSelected ? onRemove(option.type, option.data.id) : onAdd(option.type, option.data);
+  };
+
+  const handleOpenQuickView = () => {
+    setDescriptionExpanded(false); // Reset when opening
+    setShowQuickView(true);
+  };
+
+  const handleCloseQuickView = () => {
+    setShowQuickView(false);
+    setDescriptionExpanded(false); // Reset when closing
   };
 
   return (
@@ -114,7 +125,8 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
             {/* Quick View - Tour only */}
             {option.type === 'tour' && (
               <button
-                onClick={() => setShowQuickView(true)}
+                type="button"
+                onClick={handleOpenQuickView}
                 className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
                 title="Quick View"
               >
@@ -135,6 +147,7 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
             
             {/* Add/Remove */}
             <button
+              type="button"
               onClick={handleAddRemove}
               className={`px-3 py-2 text-xs rounded-lg font-medium transition-colors text-white whitespace-nowrap ${
                 isSelected ? 'bg-red-600 hover:bg-red-700' : colors.button
@@ -150,11 +163,13 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
       {showQuickView && option.type === 'tour' && (
         <QuickViewModal
           tour={option.data}
-          onClose={() => setShowQuickView(false)}
+          onClose={handleCloseQuickView}
           formatCurrency={formatCurrency}
           travelers={travelers}
           onAddToTrip={handleAddRemove}
           isInCart={isSelected}
+          descriptionExpanded={descriptionExpanded}
+          onToggleDescription={() => setDescriptionExpanded(prev => !prev)}
         />
       )}
     </>
