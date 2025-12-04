@@ -92,24 +92,27 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
             {tour.description && (
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">About this experience</h3>
-                <div className="relative">
-                  <p 
-                    className="text-sm text-gray-600 leading-relaxed whitespace-pre-line"
-                    style={!isDescriptionExpanded && descriptionIsLong ? {
-                      display: '-webkit-box',
-                      WebkitLineClamp: 4,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    } : {}}
-                  >
+                
+                {/* Show truncated or full description based on state */}
+                {isDescriptionExpanded ? (
+                  // Full description
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                     {tour.description}
                   </p>
-                  
-                  {/* Fade overlay when collapsed */}
-                  {!isDescriptionExpanded && descriptionIsLong && (
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
-                  )}
-                </div>
+                ) : (
+                  // Truncated description
+                  <div className="relative">
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {descriptionIsLong 
+                        ? tour.description.substring(0, 200) + '...'
+                        : tour.description
+                      }
+                    </p>
+                    {descriptionIsLong && (
+                      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent" />
+                    )}
+                  </div>
+                )}
                 
                 {/* Read More / Read Less Toggle */}
                 {descriptionIsLong && (
