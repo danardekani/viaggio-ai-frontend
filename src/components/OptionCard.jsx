@@ -43,6 +43,14 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
     setDescriptionExpanded(false); // Reset when closing
   };
 
+  const handleToggleDescription = () => {
+    console.log('Toggle clicked! Current state:', descriptionExpanded);
+    setDescriptionExpanded(prev => {
+      console.log('Setting new state:', !prev);
+      return !prev;
+    });
+  };
+
   return (
     <>
       <div
@@ -169,7 +177,7 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
           onAddToTrip={handleAddRemove}
           isInCart={isSelected}
           descriptionExpanded={descriptionExpanded}
-          onToggleDescription={() => setDescriptionExpanded(prev => !prev)}
+          onToggleDescription={handleToggleDescription}
         />
       )}
     </>
