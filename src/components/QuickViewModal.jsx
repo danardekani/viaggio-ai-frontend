@@ -93,9 +93,15 @@ export default function QuickViewModal({ tour, onClose, formatCurrency, traveler
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">About this experience</h3>
                 <div className="relative">
-                  <p className={`text-sm text-gray-600 leading-relaxed whitespace-pre-line ${
-                    !isDescriptionExpanded && descriptionIsLong ? 'line-clamp-4' : ''
-                  }`}>
+                  <p 
+                    className="text-sm text-gray-600 leading-relaxed whitespace-pre-line"
+                    style={!isDescriptionExpanded && descriptionIsLong ? {
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    } : {}}
+                  >
                     {tour.description}
                   </p>
                   
