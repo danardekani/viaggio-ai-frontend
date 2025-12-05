@@ -28,7 +28,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-export default function SearchPanel({ onSearch, isLoading }) {
+export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
   const [activeTab, setActiveTab] = useState('tours');
   const [isExpanded, setIsExpanded] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -99,7 +99,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
       setLoadingSuggestions(true);
       try {
-        const response = await fetch(`/api/tours/destinations/autocomplete?q=${encodeURIComponent(debouncedDestination)}&limit=8`);
+        const response = await fetch(`${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(debouncedDestination)}&limit=8`);
         const data = await response.json();
         setSuggestions(data.suggestions || []);
         setShowSuggestions(true);
@@ -113,7 +113,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
     };
 
     fetchSuggestions();
-  }, [debouncedDestination, selectedDestinationId]);
+  }, [debouncedDestination, selectedDestinationId, backendUrl]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
