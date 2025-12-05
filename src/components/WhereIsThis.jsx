@@ -38,6 +38,7 @@ export default function WhereIsThis({
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
+  const [whereIsThisOpen, setWhereIsThisOpen] = useState(true);
 
   // Handle file selection
   const handleFileSelect = (event) => {
