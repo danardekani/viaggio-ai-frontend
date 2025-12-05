@@ -7,12 +7,14 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+// React Components //
 import ChatMessage from './components/ChatMessage';
 import Sidebar from './components/Sidebar';
 import BookingPage from './components/BookingPage';
 import ItineraryModal from './components/ItineraryModal';
 import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
+import WhereIsThis from './components/WhereIsThis';
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -461,6 +463,14 @@ export default function App() {
               </div>
             </div>
           </div>
+          <WhereIsThis
+            backendUrl={BACKEND_URL}
+            isOpen={whereIsThisOpen}
+            onToggle={() => setWhereIsThisOpen(!whereIsThisOpen)}
+            onSearchFlights={(dest) => { /* handle flights */ }}
+            onSearchHotels={(dest) => { /* handle hotels */ }}
+            onSearchTours={(dest) => handlePanelSearch({ type: 'tours', destination: dest, travelers: 2 })}
+          />
         </header>
 
         {/* Search Panel */}
