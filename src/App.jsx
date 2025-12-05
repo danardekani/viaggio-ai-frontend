@@ -464,7 +464,7 @@ export default function App() {
         </header>
 
         {/* Search Panel */}
-        <SearchPanel onSearch={handlePanelSearch} isLoading={loading} />
+        <SearchPanel onSearch={handlePanelSearch} isLoading={loading} backendUrl={BACKEND_URL} />
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-3xl mx-auto space-y-4">
