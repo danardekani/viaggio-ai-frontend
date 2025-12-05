@@ -496,23 +496,30 @@ export default function App() {
 
         <div className="border-t border-gray-200 bg-white px-4 py-4">
           <div className="max-w-3xl mx-auto">
-            <div className="flex gap-3">
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+              className="flex gap-3"
+            >
               <input
                 type="text"
+                id="chat-input"
+                name="chat-input"
+                autoComplete="off"
+                aria-label="Tell us about your trip"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
                 placeholder="Tell me about your trip..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
-                onClick={handleSend}
+                type="submit"
                 disabled={!input.trim() || loading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 transition-colors flex items-center gap-2 font-medium"
+                aria-label="Send message"
+                className="px-5 py-3 bg-gray-200 text-gray-600 rounded-lg hover:bg-blue-600 hover:text-white disabled:bg-gray-100 disabled:text-gray-400 transition-colors flex items-center justify-center"
               >
                 <Send className="w-5 h-5" />
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
