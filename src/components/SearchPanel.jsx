@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Plane, 
   Hotel, 
@@ -9,13 +9,38 @@ import {
   Calendar,
   Users,
   SlidersHorizontal,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
+
+// Debounce hook for autocomplete
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function SearchPanel({ onSearch, isLoading }) {
   const [activeTab, setActiveTab] = useState('tours');
   const [isExpanded, setIsExpanded] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedDestinationId, setSelectedDestinationId] = useState(null);
+  const destinationInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
   
   // Tours filter state
   const [toursFilters, setToursFilters] = useState({
@@ -59,6 +84,123 @@ export default function SearchPanel({ onSearch, isLoading }) {
     rooms: 1,
     starRating: ''
   });
+
+  // Debounced destination value for autocomplete
+  const debouncedDestination = useDebounce(toursFilters.destination, 300);
+
+  // Fetch autocomplete suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      // Only search if we have at least 2 characters and no destination is selected
+      if (!debouncedDestination || debouncedDestination.length < 2 || selectedDestinationId) {
+        setSuggestions([]);
+        return;
+      }
+
+      setLoadingSuggestions(true);
+      try {
+        const response = await fetch(`/api/tours/destinations/autocomplete?q=${encodeURIComponent(debouncedDestination)}&limit=8`);
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(true);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+        setSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+  }, [debouncedDestination, selectedDestinationId]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        destinationInputRef.current && 
+        !destinationInputRef.current.contains(event.target) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle destination input change
+  const handleDestinationChange = (e) => {
+    const value = e.target.value;
+    setToursFilters(prev => ({ ...prev, destination: value }));
+    setSelectedDestinationId(null); // Clear selection when typing
+    if (value.length >= 2) {
+      setShowSuggestions(true);
+    }
+  };
+
+  // Handle selecting a suggestion
+  const handleSelectSuggestion = (suggestion) => {
+    setToursFilters(prev => ({ ...prev, destination: suggestion.displayName }));
+    setSelectedDestinationId(suggestion.destinationId);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+  };
+
+  // Handle keyboard navigation in suggestions
+  const handleDestinationKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      // If Enter is pressed without suggestions, trigger search
+      if (e.key === 'Enter' && toursFilters.destination) {
+        e.preventDefault();
+        handleToursSearch();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+          handleSelectSuggestion(suggestions[selectedIndex]);
+        } else if (toursFilters.destination) {
+          setShowSuggestions(false);
+          handleToursSearch();
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  };
+
+  // Get destination type icon/badge
+  const getDestinationType = (type) => {
+    const types = {
+      'CITY': { label: 'City', color: 'bg-blue-100 text-blue-700' },
+      'REGION': { label: 'Region', color: 'bg-green-100 text-green-700' },
+      'COUNTRY': { label: 'Country', color: 'bg-purple-100 text-purple-700' },
+      'STATE': { label: 'State', color: 'bg-orange-100 text-orange-700' },
+      'ISLAND': { label: 'Island', color: 'bg-cyan-100 text-cyan-700' },
+      'NATIONAL PARK': { label: 'Park', color: 'bg-emerald-100 text-emerald-700' }
+    };
+    return types[type] || { label: type, color: 'bg-gray-100 text-gray-700' };
+  };
 
   const tabs = [
     { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' },
@@ -190,21 +332,64 @@ export default function SearchPanel({ onSearch, isLoading }) {
             
             {/* Tours Tab */}
             {activeTab === 'tours' && (
-              <div className="space-y-2">
+              <form 
+                onSubmit={(e) => { e.preventDefault(); handleToursSearch(); }}
+                className="space-y-2"
+              >
                 {/* Primary Row */}
                 <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-[160px]">
-                    <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  {/* Destination with Autocomplete */}
+                  <div className="relative flex-1 min-w-[200px]" ref={destinationInputRef}>
+                    <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                    {loadingSuggestions && (
+                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                    )}
                     <input
                       type="text"
                       id="tours-destination"
                       name="tours-destination"
-                      placeholder="Where to?"
+                      placeholder="Where to? (start typing...)"
                       autoComplete="off"
                       value={toursFilters.destination}
-                      onChange={(e) => setToursFilters(prev => ({ ...prev, destination: e.target.value }))}
-                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      onChange={handleDestinationChange}
+                      onKeyDown={handleDestinationKeyDown}
+                      onFocus={() => {
+                        if (suggestions.length > 0) setShowSuggestions(true);
+                      }}
+                      className="w-full pl-8 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
+                    
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div 
+                        ref={suggestionsRef}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+                      >
+                        {suggestions.map((suggestion, index) => {
+                          const typeInfo = getDestinationType(suggestion.type);
+                          return (
+                            <button
+                              key={suggestion.destinationId || index}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(suggestion)}
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                                index === selectedIndex ? 'bg-green-50' : ''
+                              } ${index === 0 ? 'rounded-t-lg' : ''} ${
+                                index === suggestions.length - 1 ? 'rounded-b-lg' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                <span className="text-sm text-gray-900">{suggestion.displayName}</span>
+                              </div>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${typeInfo.color}`}>
+                                {typeInfo.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="relative">
@@ -250,6 +435,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
 
                   {/* More Filters Toggle */}
                   <button
+                    type="button"
                     onClick={() => setShowFilters(!showFilters)}
                     className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${
                       showFilters || filterCount > 0
@@ -265,7 +451,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
                   </button>
 
                   <button
-                    onClick={handleToursSearch}
+                    type="submit"
                     disabled={!toursFilters.destination || isLoading}
                     className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
                   >
@@ -365,6 +551,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
                       {/* Clear */}
                       {filterCount > 0 && (
                         <button
+                          type="button"
                           onClick={clearToursFilters}
                           className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1"
                         >
@@ -385,6 +572,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
                       ].map(flag => (
                         <button
                           key={flag.key}
+                          type="button"
                           onClick={() => toggleFlag(flag.key)}
                           className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                             toursFilters.flags[flag.key]
@@ -398,7 +586,7 @@ export default function SearchPanel({ onSearch, isLoading }) {
                     </div>
                   </div>
                 )}
-              </div>
+              </form>
             )}
 
             {/* Flights Tab */}
