@@ -7,7 +7,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-// React Components //
 import ChatMessage from './components/ChatMessage';
 import Sidebar from './components/Sidebar';
 import BookingPage from './components/BookingPage';
@@ -33,6 +32,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showBookingPage, setShowBookingPage] = useState(false);
   const [showMobileTrip, setShowMobileTrip] = useState(false);
+  const [whereIsThisOpen, setWhereIsThisOpen] = useState(true);
 
   const [cart, setCart] = useState({
     flights: [],
@@ -64,6 +64,30 @@ export default function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // ============================================================================
+  // "WHERE IS THIS?" HANDLERS
+  // ============================================================================
+
+  const handleWhereIsThisFlights = (destination) => {
+    // For now, send a chat message (flights API not integrated yet)
+    setInput(`Find flights to ${destination}`);
+    // Note: handleSend would need to be called after state update
+  };
+
+  const handleWhereIsThisHotels = (destination) => {
+    // For now, send a chat message (hotels API not integrated yet)
+    setInput(`Find hotels in ${destination}`);
+  };
+
+  const handleWhereIsThisTours = (destination) => {
+    // Trigger the tours search via SearchPanel
+    handlePanelSearch({
+      type: 'tours',
+      destination: destination,
+      travelers: conversationContext.travelers || 2
+    });
+  };
 
   // ============================================================================
   // SEARCH PANEL HANDLER
@@ -463,14 +487,6 @@ export default function App() {
               </div>
             </div>
           </div>
-          <WhereIsThis
-            backendUrl={BACKEND_URL}
-            isOpen={whereIsThisOpen}
-            onToggle={() => setWhereIsThisOpen(!whereIsThisOpen)}
-            onSearchFlights={(dest) => { /* handle flights */ }}
-            onSearchHotels={(dest) => { /* handle hotels */ }}
-            onSearchTours={(dest) => handlePanelSearch({ type: 'tours', destination: dest, travelers: 2 })}
-          />
         </header>
 
         {/* Search Panel */}
@@ -533,6 +549,16 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Where Is This? Panel - RIGHT SIDE */}
+      <WhereIsThis
+        backendUrl={BACKEND_URL}
+        isOpen={whereIsThisOpen}
+        onToggle={() => setWhereIsThisOpen(!whereIsThisOpen)}
+        onSearchFlights={handleWhereIsThisFlights}
+        onSearchHotels={handleWhereIsThisHotels}
+        onSearchTours={handleWhereIsThisTours}
+      />
 
       {(cart.flights.length > 0 || cart.hotels.length > 0 || cart.tours.length > 0) && (
         <button
