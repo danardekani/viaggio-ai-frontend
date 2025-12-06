@@ -20,7 +20,7 @@ export default function App() {
     {
       role: 'assistant',
       content:
-        "Hello! I'm your Viaggio travel expert. Tell me about your dream trip!\n\n• Where would you like to go?\n• When are you planning to travel?\n• How many people will be traveling?\n• What are you interested in? (history, food, adventure, etc.)",
+        "Hi, I'm Via, your personal travel expert at Viaggio! ✈️\n\nI'm here to help you plan an amazing trip. I can search for tours and experiences, give you destination tips, and help you build the perfect itinerary.\n\nTell me - where are you dreaming of going? Or if you're not sure yet, I'd love to help you discover somewhere new!",
     },
   ]);
   
@@ -228,7 +228,7 @@ export default function App() {
   };
 
   // ============================================================================
-  // CHAT HANDLER
+  // CHAT HANDLER - AGENTIC VERSION
   // ============================================================================
 
   const handleSend = async () => {
@@ -240,13 +240,15 @@ export default function App() {
     setLoading(true);
 
     try {
-      // Call backend chat API
-      const response = await fetch(`${BACKEND_URL}/api/chat`, {
+      // Call agentic chat API - Claude handles tool use automatically
+      const response = await fetch(`${BACKEND_URL}/api/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
-          context: conversationContext
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content
+          }))
         })
       });
 
@@ -254,71 +256,29 @@ export default function App() {
 
       const data = await response.json();
       
-      // Update context from backend
-      const newContext = data.context || conversationContext;
-      setConversationContext(newContext);
+      console.log('Agentic response:', { 
+        toolsUsed: data.toolsUsed, 
+        iterations: data.iterations,
+        tokens: data.usage?.totalTokens 
+      });
 
-      console.log('Backend response:', { command: data.command, context: newContext });
-
-      // Fetch tours if commanded
-      let options = [];
-      
-      if (data.command === 'SHOW_TOURS') {
-        const destination = newContext.destination;
-        
-        if (destination) {
-          try {
-            console.log('Fetching tours:', {
-              destination,
-              searchTerms: newContext.searchTerms,
-              resultCount: newContext.resultCount,
-              sortBy: newContext.sortBy,
-              flags: newContext.flags,
-              minPrice: newContext.minPrice,
-              maxPrice: newContext.maxPrice,
-              minDuration: newContext.minDuration,
-              maxDuration: newContext.maxDuration,
-              minRating: newContext.minRating
-            });
-            
-            const toursResponse = await fetch(`${BACKEND_URL}/api/tours/search`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                destination: destination,
-                searchTerms: newContext.searchTerms || '',
-                resultCount: newContext.resultCount || 10,
-                sortBy: newContext.sortBy || 'popular',
-                startDate: newContext.startDate,
-                endDate: newContext.endDate,
-                flags: newContext.flags || [],
-                minPrice: newContext.minPrice,
-                maxPrice: newContext.maxPrice,
-                minDuration: newContext.minDuration,
-                maxDuration: newContext.maxDuration,
-                minRating: newContext.minRating
-              })
-            });
-
-            if (toursResponse.ok) {
-              const toursData = await toursResponse.json();
-              options = toursData.tours.map(t => ({ type: 'tour', data: t }));
-              console.log(`Fetched ${options.length} tours`);
-            } else {
-              console.error('Tours API error:', toursResponse.status);
-            }
-          } catch (tourError) {
-            console.error('Tour fetch error:', tourError);
-          }
-        } else {
-          console.warn('No destination in context for tour search');
+      // Extract destination from conversation if mentioned
+      const messageContent = data.message.toLowerCase();
+      const destinations = ['rome', 'paris', 'london', 'tokyo', 'barcelona', 'florence', 'tuscany', 'new york', 'amsterdam'];
+      for (const dest of destinations) {
+        if (messageContent.includes(dest)) {
+          setConversationContext(prev => ({
+            ...prev,
+            destination: dest.charAt(0).toUpperCase() + dest.slice(1)
+          }));
+          break;
         }
       }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.message,
-        options: options
+        toolsUsed: data.toolsUsed // Track what tools were used
       }]);
 
     } catch (error) {
@@ -483,7 +443,7 @@ export default function App() {
               <Plane className="w-8 h-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Viaggio.ai</h1>
-                <p className="text-xs text-gray-500">Your AI Travel Expert</p>
+                <p className="text-xs text-gray-500">Powered by Via, your AI travel expert</p>
               </div>
             </div>
           </div>
@@ -534,7 +494,7 @@ export default function App() {
                 aria-label="Tell us about your trip"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Tell me about your trip..."
+                placeholder="Chat with Via about your trip..."
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
