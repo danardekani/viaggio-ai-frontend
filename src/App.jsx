@@ -277,22 +277,10 @@ export default function App() {
       }
 
       // Format tours as options for card display
+      // Tours from viator.js have: id, name, image, duration, rating, reviewCount, price, bookingLink
       const options = (data.tours || []).map(tour => ({
         type: 'tour',
-        data: {
-          id: tour.productCode || tour.name,
-          title: tour.name,
-          price: tour.price,
-          priceFormatted: tour.priceFormatted,
-          currency: tour.currency || 'USD',
-          duration: tour.duration,
-          rating: tour.rating,
-          reviewCount: tour.reviewCount,
-          description: tour.description,
-          highlights: tour.highlights || [],
-          webURL: tour.bookingUrl,
-          images: tour.images || []
-        }
+        data: tour  // Pass through as-is - already formatted correctly by viator.js
       }));
 
       setMessages(prev => [...prev, {
