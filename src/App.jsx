@@ -259,7 +259,8 @@ export default function App() {
       console.log('Agentic response:', { 
         toolsUsed: data.toolsUsed, 
         iterations: data.iterations,
-        tokens: data.usage?.totalTokens 
+        tokens: data.usage?.totalTokens,
+        toursFound: data.tours?.length || 0
       });
 
       // Extract destination from conversation if mentioned
@@ -275,10 +276,30 @@ export default function App() {
         }
       }
 
+      // Format tours as options for card display
+      const options = (data.tours || []).map(tour => ({
+        type: 'tour',
+        data: {
+          id: tour.productCode || tour.name,
+          title: tour.name,
+          price: tour.price,
+          priceFormatted: tour.priceFormatted,
+          currency: tour.currency || 'USD',
+          duration: tour.duration,
+          rating: tour.rating,
+          reviewCount: tour.reviewCount,
+          description: tour.description,
+          highlights: tour.highlights || [],
+          webURL: tour.bookingUrl,
+          images: tour.images || []
+        }
+      }));
+
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.message,
-        toolsUsed: data.toolsUsed // Track what tools were used
+        options: options,  // Tour cards!
+        toolsUsed: data.toolsUsed
       }]);
 
     } catch (error) {
