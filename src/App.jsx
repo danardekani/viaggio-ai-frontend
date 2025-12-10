@@ -166,13 +166,43 @@ export default function App() {
           { role: 'user', content: searchParams.message },
           { role: 'assistant', content: `I'd be happy to help you find flights from ${searchParams.from} to ${searchParams.to}! Flight search is coming soon. For now, I can provide general flight information and recommendations. What else would you like to know?` }
         ]);
-      } else if (searchParams.type === 'hotels') {
-        // Placeholder for hotels - add user message and AI response
-        setMessages(prev => [...prev,
-          { role: 'user', content: searchParams.message },
-          { role: 'assistant', content: `I'd love to help you find hotels in ${searchParams.destination}! Hotel search is coming soon. For now, I can provide general recommendations and information about accommodations. What else would you like to know?` }
-        ]);
-      }
+      } } else if (searchParams.type === 'hotels') {
+  // Add a user message to show what was searched
+  setMessages(prev => [...prev, { 
+    role: 'user', 
+    content: searchParams.message || `Search for hotels in ${searchParams.destination}` 
+  }]);
+
+  // Call the hotels API
+  const hotelsResponse = await fetch(`${BACKEND_URL}/api/hotels/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      destination: searchParams.destination,
+      checkIn: searchParams.checkIn,
+      checkOut: searchParams.checkOut,
+      adults: searchParams.guests || 2,
+      rooms: searchParams.rooms || 1
+    })
+  });
+
+  if (hotelsResponse.ok) {
+    const hotelsData = await hotelsResponse.json();
+    const options = hotelsData.hotels.map(h => ({ type: 'hotel', data: h }));
+    
+    const responseMessage = options.length > 0
+      ? `Here are ${options.length} hotels in ${searchParams.destination}:`
+      : `No hotels found in ${searchParams.destination} for those dates. Try different dates.`;
+    
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: responseMessage,
+      options: options
+    }]);
+  } else {
+    throw new Error('Failed to fetch hotels');
+  }
+}
     } catch (error) {
       console.error('Panel search error:', error);
       setMessages(prev => [...prev, {
