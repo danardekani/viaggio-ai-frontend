@@ -20,7 +20,7 @@ export default function App() {
     {
       role: 'assistant',
       content:
-        "Hi, I'm Via, your personal travel expert at Viaggio! ✈️\n\nI'm here to help you plan an amazing trip. I can search for tours and experiences, give you destination tips, and help you build the perfect itinerary.\n\nTell me - where are you dreaming of going? Or if you're not sure yet, I'd love to help you discover somewhere new!",
+        "Hi, I'm Via, your personal travel expert at Viaggio! ✈️\n\nI'm here to help you plan an amazing trip. I can search for tours and experiences, find hotels, give you destination tips, and help you build the perfect itinerary.\n\nTell me - where are you dreaming of going? Or if you're not sure yet, I'd love to help you discover somewhere new!",
     },
   ]);
   
@@ -72,12 +72,27 @@ export default function App() {
   const handleWhereIsThisFlights = (destination) => {
     // For now, send a chat message (flights API not integrated yet)
     setInput(`Find flights to ${destination}`);
-    // Note: handleSend would need to be called after state update
   };
 
   const handleWhereIsThisHotels = (destination) => {
-    // For now, send a chat message (hotels API not integrated yet)
-    setInput(`Find hotels in ${destination}`);
+    // Trigger hotel search via SearchPanel handler
+    // Get default dates (tomorrow and day after)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 3);
+    
+    const formatDate = (date) => date.toISOString().split('T')[0];
+    
+    handlePanelSearch({
+      type: 'hotels',
+      destination: destination,
+      checkIn: formatDate(tomorrow),
+      checkOut: formatDate(dayAfter),
+      guests: conversationContext.travelers || 2,
+      rooms: 1,
+      message: `Search for hotels in ${destination}`
+    });
   };
 
   const handleWhereIsThisTours = (destination) => {
@@ -97,6 +112,9 @@ export default function App() {
     setLoading(true);
     
     try {
+      // ========================================
+      // TOURS SEARCH
+      // ========================================
       if (searchParams.type === 'tours') {
         // Update conversation context with the search params
         const newContext = {
@@ -160,49 +178,97 @@ export default function App() {
         } else {
           throw new Error('Failed to fetch tours');
         }
-      } else if (searchParams.type === 'flights') {
+      } 
+      // ========================================
+      // FLIGHTS SEARCH (Placeholder)
+      // ========================================
+      else if (searchParams.type === 'flights') {
         // Placeholder for flights - add user message and AI response
         setMessages(prev => [...prev, 
           { role: 'user', content: searchParams.message },
           { role: 'assistant', content: `I'd be happy to help you find flights from ${searchParams.from} to ${searchParams.to}! Flight search is coming soon. For now, I can provide general flight information and recommendations. What else would you like to know?` }
         ]);
-      } } else if (searchParams.type === 'hotels') {
-  // Add a user message to show what was searched
-  setMessages(prev => [...prev, { 
-    role: 'user', 
-    content: searchParams.message || `Search for hotels in ${searchParams.destination}` 
-  }]);
+      } 
+      // ========================================
+      // HOTELS SEARCH - NOW WITH HOTELBEDS API!
+      // ========================================
+      else if (searchParams.type === 'hotels') {
+        // Update conversation context
+        const newContext = {
+          ...conversationContext,
+          destination: searchParams.destination,
+          travelers: searchParams.guests || conversationContext.travelers,
+        };
+        setConversationContext(newContext);
 
-  // Call the hotels API
-  const hotelsResponse = await fetch(`${BACKEND_URL}/api/hotels/search`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      destination: searchParams.destination,
-      checkIn: searchParams.checkIn,
-      checkOut: searchParams.checkOut,
-      adults: searchParams.guests || 2,
-      rooms: searchParams.rooms || 1
-    })
-  });
+        // Add a user message to show what was searched
+        const hotelSearchDescription = buildHotelSearchDescription(searchParams);
+        setMessages(prev => [...prev, { 
+          role: 'user', 
+          content: hotelSearchDescription 
+        }]);
 
-  if (hotelsResponse.ok) {
-    const hotelsData = await hotelsResponse.json();
-    const options = hotelsData.hotels.map(h => ({ type: 'hotel', data: h }));
-    
-    const responseMessage = options.length > 0
-      ? `Here are ${options.length} hotels in ${searchParams.destination}:`
-      : `No hotels found in ${searchParams.destination} for those dates. Try different dates.`;
-    
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: responseMessage,
-      options: options
-    }]);
-  } else {
-    throw new Error('Failed to fetch hotels');
-  }
-}
+        // Validate required fields
+        if (!searchParams.checkIn || !searchParams.checkOut) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `To search for hotels in ${searchParams.destination}, I need check-in and check-out dates. Please select your travel dates in the search panel above.`
+          }]);
+          setLoading(false);
+          return;
+        }
+
+        // Call the hotels API
+        const hotelsResponse = await fetch(`${BACKEND_URL}/api/hotels/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: searchParams.destination,
+            checkIn: searchParams.checkIn,
+            checkOut: searchParams.checkOut,
+            adults: searchParams.guests || 2,
+            rooms: searchParams.rooms || 1,
+            currency: 'USD',
+            resultCount: 20
+          })
+        });
+
+        if (hotelsResponse.ok) {
+          const hotelsData = await hotelsResponse.json();
+          const options = hotelsData.hotels.map(h => ({ type: 'hotel', data: h }));
+          
+          // Calculate nights
+          const checkInDate = new Date(searchParams.checkIn);
+          const checkOutDate = new Date(searchParams.checkOut);
+          const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+          
+          // Add assistant response with hotel options
+          const responseMessage = options.length > 0
+            ? `I found ${options.length} hotels in ${searchParams.destination} for ${nights} night${nights > 1 ? 's' : ''} (${searchParams.checkIn} to ${searchParams.checkOut}):`
+            : `No hotels found in ${searchParams.destination} for those dates. Try different dates or a nearby destination.`;
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: responseMessage,
+            options: options
+          }]);
+        } else {
+          // Handle specific error cases
+          const errorData = await hotelsResponse.json().catch(() => ({}));
+          let errorMessage = `Sorry, I couldn't find hotels in ${searchParams.destination}. `;
+          
+          if (errorData.error === 'Destination not found') {
+            errorMessage += 'Please check the spelling or try a different city name (e.g., "New York" instead of "NYC").';
+          } else {
+            errorMessage += 'Please try again or try a different destination.';
+          }
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: errorMessage
+          }]);
+        }
+      }
     } catch (error) {
       console.error('Panel search error:', error);
       setMessages(prev => [...prev, {
@@ -214,7 +280,7 @@ export default function App() {
     }
   };
 
-  // Build a human-readable search description
+  // Build a human-readable search description for tours
   const buildSearchDescription = (params) => {
     let description = `Search for tours in ${params.destination}`;
     
@@ -257,6 +323,28 @@ export default function App() {
     return description;
   };
 
+  // Build a human-readable search description for hotels
+  const buildHotelSearchDescription = (params) => {
+    let description = `Search for hotels in ${params.destination}`;
+    
+    const details = [];
+    if (params.checkIn && params.checkOut) {
+      details.push(`${params.checkIn} to ${params.checkOut}`);
+    }
+    if (params.guests && params.guests !== 2) {
+      details.push(`${params.guests} guests`);
+    }
+    if (params.rooms && params.rooms !== 1) {
+      details.push(`${params.rooms} rooms`);
+    }
+    
+    if (details.length > 0) {
+      description += ` (${details.join(', ')})`;
+    }
+    
+    return description;
+  };
+
   // ============================================================================
   // CHAT HANDLER - AGENTIC VERSION
   // ============================================================================
@@ -286,37 +374,21 @@ export default function App() {
 
       const data = await response.json();
       
-      console.log('Agentic response:', { 
-        toolsUsed: data.toolsUsed, 
-        iterations: data.iterations,
-        tokens: data.usage?.totalTokens,
-        toursFound: data.tours?.length || 0
-      });
-
-      // Extract destination from conversation if mentioned
-      const messageContent = data.message.toLowerCase();
-      const destinations = ['rome', 'paris', 'london', 'tokyo', 'barcelona', 'florence', 'tuscany', 'new york', 'amsterdam'];
-      for (const dest of destinations) {
-        if (messageContent.includes(dest)) {
-          setConversationContext(prev => ({
-            ...prev,
-            destination: dest.charAt(0).toUpperCase() + dest.slice(1)
-          }));
-          break;
-        }
+      // Handle tour options from the agentic response
+      let options = [];
+      if (data.tours && data.tours.length > 0) {
+        options = data.tours.map(t => ({ type: 'tour', data: t }));
       }
-
-      // Format tours as options for card display
-      // Tours from viator.js have: id, name, image, duration, rating, reviewCount, price, bookingLink
-      const options = (data.tours || []).map(tour => ({
-        type: 'tour',
-        data: tour  // Pass through as-is - already formatted correctly by viator.js
-      }));
+      
+      // Handle hotel options from the agentic response
+      if (data.hotels && data.hotels.length > 0) {
+        options = [...options, ...data.hotels.map(h => ({ type: 'hotel', data: h }))];
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.message,
-        options: options,  // Tour cards!
+        content: data.response,
+        options: options.length > 0 ? options : undefined,
         toolsUsed: data.toolsUsed
       }]);
 
@@ -369,7 +441,7 @@ export default function App() {
   const totalCost = () => {
     const travelers = conversationContext.travelers || 2;
     return cart.flights.reduce((sum, f) => sum + f.price, 0) +
-           cart.hotels.reduce((sum, h) => sum + h.price, 0) +
+           cart.hotels.reduce((sum, h) => sum + (h.totalPrice || h.price || 0), 0) +
            cart.tours.reduce((sum, t) => sum + t.price * travelers, 0);
   };
 
@@ -391,6 +463,14 @@ export default function App() {
     let shareText = `🌍 ${destination || 'Trip'} Itinerary\n\n`;
     shareText += `📅 ${month || 'Dates TBD'}\n`;
     shareText += `👥 ${travelers || 2} travelers\n\n`;
+
+    if (cart.hotels.length > 0) {
+      shareText += '🏨 HOTELS\n';
+      cart.hotels.forEach(h => {
+        shareText += `• ${h.name} - ${formatCurrency(h.totalPrice || h.price || 0)}\n`;
+      });
+      shareText += '\n';
+    }
 
     if (cart.tours.length > 0) {
       shareText += '🎨 TOURS\n';
