@@ -343,6 +343,13 @@ export default function App() {
 
       const data = await response.json();
       
+      console.log('Agentic response:', { 
+        toolsUsed: data.toolsUsed, 
+        iterations: data.iterations,
+        tokens: data.usage?.totalTokens,
+        toursFound: data.tours?.length || 0
+      });
+
       // Update context if provided
       if (data.context) {
         setConversationContext(prev => ({
@@ -351,16 +358,25 @@ export default function App() {
         }));
       }
 
-      // Build assistant message with options
-      const assistantMessage = {
-        role: 'assistant',
-        content: data.response,
-        options: []
-      };
+      // Extract destination from conversation if mentioned
+      const messageContent = (data.message || '').toLowerCase();
+      const destinations = ['rome', 'paris', 'london', 'tokyo', 'barcelona', 'florence', 'tuscany', 'new york', 'amsterdam', 'philadelphia'];
+      for (const dest of destinations) {
+        if (messageContent.includes(dest)) {
+          setConversationContext(prev => ({
+            ...prev,
+            destination: dest.charAt(0).toUpperCase() + dest.slice(1)
+          }));
+          break;
+        }
+      }
+
+      // Build options array from tours/hotels/flights
+      const options = [];
 
       // Add tour options if present
       if (data.tours && data.tours.length > 0) {
-        assistantMessage.options.push(...data.tours.map(tour => ({
+        options.push(...data.tours.map(tour => ({
           type: 'tour',
           data: tour
         })));
@@ -368,7 +384,7 @@ export default function App() {
 
       // Add hotel options if present
       if (data.hotels && data.hotels.length > 0) {
-        assistantMessage.options.push(...data.hotels.map(hotel => ({
+        options.push(...data.hotels.map(hotel => ({
           type: 'hotel',
           data: hotel
         })));
@@ -376,13 +392,18 @@ export default function App() {
 
       // Add flight options if present
       if (data.flights && data.flights.length > 0) {
-        assistantMessage.options.push(...data.flights.map(flight => ({
+        options.push(...data.flights.map(flight => ({
           type: 'flight',
           data: flight
         })));
       }
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.message || "I found some options for you!",  // Use data.message, not data.response
+        options: options,
+        toolsUsed: data.toolsUsed
+      }]);
 
     } catch (error) {
       console.error('Chat error:', error);
