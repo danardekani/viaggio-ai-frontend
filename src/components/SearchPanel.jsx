@@ -10,7 +10,8 @@ import {
   Users,
   SlidersHorizontal,
   X,
-  Loader2
+  Loader2,
+  Building
 } from 'lucide-react';
 
 // Debounce hook for autocomplete
@@ -33,7 +34,7 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   
-  // Autocomplete state
+  // ==================== TOURS AUTOCOMPLETE STATE ====================
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -41,6 +42,15 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
   const [selectedDestinationId, setSelectedDestinationId] = useState(null);
   const destinationInputRef = useRef(null);
   const suggestionsRef = useRef(null);
+  
+  // ==================== HOTELS AUTOCOMPLETE STATE ====================
+  const [hotelSuggestions, setHotelSuggestions] = useState([]);
+  const [showHotelSuggestions, setShowHotelSuggestions] = useState(false);
+  const [loadingHotelSuggestions, setLoadingHotelSuggestions] = useState(false);
+  const [hotelSelectedIndex, setHotelSelectedIndex] = useState(-1);
+  const [selectedHotelDestination, setSelectedHotelDestination] = useState(null);
+  const hotelDestinationInputRef = useRef(null);
+  const hotelSuggestionsRef = useRef(null);
   
   // Tours filter state
   const [toursFilters, setToursFilters] = useState({
@@ -75,7 +85,7 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     tripType: 'roundtrip'
   });
 
-  // Hotels filter state (placeholder for future)
+  // Hotels filter state
   const [hotelsFilters, setHotelsFilters] = useState({
     destination: '',
     checkIn: '',
@@ -85,13 +95,12 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     starRating: ''
   });
 
-  // Debounced destination value for autocomplete
+  // ==================== TOURS AUTOCOMPLETE ====================
   const debouncedDestination = useDebounce(toursFilters.destination, 300);
 
-  // Fetch autocomplete suggestions
+  // Fetch tours autocomplete suggestions
   useEffect(() => {
     const fetchSuggestions = async () => {
-      // Only search if we have at least 2 characters and no destination is selected
       if (!debouncedDestination || debouncedDestination.length < 2 || selectedDestinationId) {
         setSuggestions([]);
         return;
@@ -115,7 +124,7 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     fetchSuggestions();
   }, [debouncedDestination, selectedDestinationId, backendUrl]);
 
-  // Close suggestions when clicking outside
+  // Close tours suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -132,17 +141,62 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle destination input change
+  // ==================== HOTELS AUTOCOMPLETE ====================
+  const debouncedHotelDestination = useDebounce(hotelsFilters.destination, 300);
+
+  // Fetch hotels autocomplete suggestions
+  useEffect(() => {
+    const fetchHotelSuggestions = async () => {
+      if (!debouncedHotelDestination || debouncedHotelDestination.length < 2 || selectedHotelDestination) {
+        setHotelSuggestions([]);
+        return;
+      }
+
+      setLoadingHotelSuggestions(true);
+      try {
+        const response = await fetch(`${backendUrl}/api/hotels/destinations/autocomplete?q=${encodeURIComponent(debouncedHotelDestination)}&limit=8`);
+        const data = await response.json();
+        setHotelSuggestions(data.suggestions || []);
+        setShowHotelSuggestions(true);
+        setHotelSelectedIndex(-1);
+      } catch (error) {
+        console.error('Hotel autocomplete error:', error);
+        setHotelSuggestions([]);
+      } finally {
+        setLoadingHotelSuggestions(false);
+      }
+    };
+
+    fetchHotelSuggestions();
+  }, [debouncedHotelDestination, selectedHotelDestination, backendUrl]);
+
+  // Close hotels suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        hotelDestinationInputRef.current && 
+        !hotelDestinationInputRef.current.contains(event.target) &&
+        hotelSuggestionsRef.current &&
+        !hotelSuggestionsRef.current.contains(event.target)
+      ) {
+        setShowHotelSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // ==================== TOURS HANDLERS ====================
   const handleDestinationChange = (e) => {
     const value = e.target.value;
     setToursFilters(prev => ({ ...prev, destination: value }));
-    setSelectedDestinationId(null); // Clear selection when typing
+    setSelectedDestinationId(null);
     if (value.length >= 2) {
       setShowSuggestions(true);
     }
   };
 
-  // Handle selecting a suggestion
   const handleSelectSuggestion = (suggestion) => {
     setToursFilters(prev => ({ ...prev, destination: suggestion.displayName }));
     setSelectedDestinationId(suggestion.destinationId);
@@ -151,10 +205,8 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     setSelectedIndex(-1);
   };
 
-  // Handle keyboard navigation in suggestions
   const handleDestinationKeyDown = (e) => {
     if (!showSuggestions || suggestions.length === 0) {
-      // If Enter is pressed without suggestions, trigger search
       if (e.key === 'Enter' && toursFilters.destination) {
         e.preventDefault();
         handleToursSearch();
@@ -175,10 +227,9 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+        if (selectedIndex >= 0) {
           handleSelectSuggestion(suggestions[selectedIndex]);
-        } else if (toursFilters.destination) {
-          setShowSuggestions(false);
+        } else {
           handleToursSearch();
         }
         break;
@@ -189,33 +240,71 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     }
   };
 
-  // Get destination type icon/badge
-  const getDestinationType = (type) => {
-    const types = {
-      'CITY': { label: 'City', color: 'bg-blue-100 text-blue-700' },
-      'REGION': { label: 'Region', color: 'bg-green-100 text-green-700' },
-      'COUNTRY': { label: 'Country', color: 'bg-purple-100 text-purple-700' },
-      'STATE': { label: 'State', color: 'bg-orange-100 text-orange-700' },
-      'ISLAND': { label: 'Island', color: 'bg-cyan-100 text-cyan-700' },
-      'NATIONAL PARK': { label: 'Park', color: 'bg-emerald-100 text-emerald-700' }
-    };
-    return types[type] || { label: type, color: 'bg-gray-100 text-gray-700' };
+  // ==================== HOTELS HANDLERS ====================
+  const handleHotelDestinationChange = (e) => {
+    const value = e.target.value;
+    setHotelsFilters(prev => ({ ...prev, destination: value }));
+    setSelectedHotelDestination(null);
+    if (value.length >= 2) {
+      setShowHotelSuggestions(true);
+    }
   };
 
-  const tabs = [
-    { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' },
-    { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
-    { id: 'tours', label: 'Tours', icon: MapPin, color: 'green' }
-  ];
+  const handleSelectHotelSuggestion = (suggestion) => {
+    setHotelsFilters(prev => ({ ...prev, destination: suggestion.displayName || suggestion.name }));
+    setSelectedHotelDestination(suggestion.code);
+    setHotelSuggestions([]);
+    setShowHotelSuggestions(false);
+    setHotelSelectedIndex(-1);
+  };
 
+  const handleHotelDestinationKeyDown = (e) => {
+    if (!showHotelSuggestions || hotelSuggestions.length === 0) {
+      if (e.key === 'Enter' && hotelsFilters.destination) {
+        e.preventDefault();
+        handleHotelsSearch();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHotelSelectedIndex(prev => 
+          prev < hotelSuggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHotelSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (hotelSelectedIndex >= 0) {
+          handleSelectHotelSuggestion(hotelSuggestions[hotelSelectedIndex]);
+        } else {
+          handleHotelsSearch();
+        }
+        break;
+      case 'Escape':
+        setShowHotelSuggestions(false);
+        setHotelSelectedIndex(-1);
+        break;
+    }
+  };
+
+  // ==================== SEARCH HANDLERS ====================
   const handleToursSearch = () => {
-    const flags = Object.entries(toursFilters.flags)
-      .filter(([_, enabled]) => enabled)
-      .map(([flag, _]) => flag);
+    if (!toursFilters.destination) return;
+    
+    const activeFlags = Object.entries(toursFilters.flags)
+      .filter(([_, active]) => active)
+      .map(([flag]) => flag);
 
     onSearch({
       type: 'tours',
       destination: toursFilters.destination,
+      destinationId: selectedDestinationId,
       startDate: toursFilters.startDate || undefined,
       endDate: toursFilters.endDate || undefined,
       travelers: toursFilters.travelers,
@@ -226,31 +315,56 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
       minDuration: toursFilters.minDuration ? parseInt(toursFilters.minDuration) : undefined,
       maxDuration: toursFilters.maxDuration ? parseInt(toursFilters.maxDuration) : undefined,
       minRating: toursFilters.minRating ? parseFloat(toursFilters.minRating) : undefined,
-      flags: flags.length > 0 ? flags : undefined
-    });
-  };
-
-  const handleFlightsSearch = () => {
-    onSearch({
-      type: 'flights',
-      ...flightsFilters,
-      message: `Search for flights from ${flightsFilters.from} to ${flightsFilters.to}`
+      flags: activeFlags.length > 0 ? activeFlags : undefined
     });
   };
 
   const handleHotelsSearch = () => {
+    if (!hotelsFilters.destination) return;
+    
     onSearch({
       type: 'hotels',
-      ...hotelsFilters,
-      message: `Search for hotels in ${hotelsFilters.destination}`
+      destination: hotelsFilters.destination,
+      destinationCode: selectedHotelDestination,
+      checkIn: hotelsFilters.checkIn || undefined,
+      checkOut: hotelsFilters.checkOut || undefined,
+      guests: hotelsFilters.guests,
+      rooms: hotelsFilters.rooms,
+      starRating: hotelsFilters.starRating ? parseInt(hotelsFilters.starRating) : undefined
     });
   };
 
+  const handleFlightsSearch = () => {
+    if (!flightsFilters.from || !flightsFilters.to) return;
+    
+    onSearch({
+      type: 'flights',
+      from: flightsFilters.from,
+      to: flightsFilters.to,
+      departDate: flightsFilters.departDate,
+      returnDate: flightsFilters.tripType === 'roundtrip' ? flightsFilters.returnDate : undefined,
+      passengers: flightsFilters.passengers,
+      cabinClass: flightsFilters.cabinClass,
+      tripType: flightsFilters.tripType
+    });
+  };
+
+  // Toggle filter flags
+  const toggleFlag = (flag) => {
+    setToursFilters(prev => ({
+      ...prev,
+      flags: {
+        ...prev.flags,
+        [flag]: !prev.flags[flag]
+      }
+    }));
+  };
+
+  // Clear tours filters
   const clearToursFilters = () => {
     setToursFilters(prev => ({
       ...prev,
       searchTerms: '',
-      sortBy: 'popular',
       minPrice: '',
       maxPrice: '',
       minDuration: '',
@@ -266,507 +380,504 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     }));
   };
 
-  const toggleFlag = (flag) => {
-    setToursFilters(prev => ({
-      ...prev,
-      flags: { ...prev.flags, [flag]: !prev.flags[flag] }
-    }));
-  };
-
-  const activeFiltersCount = () => {
+  // Count active filters
+  const getFilterCount = () => {
     let count = 0;
     if (toursFilters.searchTerms) count++;
-    if (toursFilters.minPrice || toursFilters.maxPrice) count++;
-    if (toursFilters.minDuration || toursFilters.maxDuration) count++;
+    if (toursFilters.minPrice) count++;
+    if (toursFilters.maxPrice) count++;
+    if (toursFilters.minDuration) count++;
+    if (toursFilters.maxDuration) count++;
     if (toursFilters.minRating) count++;
-    if (toursFilters.sortBy !== 'popular') count++;
-    count += Object.values(toursFilters.flags).filter(v => v).length;
+    Object.values(toursFilters.flags).forEach(v => { if (v) count++; });
     return count;
   };
 
-  const filterCount = activeFiltersCount();
+  const filterCount = getFilterCount();
+
+  // Get destination type info for display
+  const getDestinationType = (type) => {
+    switch(type) {
+      case 'CITY': return { label: 'City', color: 'bg-blue-100 text-blue-700' };
+      case 'REGION': return { label: 'Region', color: 'bg-green-100 text-green-700' };
+      case 'COUNTRY': return { label: 'Country', color: 'bg-purple-100 text-purple-700' };
+      case 'DISTRICT': return { label: 'District', color: 'bg-orange-100 text-orange-700' };
+      default: return { label: type || 'Place', color: 'bg-gray-100 text-gray-700' };
+    }
+  };
+
+  if (!isExpanded) {
+    return (
+      <button
+        onClick={() => setIsExpanded(true)}
+        className="fixed top-20 left-1/2 -translate-x-1/2 z-30 bg-white shadow-lg rounded-full px-4 py-2 flex items-center gap-2 hover:shadow-xl transition-shadow"
+      >
+        <Search className="w-4 h-4 text-gray-600" />
+        <span className="text-sm font-medium text-gray-700">Search</span>
+        <ChevronDown className="w-4 h-4 text-gray-400" />
+      </button>
+    );
+  }
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm">
-      {/* Compact Tab Header */}
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="flex items-center justify-between py-1">
+      <div className="max-w-5xl mx-auto px-4 py-3">
+        {/* Tab Headers */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex gap-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              const colorClasses = {
-                blue: isActive ? 'bg-blue-50 text-blue-600 border-blue-200' : 'text-gray-500 hover:bg-gray-50',
-                purple: isActive ? 'bg-purple-50 text-purple-600 border-purple-200' : 'text-gray-500 hover:bg-gray-50',
-                green: isActive ? 'bg-green-50 text-green-600 border-green-200' : 'text-gray-500 hover:bg-gray-50'
-              };
-              
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-                    isActive ? colorClasses[tab.color] : 'border-transparent ' + colorClasses[tab.color]
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+            {[
+              { id: 'tours', label: 'Tours', icon: MapPin, color: 'green' },
+              { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
+              { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? `bg-${tab.color}-100 text-${tab.color}-700`
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
           </div>
           
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-gray-400 hover:text-gray-600 p-1"
+            onClick={() => setIsExpanded(false)}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <ChevronUp className="w-4 h-4" />
           </button>
         </div>
-      </div>
 
-      {/* Filter Panel */}
-      {isExpanded && (
-        <div className="border-t border-gray-100">
-          <div className="max-w-5xl mx-auto px-4 py-3">
-            
-            {/* Tours Tab */}
-            {activeTab === 'tours' && (
-              <form 
-                onSubmit={(e) => { e.preventDefault(); handleToursSearch(); }}
-                className="space-y-2"
-              >
-                {/* Primary Row */}
-                <div className="flex flex-wrap gap-2 items-center">
-                  {/* Destination with Autocomplete */}
-                  <div className="relative flex-1 min-w-[200px]" ref={destinationInputRef}>
-                    <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                    {loadingSuggestions && (
-                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-                    )}
-                    <input
-                      type="text"
-                      id="tours-destination"
-                      name="tours-destination"
-                      placeholder="Where to? (start typing...)"
-                      autoComplete="off"
-                      value={toursFilters.destination}
-                      onChange={handleDestinationChange}
-                      onKeyDown={handleDestinationKeyDown}
-                      onFocus={() => {
-                        if (suggestions.length > 0) setShowSuggestions(true);
-                      }}
-                      className="w-full pl-8 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                    
-                    {/* Autocomplete Dropdown */}
-                    {showSuggestions && suggestions.length > 0 && (
-                      <div 
-                        ref={suggestionsRef}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
-                      >
-                        {suggestions.map((suggestion, index) => {
-                          const typeInfo = getDestinationType(suggestion.type);
-                          return (
-                            <button
-                              key={suggestion.destinationId || index}
-                              type="button"
-                              onClick={() => handleSelectSuggestion(suggestion)}
-                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                                index === selectedIndex ? 'bg-green-50' : ''
-                              } ${index === 0 ? 'rounded-t-lg' : ''} ${
-                                index === suggestions.length - 1 ? 'rounded-b-lg' : ''
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-sm text-gray-900">{suggestion.displayName}</span>
-                              </div>
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${typeInfo.color}`}>
-                                {typeInfo.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="relative">
-                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="date"
-                      id="tours-start-date"
-                      name="tours-start-date"
-                      value={toursFilters.startDate}
-                      onChange={(e) => setToursFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                      className="pl-8 pr-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[130px]"
-                    />
-                  </div>
-
-                  <span className="text-gray-400 text-sm">to</span>
-
-                  <div className="relative">
-                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="date"
-                      id="tours-end-date"
-                      name="tours-end-date"
-                      value={toursFilters.endDate}
-                      onChange={(e) => setToursFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                      className="pl-8 pr-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[130px]"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <select
-                      id="tours-travelers"
-                      name="tours-travelers"
-                      value={toursFilters.travelers}
-                      onChange={(e) => setToursFilters(prev => ({ ...prev, travelers: parseInt(e.target.value) }))}
-                      className="pl-8 pr-6 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
-                    >
-                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                        <option key={n} value={n}>{n}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* More Filters Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      showFilters || filterCount > 0
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : 'text-gray-600 border-gray-300 hover:bg-gray-50'
-                    }`}
+        {/* Tours Tab */}
+        {activeTab === 'tours' && (
+          <form onSubmit={(e) => { e.preventDefault(); handleToursSearch(); }}>
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* Destination with Autocomplete */}
+              <div className="relative flex-1 min-w-[200px]" ref={destinationInputRef}>
+                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  id="tours-destination"
+                  name="tours-destination"
+                  placeholder="Where to? (start typing...)"
+                  autoComplete="off"
+                  value={toursFilters.destination}
+                  onChange={handleDestinationChange}
+                  onKeyDown={handleDestinationKeyDown}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  className="w-full pl-8 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                
+                {/* Loading Indicator */}
+                {loadingSuggestions && (
+                  <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                )}
+                
+                {/* Autocomplete Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
                   >
-                    <SlidersHorizontal className="w-4 h-4" />
-                    <span>Filters</span>
-                    {filterCount > 0 && (
-                      <span className="bg-green-600 text-white text-xs px-1.5 py-0.5 rounded-full">{filterCount}</span>
-                    )}
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={!toursFilters.destination || isLoading}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                  >
-                    <Search className="w-4 h-4" />
-                    Search
-                  </button>
-                </div>
-
-                {/* Advanced Filters (Collapsible) */}
-                {showFilters && (
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {/* Activity Type */}
-                      <input
-                        type="text"
-                        id="tours-activity"
-                        name="tours-activity"
-                        placeholder="Activity (food, history...)"
-                        autoComplete="off"
-                        value={toursFilters.searchTerms}
-                        onChange={(e) => setToursFilters(prev => ({ ...prev, searchTerms: e.target.value }))}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[160px]"
-                      />
-
-                      {/* Sort */}
-                      <select
-                        id="tours-sort"
-                        name="tours-sort"
-                        value={toursFilters.sortBy}
-                        onChange={(e) => setToursFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
-                      >
-                        <option value="popular">Most Popular</option>
-                        <option value="reviews">Most Reviews</option>
-                        <option value="rating">Highest Rated</option>
-                        <option value="price_low">Price: Low → High</option>
-                        <option value="price_high">Price: High → Low</option>
-                        <option value="newest">Newest</option>
-                        <option value="duration_short">Shortest</option>
-                        <option value="duration_long">Longest</option>
-                      </select>
-
-                      {/* Price Range */}
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-500 text-sm">$</span>
-                        <input
-                          type="number"
-                          id="tours-min-price"
-                          name="tours-min-price"
-                          placeholder="Min"
-                          value={toursFilters.minPrice}
-                          onChange={(e) => setToursFilters(prev => ({ ...prev, minPrice: e.target.value }))}
-                          className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                        <span className="text-gray-400">-</span>
-                        <input
-                          type="number"
-                          id="tours-max-price"
-                          name="tours-max-price"
-                          placeholder="Max"
-                          value={toursFilters.maxPrice}
-                          onChange={(e) => setToursFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
-                          className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </div>
-
-                      {/* Duration */}
-                      <select
-                        id="tours-duration"
-                        name="tours-duration"
-                        value={toursFilters.maxDuration}
-                        onChange={(e) => setToursFilters(prev => ({ ...prev, maxDuration: e.target.value }))}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
-                      >
-                        <option value="">Any Duration</option>
-                        <option value="60">≤ 1 hour</option>
-                        <option value="120">≤ 2 hours</option>
-                        <option value="240">≤ 4 hours</option>
-                        <option value="480">≤ 8 hours</option>
-                      </select>
-
-                      {/* Rating */}
-                      <select
-                        id="tours-rating"
-                        name="tours-rating"
-                        value={toursFilters.minRating}
-                        onChange={(e) => setToursFilters(prev => ({ ...prev, minRating: e.target.value }))}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
-                      >
-                        <option value="">Any Rating</option>
-                        <option value="3">3+ ★</option>
-                        <option value="3.5">3.5+ ★</option>
-                        <option value="4">4+ ★</option>
-                        <option value="4.5">4.5+ ★</option>
-                      </select>
-
-                      {/* Clear */}
-                      {filterCount > 0 && (
+                    {suggestions.map((suggestion, index) => {
+                      const typeInfo = getDestinationType(suggestion.type);
+                      return (
                         <button
+                          key={suggestion.destinationId || index}
                           type="button"
-                          onClick={clearToursFilters}
-                          className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Compact Flag Chips */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { key: 'FREE_CANCELLATION', label: 'Free Cancel' },
-                        { key: 'SKIP_THE_LINE', label: 'Skip Line' },
-                        { key: 'PRIVATE_TOUR', label: 'Private' },
-                        { key: 'LIKELY_TO_SELL_OUT', label: 'Popular' },
-                        { key: 'SPECIAL_OFFER', label: 'Deals' }
-                      ].map(flag => (
-                        <button
-                          key={flag.key}
-                          type="button"
-                          onClick={() => toggleFlag(flag.key)}
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                            toursFilters.flags[flag.key]
-                              ? 'bg-green-600 text-white'
-                              : 'bg-white text-gray-600 border border-gray-300 hover:border-green-400'
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                          className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                            index === selectedIndex ? 'bg-green-50' : ''
+                          } ${index === 0 ? 'rounded-t-lg' : ''} ${
+                            index === suggestions.length - 1 ? 'rounded-b-lg' : ''
                           }`}
                         >
-                          {flag.label}
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-900">{suggestion.displayName}</span>
+                          </div>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${typeInfo.color}`}>
+                            {typeInfo.label}
+                          </span>
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
-              </form>
-            )}
+              </div>
 
-            {/* Flights Tab */}
-            {activeTab === 'flights' && (
-              <div className="space-y-2">
+              <div className="relative">
+                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="date"
+                  id="tours-start-date"
+                  name="tours-start-date"
+                  value={toursFilters.startDate}
+                  onChange={(e) => setToursFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[130px]"
+                />
+              </div>
+
+              <select
+                id="tours-travelers"
+                name="tours-travelers"
+                value={toursFilters.travelers}
+                onChange={(e) => setToursFilters(prev => ({ ...prev, travelers: parseInt(e.target.value) }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white pr-8"
+              >
+                {[1,2,3,4,5,6,7,8].map(n => (
+                  <option key={n} value={n}>{n} traveler{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+
+              <select
+                id="tours-sort"
+                name="tours-sort"
+                value={toursFilters.sortBy}
+                onChange={(e) => setToursFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
+              >
+                <option value="popular">Most Popular</option>
+                <option value="reviews">Most Reviews</option>
+                <option value="rating">Top Rated</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="newest">Newest</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  showFilters || filterCount > 0
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : 'text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Filters</span>
+                {filterCount > 0 && (
+                  <span className="bg-green-600 text-white text-xs px-1.5 py-0.5 rounded-full">{filterCount}</span>
+                )}
+              </button>
+
+              <button
+                type="submit"
+                disabled={!toursFilters.destination || isLoading}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+              >
+                <Search className="w-4 h-4" />
+                Search
+              </button>
+            </div>
+
+            {/* Advanced Filters (Collapsible) */}
+            {showFilters && (
+              <div className="bg-gray-50 rounded-lg p-3 mt-3 space-y-3">
                 <div className="flex flex-wrap gap-2 items-center">
-                  {/* Trip Type Pills */}
-                  <div className="flex gap-1 mr-2">
-                    {['roundtrip', 'oneway'].map(type => (
-                      <button
-                        key={type}
-                        onClick={() => setFlightsFilters(prev => ({ ...prev, tripType: type }))}
-                        className={`px-2.5 py-1 text-xs rounded-full font-medium ${
-                          flightsFilters.tripType === type
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        {type === 'roundtrip' ? 'Round Trip' : 'One Way'}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="relative flex-1 min-w-[120px]">
-                    <Plane className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      id="flights-from"
-                      name="flights-from"
-                      placeholder="From"
-                      autoComplete="off"
-                      value={flightsFilters.from}
-                      onChange={(e) => setFlightsFilters(prev => ({ ...prev, from: e.target.value }))}
-                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="relative flex-1 min-w-[120px]">
-                    <Plane className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90" />
-                    <input
-                      type="text"
-                      id="flights-to"
-                      name="flights-to"
-                      placeholder="To"
-                      autoComplete="off"
-                      value={flightsFilters.to}
-                      onChange={(e) => setFlightsFilters(prev => ({ ...prev, to: e.target.value }))}
-                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
                   <input
-                    type="date"
-                    id="flights-depart"
-                    name="flights-depart"
-                    value={flightsFilters.departDate}
-                    onChange={(e) => setFlightsFilters(prev => ({ ...prev, departDate: e.target.value }))}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[130px]"
+                    type="text"
+                    id="tours-activity"
+                    name="tours-activity"
+                    placeholder="Activity (food, history...)"
+                    autoComplete="off"
+                    value={toursFilters.searchTerms}
+                    onChange={(e) => setToursFilters(prev => ({ ...prev, searchTerms: e.target.value }))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[160px]"
                   />
 
-                  {flightsFilters.tripType === 'roundtrip' && (
-                    <input
-                      type="date"
-                      id="flights-return"
-                      name="flights-return"
-                      value={flightsFilters.returnDate}
-                      onChange={(e) => setFlightsFilters(prev => ({ ...prev, returnDate: e.target.value }))}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[130px]"
-                    />
+                  <input
+                    type="number"
+                    id="tours-min-price"
+                    name="tours-min-price"
+                    placeholder="Min $"
+                    value={toursFilters.minPrice}
+                    onChange={(e) => setToursFilters(prev => ({ ...prev, minPrice: e.target.value }))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[80px]"
+                  />
+                  <span className="text-gray-400 text-sm">to</span>
+                  <input
+                    type="number"
+                    id="tours-max-price"
+                    name="tours-max-price"
+                    placeholder="Max $"
+                    value={toursFilters.maxPrice}
+                    onChange={(e) => setToursFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-[80px]"
+                  />
+
+                  <select
+                    id="tours-min-rating"
+                    name="tours-min-rating"
+                    value={toursFilters.minRating}
+                    onChange={(e) => setToursFilters(prev => ({ ...prev, minRating: e.target.value }))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white"
+                  >
+                    <option value="">Any Rating</option>
+                    <option value="3">3+ ★</option>
+                    <option value="3.5">3.5+ ★</option>
+                    <option value="4">4+ ★</option>
+                    <option value="4.5">4.5+ ★</option>
+                  </select>
+
+                  {filterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearToursFilters}
+                      className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1"
+                    >
+                      <X className="w-3 h-3" />
+                      Clear
+                    </button>
                   )}
-
-                  <select
-                    id="flights-passengers"
-                    name="flights-passengers"
-                    value={flightsFilters.passengers}
-                    onChange={(e) => setFlightsFilters(prev => ({ ...prev, passengers: parseInt(e.target.value) }))}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-                  >
-                    {[1,2,3,4,5,6].map(n => (
-                      <option key={n} value={n}>{n} pax</option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={handleFlightsSearch}
-                    disabled={!flightsFilters.from || !flightsFilters.to || isLoading}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                  >
-                    <Search className="w-4 h-4" />
-                    Search
-                  </button>
                 </div>
-                
-                <p className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg inline-block">
-                  ✈️ Flight search coming soon! For now, ask the AI assistant.
-                </p>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { key: 'FREE_CANCELLATION', label: 'Free Cancel' },
+                    { key: 'SKIP_THE_LINE', label: 'Skip Line' },
+                    { key: 'PRIVATE_TOUR', label: 'Private' },
+                    { key: 'LIKELY_TO_SELL_OUT', label: 'Popular' },
+                    { key: 'SPECIAL_OFFER', label: 'Deals' }
+                  ].map(flag => (
+                    <button
+                      key={flag.key}
+                      type="button"
+                      onClick={() => toggleFlag(flag.key)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        toursFilters.flags[flag.key]
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white text-gray-600 border border-gray-300 hover:border-green-400'
+                      }`}
+                    >
+                      {flag.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
+          </form>
+        )}
 
-            {/* Hotels Tab */}
-            {activeTab === 'hotels' && (
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-[180px]">
-                    <Hotel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      id="hotels-destination"
-                      name="hotels-destination"
-                      placeholder="City or hotel name"
-                      autoComplete="off"
-                      value={hotelsFilters.destination}
-                      onChange={(e) => setHotelsFilters(prev => ({ ...prev, destination: e.target.value }))}
-                      className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-
-                  <input
-                    type="date"
-                    id="hotels-checkin"
-                    name="hotels-checkin"
-                    value={hotelsFilters.checkIn}
-                    onChange={(e) => setHotelsFilters(prev => ({ ...prev, checkIn: e.target.value }))}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-[130px]"
-                    placeholder="Check-in"
-                  />
-
-                  <input
-                    type="date"
-                    id="hotels-checkout"
-                    name="hotels-checkout"
-                    value={hotelsFilters.checkOut}
-                    onChange={(e) => setHotelsFilters(prev => ({ ...prev, checkOut: e.target.value }))}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-[130px]"
-                    placeholder="Check-out"
-                  />
-
-                  <select
-                    id="hotels-guests"
-                    name="hotels-guests"
-                    value={hotelsFilters.guests}
-                    onChange={(e) => setHotelsFilters(prev => ({ ...prev, guests: parseInt(e.target.value) }))}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none bg-white"
+        {/* Hotels Tab */}
+        {activeTab === 'hotels' && (
+          <form onSubmit={(e) => { e.preventDefault(); handleHotelsSearch(); }}>
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* Destination with Autocomplete */}
+              <div className="relative flex-1 min-w-[180px]" ref={hotelDestinationInputRef}>
+                <Hotel className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  id="hotels-destination"
+                  name="hotels-destination"
+                  placeholder="City (start typing...)"
+                  autoComplete="off"
+                  value={hotelsFilters.destination}
+                  onChange={handleHotelDestinationChange}
+                  onKeyDown={handleHotelDestinationKeyDown}
+                  onFocus={() => {
+                    if (hotelSuggestions.length > 0) setShowHotelSuggestions(true);
+                  }}
+                  className="w-full pl-8 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                
+                {/* Loading Indicator */}
+                {loadingHotelSuggestions && (
+                  <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                )}
+                
+                {/* Autocomplete Dropdown */}
+                {showHotelSuggestions && hotelSuggestions.length > 0 && (
+                  <div 
+                    ref={hotelSuggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
                   >
-                    {[1,2,3,4,5,6].map(n => (
-                      <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>
-                    ))}
-                  </select>
-
-                  {/* Star Rating Pills */}
-                  <div className="flex gap-1">
-                    {['', '3', '4', '5'].map(stars => (
+                    {hotelSuggestions.map((suggestion, index) => (
                       <button
-                        key={stars || 'any'}
-                        onClick={() => setHotelsFilters(prev => ({ ...prev, starRating: stars }))}
-                        className={`px-2 py-1 text-xs rounded-full font-medium ${
-                          hotelsFilters.starRating === stars
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        key={suggestion.code || index}
+                        type="button"
+                        onClick={() => handleSelectHotelSuggestion(suggestion)}
+                        className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                          index === hotelSelectedIndex ? 'bg-purple-50' : ''
+                        } ${index === 0 ? 'rounded-t-lg' : ''} ${
+                          index === hotelSuggestions.length - 1 ? 'rounded-b-lg' : ''
                         }`}
                       >
-                        {stars ? `${stars}★` : 'Any'}
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm text-gray-900">{suggestion.displayName || suggestion.name}</span>
+                        </div>
+                        {suggestion.countryCode && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
+                            {suggestion.countryCode}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
-
-                  <button
-                    onClick={handleHotelsSearch}
-                    disabled={!hotelsFilters.destination || isLoading}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                  >
-                    <Search className="w-4 h-4" />
-                    Search
-                  </button>
-                </div>
+                )}
               </div>
-            )}
+
+              <input
+                type="date"
+                id="hotels-checkin"
+                name="hotels-checkin"
+                value={hotelsFilters.checkIn}
+                onChange={(e) => setHotelsFilters(prev => ({ ...prev, checkIn: e.target.value }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-[130px]"
+                placeholder="Check-in"
+              />
+
+              <input
+                type="date"
+                id="hotels-checkout"
+                name="hotels-checkout"
+                value={hotelsFilters.checkOut}
+                onChange={(e) => setHotelsFilters(prev => ({ ...prev, checkOut: e.target.value }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-[130px]"
+                placeholder="Check-out"
+              />
+
+              <select
+                id="hotels-guests"
+                name="hotels-guests"
+                value={hotelsFilters.guests}
+                onChange={(e) => setHotelsFilters(prev => ({ ...prev, guests: parseInt(e.target.value) }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none bg-white"
+              >
+                {[1,2,3,4,5,6].map(n => (
+                  <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+
+              <select
+                id="hotels-rooms"
+                name="hotels-rooms"
+                value={hotelsFilters.rooms}
+                onChange={(e) => setHotelsFilters(prev => ({ ...prev, rooms: parseInt(e.target.value) }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none bg-white"
+              >
+                {[1,2,3,4].map(n => (
+                  <option key={n} value={n}>{n} room{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+
+              <button
+                type="submit"
+                disabled={!hotelsFilters.destination || isLoading}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+              >
+                <Search className="w-4 h-4" />
+                Search
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Flights Tab */}
+        {activeTab === 'flights' && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex gap-1 mr-2">
+                {['roundtrip', 'oneway'].map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setFlightsFilters(prev => ({ ...prev, tripType: type }))}
+                    className={`px-2.5 py-1 text-xs rounded-full font-medium ${
+                      flightsFilters.tripType === type
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {type === 'roundtrip' ? 'Round Trip' : 'One Way'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative flex-1 min-w-[120px]">
+                <Plane className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  id="flights-from"
+                  name="flights-from"
+                  placeholder="From"
+                  autoComplete="off"
+                  value={flightsFilters.from}
+                  onChange={(e) => setFlightsFilters(prev => ({ ...prev, from: e.target.value }))}
+                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="relative flex-1 min-w-[120px]">
+                <Plane className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90" />
+                <input
+                  type="text"
+                  id="flights-to"
+                  name="flights-to"
+                  placeholder="To"
+                  autoComplete="off"
+                  value={flightsFilters.to}
+                  onChange={(e) => setFlightsFilters(prev => ({ ...prev, to: e.target.value }))}
+                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <input
+                type="date"
+                id="flights-depart"
+                name="flights-depart"
+                value={flightsFilters.departDate}
+                onChange={(e) => setFlightsFilters(prev => ({ ...prev, departDate: e.target.value }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[130px]"
+              />
+
+              {flightsFilters.tripType === 'roundtrip' && (
+                <input
+                  type="date"
+                  id="flights-return"
+                  name="flights-return"
+                  value={flightsFilters.returnDate}
+                  onChange={(e) => setFlightsFilters(prev => ({ ...prev, returnDate: e.target.value }))}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[130px]"
+                />
+              )}
+
+              <select
+                id="flights-passengers"
+                name="flights-passengers"
+                value={flightsFilters.passengers}
+                onChange={(e) => setFlightsFilters(prev => ({ ...prev, passengers: parseInt(e.target.value) }))}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+              >
+                {[1,2,3,4,5,6].map(n => (
+                  <option key={n} value={n}>{n} passenger{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                disabled={true}
+                className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-1.5"
+              >
+                <Search className="w-4 h-4" />
+                Coming Soon
+              </button>
+            </div>
+            
+            <p className="text-xs text-gray-500 italic">
+              Flight search is coming soon! For now, ask the AI assistant.
+            </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
