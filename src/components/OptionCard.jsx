@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plane, Hotel, MapPin, ExternalLink, Star, Clock, Eye } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
+import HotelQuickViewModal from './HotelQuickViewModal';
 
 export default function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency, travelers = 2 }) {
   const [showQuickView, setShowQuickView] = useState(false);
@@ -34,18 +35,21 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
   };
 
   const handleOpenQuickView = () => {
-    setDescriptionExpanded(false); // Reset when opening
+    setDescriptionExpanded(false);
     setShowQuickView(true);
   };
 
   const handleCloseQuickView = () => {
     setShowQuickView(false);
-    setDescriptionExpanded(false); // Reset when closing
+    setDescriptionExpanded(false);
   };
 
   const handleToggleDescription = () => {
     setDescriptionExpanded(prev => !prev);
   };
+
+  // Check if quick view is supported for this option type
+  const supportsQuickView = option.type === 'tour' || option.type === 'hotel';
 
   return (
     <>
@@ -56,7 +60,7 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
       >
         <div className="flex items-center gap-3 p-3">
           {/* Image - Compact Square */}
-          {option.type === 'tour' && option.data.image ? (
+          {(option.type === 'tour' || option.type === 'hotel') && option.data.image ? (
             <img 
               src={option.data.image} 
               alt={option.data.name}
@@ -77,15 +81,37 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
             </h4>
             
             {/* Flight info */}
-            {option.data.route && (
+            {option.type === 'flight' && option.data.route && (
               <p className="text-xs text-gray-500 mt-0.5">{option.data.route}</p>
             )}
             
             {/* Hotel info */}
-            {option.data.location && (
-              <p className="text-xs text-gray-500 mt-0.5">
-                ⭐ {option.data.rating}/5 · {option.data.location}
-              </p>
+            {option.type === 'hotel' && (
+              <div className="mt-1">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  {option.data.stars && (
+                    <span className="flex items-center gap-0.5">
+                      {[...Array(option.data.stars)].map((_, i) => (
+                        <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </span>
+                  )}
+                  {option.data.location && (
+                    <span className="flex items-center gap-0.5">
+                      <MapPin className="w-3 h-3" />
+                      {option.data.location.length > 25 
+                        ? option.data.location.substring(0, 25) + '...' 
+                        : option.data.location}
+                    </span>
+                  )}
+                </div>
+                {option.data.nights && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {option.data.nights} night{option.data.nights > 1 ? 's' : ''}
+                    {option.data.pricePerNight && ` · ${formatCurrency(option.data.pricePerNight)}/night`}
+                  </p>
+                )}
+              </div>
             )}
             
             {/* Tour info - compact */}
@@ -116,18 +142,21 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
               {formatCurrency(
                 option.type === 'tour'
                   ? option.data.price * travelers
-                  : option.data.price
+                  : (option.data.totalPrice || option.data.price)
               )}
             </p>
             {option.type === 'tour' && (
               <p className="text-[10px] text-gray-400">{travelers} {travelers === 1 ? 'person' : 'people'}</p>
             )}
+            {option.type === 'hotel' && option.data.nights && (
+              <p className="text-[10px] text-gray-400">total</p>
+            )}
           </div>
 
           {/* Action Buttons - Compact */}
           <div className="flex gap-1.5 flex-shrink-0">
-            {/* Quick View - Tour only */}
-            {option.type === 'tour' && (
+            {/* Quick View - Tours and Hotels */}
+            {supportsQuickView && (
               <button
                 type="button"
                 onClick={handleOpenQuickView}
@@ -139,15 +168,17 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
             )}
             
             {/* View Details */}
-            <a
-              href={bookingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-              title="View Details"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            {bookingUrl && (
+              <a
+                href={bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                title="View Details"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
             
             {/* Add/Remove */}
             <button
@@ -163,7 +194,7 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
         </div>
       </div>
 
-      {/* Quick View Modal */}
+      {/* Quick View Modal - Tours */}
       {showQuickView && option.type === 'tour' && (
         <QuickViewModal
           tour={option.data}
@@ -174,6 +205,17 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
           isInCart={isSelected}
           descriptionExpanded={descriptionExpanded}
           onToggleDescription={handleToggleDescription}
+        />
+      )}
+
+      {/* Quick View Modal - Hotels */}
+      {showQuickView && option.type === 'hotel' && (
+        <HotelQuickViewModal
+          hotel={option.data}
+          onClose={handleCloseQuickView}
+          formatCurrency={formatCurrency}
+          onAddToTrip={handleAddRemove}
+          isInCart={isSelected}
         />
       )}
     </>
