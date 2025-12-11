@@ -406,21 +406,26 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     }
   };
 
-  if (!isExpanded) {
-    return (
+  return (
+    <>
+      {/* Collapsed Toggle Button - Always in DOM, fades in/out */}
       <button
         onClick={() => setIsExpanded(true)}
-        className="fixed top-20 left-1/2 -translate-x-1/2 z-30 bg-white shadow-lg rounded-full px-4 py-2 flex items-center gap-2 hover:shadow-xl transition-shadow"
+        className={`fixed top-20 left-1/2 -translate-x-1/2 z-30 bg-white shadow-lg rounded-full px-4 py-2 flex items-center gap-2 hover:shadow-xl transition-all duration-300 ${
+          isExpanded ? 'opacity-0 pointer-events-none -translate-y-4' : 'opacity-100 translate-y-0'
+        }`}
       >
         <Search className="w-4 h-4 text-gray-600" />
         <span className="text-sm font-medium text-gray-700">Search</span>
         <ChevronDown className="w-4 h-4 text-gray-400" />
       </button>
-    );
-  }
 
-  return (
-    <div className="bg-white border-b border-gray-200 shadow-sm">
+      {/* Search Panel - Always in DOM, animates height */}
+      <div 
+        className={`bg-white border-b border-gray-200 shadow-sm overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 border-b-0'
+        }`}
+      >
       <div className="max-w-5xl mx-auto px-4 py-3">
         {/* Tab Headers */}
         <div className="flex items-center justify-between mb-3">
@@ -879,5 +884,6 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
         )}
       </div>
     </div>
+    </>
   );
 }
