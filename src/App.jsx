@@ -208,15 +208,7 @@ export default function App() {
           content: hotelSearchDescription 
         }]);
 
-        // Validate required fields
-        if (!searchParams.checkIn || !searchParams.checkOut) {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: `To search for hotels in ${searchParams.destination}, I need check-in and check-out dates. Please select your travel dates in the search panel above.`
-          }]);
-          setLoading(false);
-          return;
-        }
+        // Dates are optional - backend will use smart defaults if not provided
 
         // Call the hotels API
         const hotelsResponse = await fetch(`${BACKEND_URL}/api/hotels/search`, {
@@ -237,15 +229,31 @@ export default function App() {
           const hotelsData = await hotelsResponse.json();
           const options = hotelsData.hotels.map(h => ({ type: 'hotel', data: h }));
           
-          // Calculate nights
-          const checkInDate = new Date(searchParams.checkIn);
-          const checkOutDate = new Date(searchParams.checkOut);
-          const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+          // Get dates from response (may be defaults from backend)
+          const checkIn = hotelsData.searchParams?.checkIn || searchParams.checkIn;
+          const checkOut = hotelsData.searchParams?.checkOut || searchParams.checkOut;
+          const usingDefaultDates = hotelsData.searchParams?.usingDefaultDates;
           
-          // Add assistant response with hotel options
-          const responseMessage = options.length > 0
-            ? `I found ${options.length} hotels in ${searchParams.destination} for ${nights} night${nights > 1 ? 's' : ''} (${searchParams.checkIn} to ${searchParams.checkOut}):`
-            : `No hotels found in ${searchParams.destination} for those dates. Try different dates or a nearby destination.`;
+          // Calculate nights
+          let nights = 3;
+          if (checkIn && checkOut) {
+            const checkInDate = new Date(checkIn);
+            const checkOutDate = new Date(checkOut);
+            nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+          }
+          
+          // Build response message
+          let responseMessage;
+          if (options.length > 0) {
+            responseMessage = `I found ${options.length} hotels in ${searchParams.destination}! 🏨`;
+            if (usingDefaultDates) {
+              responseMessage += ` (Showing prices for ${nights} nights starting ${checkIn}. You can adjust dates above for your exact trip.)`;
+            } else {
+              responseMessage += ` for ${nights} night${nights > 1 ? 's' : ''} (${checkIn} to ${checkOut}):`;
+            }
+          } else {
+            responseMessage = `No hotels found in ${searchParams.destination}. Try a different destination or adjust your dates.`;
+          }
           
           setMessages(prev => [...prev, {
             role: 'assistant',
