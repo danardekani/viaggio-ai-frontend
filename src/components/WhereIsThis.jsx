@@ -116,7 +116,7 @@ export default function WhereIsThis({
         },
         body: JSON.stringify({
           image: base64Data,
-          media_type: mediaType
+          mediaType: mediaType
         })
       });
 
