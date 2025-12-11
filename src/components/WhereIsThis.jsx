@@ -109,7 +109,7 @@ export default function WhereIsThis({
       const base64Data = image.split(',')[1];
       const mediaType = image.split(';')[0].split(':')[1] || 'image/jpeg';
 
-      const response = await fetch(`${backendUrl}/api/identify-location`, {
+      const response = await fetch(`${backendUrl}/api/identify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
