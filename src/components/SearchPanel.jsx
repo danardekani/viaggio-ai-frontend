@@ -762,10 +762,6 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
                     Search
                   </button>
                 </div>
-                
-                <p className="text-xs text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg inline-block">
-                  🏨 Hotel search coming soon! For now, ask the AI assistant.
-                </p>
               </div>
             )}
           </div>
