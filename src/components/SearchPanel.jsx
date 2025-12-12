@@ -398,11 +398,44 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
   // Get destination type info for display
   const getDestinationType = (type) => {
     switch(type) {
-      case 'CITY': return { label: 'City', color: 'bg-blue-100 text-blue-700' };
-      case 'REGION': return { label: 'Region', color: 'bg-green-100 text-green-700' };
-      case 'COUNTRY': return { label: 'Country', color: 'bg-purple-100 text-purple-700' };
-      case 'DISTRICT': return { label: 'District', color: 'bg-orange-100 text-orange-700' };
-      default: return { label: type || 'Place', color: 'bg-gray-100 text-gray-700' };
+      case 'CITY': 
+        return { label: 'City', color: 'bg-blue-100 text-blue-700' };
+      case 'REGION': 
+        return { label: 'Region', color: 'bg-green-100 text-green-700' };
+      case 'COUNTRY': 
+        return { label: 'Country', color: 'bg-purple-100 text-purple-700' };
+      case 'DISTRICT': 
+        return { label: 'District', color: 'bg-orange-100 text-orange-700' };
+      case 'NATIONAL_PARK': 
+        return { label: 'National Park', color: 'bg-emerald-100 text-emerald-700' };
+      case 'STATE': 
+        return { label: 'State', color: 'bg-indigo-100 text-indigo-700' };
+      case 'PROVINCE': 
+        return { label: 'Province', color: 'bg-indigo-100 text-indigo-700' };
+      case 'ISLAND': 
+        return { label: 'Island', color: 'bg-cyan-100 text-cyan-700' };
+      case 'TOWN': 
+        return { label: 'Town', color: 'bg-sky-100 text-sky-700' };
+      case 'VILLAGE': 
+        return { label: 'Village', color: 'bg-sky-100 text-sky-700' };
+      case 'NEIGHBORHOOD': 
+        return { label: 'Neighborhood', color: 'bg-amber-100 text-amber-700' };
+      case 'AIRPORT': 
+        return { label: 'Airport', color: 'bg-slate-100 text-slate-700' };
+      case 'ATTRACTION': 
+        return { label: 'Attraction', color: 'bg-pink-100 text-pink-700' };
+      case 'LANDMARK': 
+        return { label: 'Landmark', color: 'bg-rose-100 text-rose-700' };
+      case 'DESTINATION': 
+        return { label: 'Destination', color: 'bg-teal-100 text-teal-700' };
+      default: 
+        // Format unknown types: SOME_TYPE -> Some Type
+        const formatted = type 
+          ? type.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ')
+          : 'Place';
+        return { label: formatted, color: 'bg-gray-100 text-gray-700' };
     }
   };
 
