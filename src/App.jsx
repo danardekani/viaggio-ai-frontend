@@ -316,6 +316,39 @@ export default function App() {
   };
 
   // ============================================================================
+  // GET DISPLAYED RESULTS - Extract current results for AI context
+  // ============================================================================
+  
+  const getDisplayedResults = () => {
+    // Find the most recent message with options (search results)
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].options && messages[i].options.length > 0) {
+        return {
+          tours: messages[i].options
+            .filter(o => o.type === 'tour')
+            .map(o => ({
+              name: o.data.name,
+              price: o.data.price,
+              duration: o.data.duration,
+              rating: o.data.rating,
+              reviewCount: o.data.reviewCount,
+              description: o.data.description?.substring(0, 200)
+            })),
+          hotels: messages[i].options
+            .filter(o => o.type === 'hotel')
+            .map(o => ({
+              name: o.data.name,
+              price: o.data.price,
+              rating: o.data.rating,
+              location: o.data.location
+            }))
+        };
+      }
+    }
+    return { tours: [], hotels: [] };
+  };
+
+  // ============================================================================
   // CHAT HANDLER - AGENTIC VERSION
   // ============================================================================
 
@@ -328,14 +361,40 @@ export default function App() {
     setLoading(true);
 
     try {
+      // Build messages with context about displayed results
+      const messagesWithContext = [...messages, userMessage].map(m => {
+        // If this message has options (tour/hotel results), include them as context
+        if (m.options && m.options.length > 0) {
+          const resultsContext = m.options.map((opt, i) => {
+            if (opt.type === 'tour') {
+              const t = opt.data;
+              return `${i + 1}. "${t.name}" - $${t.price}, ${t.duration}, ${t.rating}★ (${t.reviewCount} reviews)`;
+            } else if (opt.type === 'hotel') {
+              const h = opt.data;
+              return `${i + 1}. "${h.name}" - $${h.price}/night, ${h.rating}★`;
+            }
+            return null;
+          }).filter(Boolean).join('\n');
+          
+          // Append results context to the message content
+          return {
+            role: m.role,
+            content: `${m.content}\n\n[DISPLAYED RESULTS:\n${resultsContext}]`
+          };
+        }
+        
+        return {
+          role: m.role,
+          content: m.content
+        };
+      });
+
       const response = await fetch(`${BACKEND_URL}/api/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          messages: messagesWithContext,
+          currentResults: getDisplayedResults() // Also send structured data
         })
       });
 
