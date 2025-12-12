@@ -422,8 +422,8 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
 
       {/* Search Panel - Always in DOM, animates height */}
       <div 
-        className={`bg-white border-b border-gray-200 shadow-sm overflow-hidden transition-all duration-300 ease-in-out ${
-          isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 border-b-0'
+        className={`bg-white border-b border-gray-200 shadow-sm transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[500px] opacity-100 overflow-visible' : 'max-h-0 opacity-0 border-b-0 overflow-hidden'
         }`}
       >
       <div className="max-w-5xl mx-auto px-4 py-3">
