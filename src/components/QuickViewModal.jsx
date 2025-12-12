@@ -14,23 +14,19 @@ export default function QuickViewModal({
   if (!tour) return null;
 
   const description = tour.description || '';
-  const isLongDescription = description.length > 150; // Show "Read more" if over 150 chars
+  const isLongDescription = description.length > 150;
   
   // Get display text based on expanded state
   let displayDescription;
   if (descriptionExpanded || !isLongDescription) {
     displayDescription = description;
   } else {
-    // Truncate to ~100 chars, but find a good break point (space or punctuation)
     const truncateAt = 100;
     let cutPoint = truncateAt;
-    
-    // Find the last space before the truncate point to avoid cutting mid-word
     const lastSpace = description.lastIndexOf(' ', truncateAt);
     if (lastSpace > 50) {
       cutPoint = lastSpace;
     }
-    
     displayDescription = description.substring(0, cutPoint) + '...';
   }
 
@@ -47,6 +43,23 @@ export default function QuickViewModal({
   };
 
   const highlights = getHighlights();
+
+  // Calculate the display price based on pricing type
+  const isPerGroup = tour.pricingType === 'group';
+  const displayPrice = isPerGroup ? tour.price : tour.price * travelers;
+  
+  // Build the price description text
+  const getPriceDescription = () => {
+    if (isPerGroup) {
+      let text = 'per group';
+      if (tour.maxGroupSize) {
+        text += ` (up to ${tour.maxGroupSize} people)`;
+      }
+      return text;
+    } else {
+      return `Total for ${travelers} ${travelers === 1 ? 'person' : 'people'} (${formatCurrency(tour.price)}/person)`;
+    }
+  };
 
   return (
     <div 
@@ -228,11 +241,10 @@ export default function QuickViewModal({
         <div className="border-t border-gray-200 bg-gray-50 px-5 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(tour.price * travelers)}
+              {formatCurrency(displayPrice)}
             </p>
             <p className="text-xs text-gray-500">
-              Total for {travelers} {travelers === 1 ? 'person' : 'people'}
-              {tour.price && <span className="ml-1">({formatCurrency(tour.price)}/person)</span>}
+              {getPriceDescription()}
             </p>
           </div>
           
