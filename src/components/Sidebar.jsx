@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   Calendar,
+  ChevronDown,
+  ChevronUp,
   Plane,
   Hotel,
   MapPin,
-  X,
-  ChevronDown,
-  ChevronUp,
   Share2,
+  X,
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -19,34 +19,44 @@ export default function Sidebar({
   totalCost,
   setShowItinerary,
   shareItinerary,
+  travelers = 2,
 }) {
-  if (
-    cart.flights.length === 0 &&
-    cart.hotels.length === 0 &&
-    cart.tours.length === 0
-  ) {
-    return (
-      <div className="text-center text-gray-500 text-sm mt-8">
-        <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-        <p>No items selected yet</p>
-        <p className="text-xs mt-2">Start planning!</p>
-      </div>
-    );
-  }
+  // Helper to calculate tour price based on pricing type
+  const getTourPrice = (tour) => {
+    if (tour.pricingType === 'group') {
+      return tour.price; // Per group - don't multiply
+    }
+    return tour.price * travelers; // Per person - multiply
+  };
+
+  // Helper to get price description
+  const getTourPriceLabel = (tour) => {
+    if (tour.pricingType === 'group') {
+      return tour.maxGroupSize 
+        ? `per group (up to ${tour.maxGroupSize})` 
+        : 'per group';
+    }
+    return `${travelers} ${travelers === 1 ? 'person' : 'people'}`;
+  };
 
   return (
     <>
       {/* Flights */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
           onClick={() => toggleSection('flights')}
-          className="w-full px-4 py-3 flex items-center justify-between bg-blue-50 hover:bg-blue-100 transition-colors"
+          className="w-full flex items-center justify-between p-3"
         >
           <div className="flex items-center gap-2">
             <Plane className="w-4 h-4 text-blue-600" />
-            <span className="font-semibold text-gray-900 text-sm">
-              Flights ({cart.flights.length})
+            <span className="text-sm font-semibold text-gray-900">
+              Flights
             </span>
+            {cart.flights.length > 0 && (
+              <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">
+                {cart.flights.length}
+              </span>
+            )}
           </div>
           {expandedSections.flights ? (
             <ChevronUp className="w-4 h-4 text-gray-600" />
@@ -68,9 +78,6 @@ export default function Sidebar({
                       {flight.airline}
                     </p>
                     <p className="text-xs text-gray-600">{flight.route}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {flight.departure}
-                    </p>
                     <p className="text-xs font-semibold text-blue-600 mt-2">
                       {formatCurrency(flight.price)}
                     </p>
@@ -90,16 +97,21 @@ export default function Sidebar({
       </div>
 
       {/* Hotels */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
           onClick={() => toggleSection('hotels')}
-          className="w-full px-4 py-3 flex items-center justify-between bg-purple-50 hover:bg-purple-100 transition-colors"
+          className="w-full flex items-center justify-between p-3"
         >
           <div className="flex items-center gap-2">
             <Hotel className="w-4 h-4 text-purple-600" />
-            <span className="font-semibold text-gray-900 text-sm">
-              Hotels ({cart.hotels.length})
+            <span className="text-sm font-semibold text-gray-900">
+              Hotels
             </span>
+            {cart.hotels.length > 0 && (
+              <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">
+                {cart.hotels.length}
+              </span>
+            )}
           </div>
           {expandedSections.hotels ? (
             <ChevronUp className="w-4 h-4 text-gray-600" />
@@ -120,12 +132,16 @@ export default function Sidebar({
                     <p className="text-sm font-semibold text-gray-900">
                       {hotel.name}
                     </p>
-                    <p className="text-xs text-gray-600">{hotel.location}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      ⭐ {hotel.rating}/5
+                    <p className="text-xs text-gray-600">
+                      ⭐ {hotel.rating}/5 · {hotel.location}
                     </p>
                     <p className="text-xs font-semibold text-purple-600 mt-2">
                       {formatCurrency(hotel.price)}
+                      {hotel.nights && (
+                        <span className="text-gray-500 font-normal">
+                          {' '}({hotel.nights} night{hotel.nights > 1 ? 's' : ''})
+                        </span>
+                      )}
                     </p>
                   </div>
                   <button
@@ -143,16 +159,21 @@ export default function Sidebar({
       </div>
 
       {/* Tours */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
           onClick={() => toggleSection('tours')}
-          className="w-full px-4 py-3 flex items-center justify-between bg-green-50 hover:bg-green-100 transition-colors"
+          className="w-full flex items-center justify-between p-3"
         >
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-green-600" />
-            <span className="font-semibold text-gray-900 text-sm">
-              Tours & Experiences ({cart.tours.length})
+            <span className="text-sm font-semibold text-gray-900">
+              Tours
             </span>
+            {cart.tours.length > 0 && (
+              <span className="text-xs bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full">
+                {cart.tours.length}
+              </span>
+            )}
           </div>
           {expandedSections.tours ? (
             <ChevronUp className="w-4 h-4 text-gray-600" />
@@ -174,13 +195,12 @@ export default function Sidebar({
                       {tour.name}
                     </p>
                     <p className="text-xs text-gray-600">
-                      {tour.date} at {tour.time}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
                       {tour.duration}
+                      {tour.date && tour.time && ` · ${tour.date} at ${tour.time}`}
                     </p>
                     <p className="text-xs font-semibold text-green-600 mt-2">
-                      {formatCurrency(tour.price * 2)} (2 people)
+                      {formatCurrency(getTourPrice(tour))}
+                      <span className="text-gray-500 font-normal"> ({getTourPriceLabel(tour)})</span>
                     </p>
                   </div>
                   <button
@@ -201,7 +221,9 @@ export default function Sidebar({
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-3 text-white">
         <div className="flex justify-between items-center">
           <span className="font-semibold">Total Cost</span>
-          <span className="text-xl font-bold">{formatCurrency(totalCost())}</span>
+          <span className="text-xl font-bold">
+            {formatCurrency(typeof totalCost === 'function' ? totalCost() : totalCost)}
+          </span>
         </div>
       </div>
 
