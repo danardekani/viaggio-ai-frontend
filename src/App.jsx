@@ -125,10 +125,18 @@ export default function App() {
     }));
   };
 
+  // Helper to calculate tour price based on pricing type
+  const getTourPrice = (tour) => {
+    if (tour.pricingType === 'group') {
+      return tour.price || 0; // Per group - don't multiply
+    }
+    return (tour.price || 0) * (conversationContext.travelers || 2); // Per person - multiply
+  };
+
   const totalCost =
     cart.flights.reduce((sum, f) => sum + (f.price || 0), 0) +
     cart.hotels.reduce((sum, h) => sum + (h.price || 0), 0) +
-    cart.tours.reduce((sum, t) => sum + ((t.price || 0) * (conversationContext.travelers || 2)), 0);
+    cart.tours.reduce((sum, t) => sum + getTourPrice(t), 0);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -485,9 +493,43 @@ export default function App() {
   };
 
   const shareItinerary = () => {
-    const text = `My Viaggio Trip:\n${cart.tours.map(t => `- ${t.name}`).join('\n')}`;
+    const travelers = conversationContext.travelers || 2;
+    const { destination } = conversationContext;
+    
+    let text = `🌍 My Viaggio Trip${destination ? ` to ${destination}` : ''}\n`;
+    text += `👥 ${travelers} traveler${travelers === 1 ? '' : 's'}\n\n`;
+    
+    if (cart.flights.length > 0) {
+      text += `✈️ FLIGHTS\n`;
+      cart.flights.forEach(f => {
+        text += `• ${f.airline} - ${formatCurrency(f.price)}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (cart.hotels.length > 0) {
+      text += `🏨 HOTELS\n`;
+      cart.hotels.forEach(h => {
+        text += `• ${h.name} - ${formatCurrency(h.price)}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (cart.tours.length > 0) {
+      text += `🎯 TOURS & EXPERIENCES\n`;
+      cart.tours.forEach(t => {
+        const tourPrice = getTourPrice(t);
+        const priceLabel = t.pricingType === 'group' ? 'per group' : `${travelers} people`;
+        text += `• ${t.name} - ${formatCurrency(tourPrice)} (${priceLabel})\n`;
+      });
+      text += '\n';
+    }
+    
+    text += `💰 TOTAL: ${formatCurrency(totalCost)}\n`;
+    text += `✨ Planned with Viaggio.ai`;
+    
     navigator.clipboard.writeText(text)
-      .then(() => window.alert('Itinerary copied!'))
+      .then(() => window.alert('✅ Itinerary copied to clipboard!'))
       .catch(() => window.alert('Unable to copy.'));
   };
 
@@ -553,6 +595,7 @@ export default function App() {
                 totalCost={totalCost}
                 setShowItinerary={setShowItinerary}
                 shareItinerary={shareItinerary}
+                travelers={conversationContext.travelers || 2}
               />
             </div>
           </>
@@ -686,6 +729,7 @@ export default function App() {
           setShowItinerary={setShowItinerary}
           shareItinerary={shareItinerary}
           onClose={() => setShowMobileTrip(false)}
+          travelers={conversationContext.travelers || 2}
         />
       )}
 
@@ -697,6 +741,7 @@ export default function App() {
           onClose={() => setShowItinerary(false)}
           onBookTrip={handleBookTrip}
           onShare={shareItinerary}
+          travelers={conversationContext.travelers || 2}
         />
       )}
     </div>
