@@ -12,6 +12,7 @@ export default function MobileTripSheet({
   setShowItinerary,
   shareItinerary,
   onClose,
+  travelers = 2,
 }) {
   return (
     <div className="md:hidden fixed inset-0 z-50">
@@ -45,6 +46,7 @@ export default function MobileTripSheet({
             totalCost={totalCost}
             setShowItinerary={setShowItinerary}
             shareItinerary={shareItinerary}
+            travelers={travelers}
           />
         </div>
       </div>
