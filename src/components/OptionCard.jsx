@@ -147,12 +147,19 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
             <p className={`text-lg font-bold ${colors.icon}`}>
               {formatCurrency(
                 option.type === 'tour'
-                  ? option.data.price * travelers
+                  ? (option.data.pricingType === 'group' 
+                      ? option.data.price  // Per group - don't multiply
+                      : option.data.price * travelers)  // Per person - multiply
                   : option.data.price
               )}
             </p>
             {option.type === 'tour' && (
-              <p className="text-[10px] text-gray-400">{travelers} {travelers === 1 ? 'person' : 'people'}</p>
+              <p className="text-[10px] text-gray-400">
+                {option.data.pricingType === 'group' 
+                  ? `per group${option.data.maxGroupSize ? ` (up to ${option.data.maxGroupSize})` : ''}`
+                  : `${travelers} ${travelers === 1 ? 'person' : 'people'}`
+                }
+              </p>
             )}
             {option.type === 'hotel' && option.data.nights && (
               <p className="text-[10px] text-gray-400">{option.data.nights} night{option.data.nights > 1 ? 's' : ''}</p>
