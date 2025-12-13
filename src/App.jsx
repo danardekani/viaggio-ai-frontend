@@ -163,11 +163,7 @@ export default function App() {
           sortBy: searchParams.sortBy || 'popular'
         }));
 
-        // Add user message showing what was searched
-        const searchDescription = buildSearchDescription(searchParams);
-        setMessages(prev => [...prev, { role: 'user', content: searchDescription }]);
-
-        // Call the API
+        // Call the API directly (no user message added to chat)
         const response = await fetch(`${BACKEND_URL}/api/tours/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -217,17 +213,7 @@ export default function App() {
           destination: searchParams.destination,
         }));
 
-        // Add user message
-        let searchMsg = `Search for hotels in ${searchParams.destination}`;
-        if (searchParams.checkIn && searchParams.checkOut) {
-          searchMsg += ` from ${searchParams.checkIn} to ${searchParams.checkOut}`;
-        }
-        if (searchParams.guests) {
-          searchMsg += ` for ${searchParams.guests} guest${searchParams.guests > 1 ? 's' : ''}`;
-        }
-        setMessages(prev => [...prev, { role: 'user', content: searchMsg }]);
-
-        // Call the hotels API
+        // Call the hotels API directly (no user message added to chat)
         const response = await fetch(`${BACKEND_URL}/api/hotels/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -264,10 +250,10 @@ export default function App() {
         }
       } else if (searchParams.type === 'flights') {
         // Flights not yet implemented
-        setMessages(prev => [...prev, 
-          { role: 'user', content: `Search for flights from ${searchParams.from} to ${searchParams.to}` },
-          { role: 'assistant', content: `Flight search is coming soon! For now, I can provide general recommendations and information about flights. What else would you like to know?` }
-        ]);
+        setMessages(prev => [...prev, {
+          role: 'assistant', 
+          content: `Flight search is coming soon! For now, I can provide general recommendations and information about flights. What else would you like to know?`
+        }]);
       }
     } catch (error) {
       console.error('Panel search error:', error);
@@ -278,49 +264,6 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Build a human-readable search description
-  const buildSearchDescription = (params) => {
-    let description = `Search for tours in ${params.destination}`;
-    
-    if (params.searchTerms) {
-      description += ` - ${params.searchTerms}`;
-    }
-    
-    const details = [];
-    if (params.startDate && params.endDate) {
-      details.push(`${params.startDate} to ${params.endDate}`);
-    }
-    if (params.travelers && params.travelers !== 2) {
-      details.push(`${params.travelers} travelers`);
-    }
-    if (params.minPrice || params.maxPrice) {
-      if (params.minPrice && params.maxPrice) {
-        details.push(`$${params.minPrice}-$${params.maxPrice}`);
-      } else if (params.maxPrice) {
-        details.push(`under $${params.maxPrice}`);
-      } else {
-        details.push(`over $${params.minPrice}`);
-      }
-    }
-    if (params.flags && params.flags.length > 0) {
-      const flagLabels = {
-        'FREE_CANCELLATION': 'free cancellation',
-        'SKIP_THE_LINE': 'skip the line',
-        'PRIVATE_TOUR': 'private',
-        'LIKELY_TO_SELL_OUT': 'popular',
-        'SPECIAL_OFFER': 'deals'
-      };
-      const flagNames = params.flags.map(f => flagLabels[f] || f).join(', ');
-      details.push(flagNames);
-    }
-    
-    if (details.length > 0) {
-      description += ` (${details.join(', ')})`;
-    }
-    
-    return description;
   };
 
   // ============================================================================
