@@ -497,52 +497,50 @@ export default function App() {
       {/* LEFT SIDEBAR - Trip Details */}
       {/* ================================================================== */}
       <div 
-        className={`hidden md:flex flex-col bg-white border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'w-80' : 'w-0'
+        className={`hidden md:flex flex-col bg-white border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${
+          sidebarOpen ? 'w-80' : 'w-0 border-r-0'
         }`}
       >
-        {sidebarOpen && (
-          <>
-            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-between flex-shrink-0">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate">Trip Details</span>
-                </h2>
-                {conversationContext.destination ? (
-                  <p className="text-xs text-blue-100 mt-1 truncate">
-                    {conversationContext.destination}
-                    {conversationContext.travelers && ` • ${conversationContext.travelers} travelers`}
-                    {conversationContext.month && ` • ${conversationContext.month}`}
-                  </p>
-                ) : (
-                  <p className="text-xs text-blue-100 mt-1">Your selections</p>
-                )}
-              </div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1.5 hover:bg-white hover:bg-opacity-20 rounded transition-colors flex-shrink-0 ml-2"
-                aria-label="Close sidebar"
-              >
-                <ChevronLeft className="w-5 h-5 text-white" />
-              </button>
+        <div className="w-80 flex flex-col h-full">
+          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-between flex-shrink-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Trip Details</span>
+              </h2>
+              {conversationContext.destination ? (
+                <p className="text-xs text-blue-100 mt-1 truncate">
+                  {conversationContext.destination}
+                  {conversationContext.travelers && ` • ${conversationContext.travelers} travelers`}
+                  {conversationContext.month && ` • ${conversationContext.month}`}
+                </p>
+              ) : (
+                <p className="text-xs text-blue-100 mt-1">Your selections</p>
+              )}
             </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-1.5 hover:bg-white hover:bg-opacity-20 rounded transition-colors flex-shrink-0 ml-2"
+              aria-label="Close sidebar"
+            >
+              <ChevronLeft className="w-5 h-5 text-white" />
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <Sidebar
-                cart={cart}
-                expandedSections={expandedSections}
-                toggleSection={toggleSection}
-                removeFromCart={removeFromCart}
-                formatCurrency={formatCurrency}
-                totalCost={totalCost}
-                setShowItinerary={setShowItinerary}
-                shareItinerary={shareItinerary}
-                travelers={conversationContext.travelers || 2}
-              />
-            </div>
-          </>
-        )}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <Sidebar
+              cart={cart}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              removeFromCart={removeFromCart}
+              formatCurrency={formatCurrency}
+              totalCost={totalCost}
+              setShowItinerary={setShowItinerary}
+              shareItinerary={shareItinerary}
+              travelers={conversationContext.travelers || 2}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Left Sidebar Toggle Button */}
