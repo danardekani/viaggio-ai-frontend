@@ -227,7 +227,11 @@ export default function App() {
           })
         });
 
-        if (!response.ok) throw new Error('Hotel search failed');
+        if (!response.ok) {
+          // Try to get the error message from the API response
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || errorData.error || 'Hotel search failed');
+        }
 
         const data = await response.json();
         const hotels = data.hotels || [];
@@ -258,9 +262,13 @@ export default function App() {
       }
     } catch (error) {
       console.error('Panel search error:', error);
+      // Show the actual error message if available
+      const errorMessage = error.message && error.message !== 'Hotel search failed' && error.message !== 'Search failed'
+        ? error.message
+        : 'Sorry, I encountered an error while searching. Please try again or use the chat to describe what you\'re looking for.';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error while searching. Please try again or use the chat to describe what you\'re looking for.'
+        content: errorMessage
       }]);
     } finally {
       setLoading(false);
