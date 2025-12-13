@@ -219,6 +219,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             destination: searchParams.destination,
+            destinationCode: searchParams.destinationCode,  // Pass the code from autocomplete
             checkIn: searchParams.checkIn,
             checkOut: searchParams.checkOut,
             adults: searchParams.guests || 2,
