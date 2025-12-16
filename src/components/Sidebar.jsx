@@ -41,8 +41,8 @@ export default function Sidebar({
 
   return (
     <>
-      {/* MVP: Flights section disabled for initial launch
-      {/* Flights */}
+      {/* MVP: Flights section disabled for initial launch */}
+      {false && (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
           onClick={() => toggleSection('flights')}
@@ -96,10 +96,10 @@ export default function Sidebar({
           </div>
         )}
       </div>
-      End of Flights - MVP disabled */}
+      )}
 
-      {/* MVP: Hotels section disabled for initial launch
-      {/* Hotels */}
+      {/* MVP: Hotels section disabled for initial launch */}
+      {false && (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
           onClick={() => toggleSection('hotels')}
@@ -160,7 +160,7 @@ export default function Sidebar({
           </div>
         )}
       </div>
-      End of Hotels - MVP disabled */}
+      )}
 
       {/* Tours */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
