@@ -104,16 +104,16 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
                 </p>
                 {/* Room type and board */}
                 <div className="flex items-center gap-2 text-xs text-gray-400">
-                  {option.data.roomName && (
+                  {option.data.roomType && (
                     <span className="flex items-center gap-0.5">
                       <Bed className="w-3 h-3" />
-                      <span className="truncate max-w-[80px]">{option.data.roomName}</span>
+                      <span className="truncate max-w-[80px]">{option.data.roomType}</span>
                     </span>
                   )}
-                  {option.data.boardName && option.data.boardName !== 'Room Only' && (
+                  {option.data.boardType && option.data.boardType !== 'Room Only' && (
                     <span className="flex items-center gap-0.5">
                       <Coffee className="w-3 h-3" />
-                      <span className="truncate max-w-[80px]">{option.data.boardName}</span>
+                      <span className="truncate max-w-[80px]">{option.data.boardType}</span>
                     </span>
                   )}
                 </div>
