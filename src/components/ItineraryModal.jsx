@@ -47,6 +47,7 @@ export default function ItineraryModal({
         </div>
 
         <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* MVP: Flights section disabled for initial launch
           {cart.flights.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -67,7 +68,9 @@ export default function ItineraryModal({
               </div>
             </div>
           )}
+          */}
 
+          {/* MVP: Hotels section disabled for initial launch
           {cart.hotels.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -90,6 +93,7 @@ export default function ItineraryModal({
               </div>
             </div>
           )}
+          */}
 
           {cart.tours.length > 0 && (
             <div>
