@@ -705,8 +705,8 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
           </form>
         )}
 
-        {/* MVP: Hotels Tab - disabled for initial launch
-        {activeTab === 'hotels' && (
+        {/* MVP: Hotels Tab - disabled for initial launch */}
+        {false && activeTab === 'hotels' && (
           <form onSubmit={(e) => { e.preventDefault(); handleHotelsSearch(); }}>
             <div className="flex flex-wrap gap-2 items-center">
               {/* Destination with Autocomplete */}
@@ -819,10 +819,9 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
             </div>
           </form>
         )}
-        End of Hotels Tab - MVP disabled */}
 
-        {/* MVP: Flights Tab - disabled for initial launch
-        {activeTab === 'flights' && (
+        {/* MVP: Flights Tab - disabled for initial launch */}
+        {false && activeTab === 'flights' && (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2 items-center">
               <div className="flex gap-1 mr-2">
@@ -917,7 +916,6 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
             </p>
           </div>
         )}
-        End of Flights Tab - MVP disabled */}
       </div>
     </div>
     </>
