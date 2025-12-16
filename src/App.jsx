@@ -56,6 +56,7 @@ export default function App() {
   });
 
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -64,6 +65,18 @@ export default function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-resize textarea as user types
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set new height (max 150px for ~5 lines)
+      const newHeight = Math.min(textarea.scrollHeight, 150);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [input]);
 
   // ============================================================================
   // "WHERE IS THIS?" HANDLERS
@@ -625,24 +638,36 @@ export default function App() {
           <div className="max-w-3xl mx-auto">
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-              className="flex gap-3"
+              className="flex gap-3 items-end"
             >
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 id="chat-input"
                 name="chat-input"
                 autoComplete="off"
                 aria-label="Tell us about your trip"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  // Submit on Enter (without Shift)
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (input.trim() && !loading) {
+                      handleSend();
+                    }
+                  }
+                }}
                 placeholder="Chat with Via about your trip..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={1}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none overflow-hidden leading-normal"
+                style={{ minHeight: '48px', maxHeight: '150px' }}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
                 aria-label="Send message"
                 className="px-5 py-3 bg-gray-200 text-gray-600 rounded-lg hover:bg-blue-600 hover:text-white disabled:bg-gray-100 disabled:text-gray-400 transition-colors flex items-center justify-center flex-shrink-0"
+                style={{ height: '48px' }}
               >
                 <Send className="w-5 h-5" />
               </button>
