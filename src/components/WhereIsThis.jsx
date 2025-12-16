@@ -318,7 +318,8 @@ export default function WhereIsThis({
                         Start Planning
                       </p>
                       
-                      {/* MVP: Flights button disabled for initial launch
+                      {/* MVP: Flights button disabled for initial launch */}
+                      {false && (
                       <button
                         onClick={() => onSearchFlights?.(result.destination?.fullName || result.destination?.name)}
                         className="w-full py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-medium transition-colors flex items-center gap-3"
@@ -328,9 +329,10 @@ export default function WhereIsThis({
                         </div>
                         <span>Find Flights</span>
                       </button>
-                      */}
+                      )}
                       
-                      {/* MVP: Hotels button disabled for initial launch
+                      {/* MVP: Hotels button disabled for initial launch */}
+                      {false && (
                       <button
                         onClick={() => onSearchHotels?.(result.destination?.fullName || result.destination?.name)}
                         className="w-full py-3 px-4 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl font-medium transition-colors flex items-center gap-3"
@@ -340,7 +342,7 @@ export default function WhereIsThis({
                         </div>
                         <span>Find Hotels</span>
                       </button>
-                      */}
+                      )}
                       
                       <button
                         onClick={() => onSearchTours?.(result.destination?.fullName || result.destination?.name)}
