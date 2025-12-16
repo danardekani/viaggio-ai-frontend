@@ -69,6 +69,7 @@ export default function App() {
   // "WHERE IS THIS?" HANDLERS
   // ============================================================================
   
+  /* MVP: Flights disabled for initial launch
   const handleWhereIsThisFlights = (destination) => {
     const message = `I'd like to find flights to ${destination}`;
     setInput(message);
@@ -77,7 +78,9 @@ export default function App() {
       document.getElementById('chat-input')?.form?.requestSubmit();
     }, 100);
   };
+  */
 
+  /* MVP: Hotels disabled for initial launch
   const handleWhereIsThisHotels = (destination) => {
     const message = `Find me hotels in ${destination}`;
     setInput(message);
@@ -85,6 +88,7 @@ export default function App() {
       document.getElementById('chat-input')?.form?.requestSubmit();
     }, 100);
   };
+  */
 
   const handleWhereIsThisTours = (destination) => {
     const message = `What tours and activities are available in ${destination}?`;
@@ -134,8 +138,9 @@ export default function App() {
   };
 
   const totalCost =
-    cart.flights.reduce((sum, f) => sum + (f.price || 0), 0) +
-    cart.hotels.reduce((sum, h) => sum + (h.price || 0), 0) +
+    // MVP: Only tours for initial launch
+    // cart.flights.reduce((sum, f) => sum + (f.price || 0), 0) +
+    // cart.hotels.reduce((sum, h) => sum + (h.price || 0), 0) +
     cart.tours.reduce((sum, t) => sum + getTourPrice(t), 0);
 
   const formatCurrency = (amount) => {
@@ -206,7 +211,9 @@ export default function App() {
             content: `I couldn't find any tours matching your criteria in ${searchParams.destination}. Try adjusting your filters or searching for a different location.`
           }]);
         }
-      } else if (searchParams.type === 'hotels') {
+      }
+      /* MVP: Hotels search disabled for initial launch
+      else if (searchParams.type === 'hotels') {
         // Update context
         setConversationContext(prev => ({
           ...prev,
@@ -260,6 +267,7 @@ export default function App() {
           content: `Flight search is coming soon! For now, I can provide general recommendations and information about flights. What else would you like to know?`
         }]);
       }
+      End of Hotels/Flights - MVP disabled */
     } catch (error) {
       console.error('Panel search error:', error);
       // Show the actual error message if available
@@ -650,15 +658,17 @@ export default function App() {
         backendUrl={BACKEND_URL}
         isOpen={whereIsThisOpen}
         onToggle={() => setWhereIsThisOpen(!whereIsThisOpen)}
-        onSearchFlights={handleWhereIsThisFlights}
-        onSearchHotels={handleWhereIsThisHotels}
+        // MVP: Flights and Hotels disabled for initial launch
+        // onSearchFlights={handleWhereIsThisFlights}
+        // onSearchHotels={handleWhereIsThisHotels}
         onSearchTours={handleWhereIsThisTours}
       />
 
       {/* ================================================================== */}
       {/* MOBILE COMPONENTS */}
       {/* ================================================================== */}
-      {(cart.flights.length > 0 || cart.hotels.length > 0 || cart.tours.length > 0) && (
+      {/* MVP: Only check tours for mobile trip button */}
+      {cart.tours.length > 0 && (
         <button
           onClick={() => setShowMobileTrip(true)}
           className="md:hidden fixed bottom-24 right-4 px-4 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-semibold z-40"
