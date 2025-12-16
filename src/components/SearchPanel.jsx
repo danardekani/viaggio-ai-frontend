@@ -13,6 +13,7 @@ import {
   Loader2,
   Building
 } from 'lucide-react';
+import DealsDiscovery from './DealsDiscovery';
 
 // Debounce hook for autocomplete
 function useDebounce(value, delay) {
@@ -349,6 +350,32 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     });
   };
 
+  // Handle deals search from DealsDiscovery component
+  const handleDealsSearch = (cityName) => {
+    // Update the destination filter to show the city
+    setToursFilters(prev => ({
+      ...prev,
+      destination: cityName,
+      flags: {
+        ...prev.flags,
+        SPECIAL_OFFER: true // Enable deals filter
+      }
+    }));
+    
+    // Clear any previous destination ID since we're searching by name
+    setSelectedDestinationId(null);
+    
+    // Trigger the search with SPECIAL_OFFER flag
+    onSearch({
+      type: 'tours',
+      destination: cityName,
+      destinationId: null,
+      travelers: toursFilters.travelers,
+      sortBy: 'popular',
+      flags: ['SPECIAL_OFFER']
+    });
+  };
+
   // Toggle filter flags
   const toggleFlag = (flag) => {
     setToursFilters(prev => ({
@@ -462,26 +489,36 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
       <div className="max-w-5xl mx-auto px-4 py-3">
         {/* Tab Headers */}
         <div className="flex items-center justify-between mb-3">
-          <div className="flex gap-1">
-            {[
-              { id: 'tours', label: 'Tours', icon: MapPin, color: 'green' },
-              // MVP: Hotels and Flights disabled for initial launch
-              // { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
-              // { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? `bg-${tab.color}-100 text-${tab.color}-700`
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {[
+                { id: 'tours', label: 'Tours', icon: MapPin, color: 'green' },
+                // MVP: Hotels and Flights disabled for initial launch
+                // { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
+                // { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? `bg-${tab.color}-100 text-${tab.color}-700`
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Deals Discovery Button */}
+            <div className="border-l border-gray-200 pl-3">
+              <DealsDiscovery 
+                onSearchDeals={handleDealsSearch}
+                isLoading={isLoading}
+              />
+            </div>
           </div>
           
           <button
