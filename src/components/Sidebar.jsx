@@ -41,6 +41,7 @@ export default function Sidebar({
 
   return (
     <>
+      {/* MVP: Flights section disabled for initial launch
       {/* Flights */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
@@ -95,7 +96,9 @@ export default function Sidebar({
           </div>
         )}
       </div>
+      End of Flights - MVP disabled */}
 
+      {/* MVP: Hotels section disabled for initial launch
       {/* Hotels */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <button
@@ -157,6 +160,7 @@ export default function Sidebar({
           </div>
         )}
       </div>
+      End of Hotels - MVP disabled */}
 
       {/* Tours */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
