@@ -465,8 +465,9 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
           <div className="flex gap-1">
             {[
               { id: 'tours', label: 'Tours', icon: MapPin, color: 'green' },
-              { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
-              { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' }
+              // MVP: Hotels and Flights disabled for initial launch
+              // { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
+              // { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -704,7 +705,7 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
           </form>
         )}
 
-        {/* Hotels Tab */}
+        {/* MVP: Hotels Tab - disabled for initial launch
         {activeTab === 'hotels' && (
           <form onSubmit={(e) => { e.preventDefault(); handleHotelsSearch(); }}>
             <div className="flex flex-wrap gap-2 items-center">
@@ -818,8 +819,9 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
             </div>
           </form>
         )}
+        End of Hotels Tab - MVP disabled */}
 
-        {/* Flights Tab */}
+        {/* MVP: Flights Tab - disabled for initial launch
         {activeTab === 'flights' && (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2 items-center">
@@ -915,6 +917,7 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
             </p>
           </div>
         )}
+        End of Flights Tab - MVP disabled */}
       </div>
     </div>
     </>
