@@ -181,7 +181,7 @@ export default function LandingPage({
   }, [destination]);
 
   const handleSelectSuggestion = (suggestion) => {
-    setDestination(suggestion.name || suggestion.displayName);
+    setDestination(suggestion.displayName || suggestion.name);
     setSelectedDestinationId(suggestion.destinationId);
     setShowSuggestions(false);
     setSuggestions([]);
@@ -526,7 +526,7 @@ export default function LandingPage({
                             <MapPin className="w-4 h-4 text-gray-400" />
                             <div>
                               <p className="text-sm font-medium text-gray-900">
-                                {suggestion.name || suggestion.displayName}
+                                {suggestion.displayName || suggestion.name}
                               </p>
                               {suggestion.type && (
                                 <p className="text-xs text-gray-500">{suggestion.type}</p>
@@ -776,7 +776,7 @@ export default function LandingPage({
                             <MapPin className="w-4 h-4 text-orange-400" />
                             <div>
                               <p className="text-sm font-medium text-gray-900">
-                                {suggestion.name || suggestion.displayName}
+                                {suggestion.displayName || suggestion.name}
                               </p>
                               {suggestion.type && (
                                 <p className="text-xs text-gray-500">{suggestion.type}</p>
