@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plane, Hotel, MapPin, ExternalLink, Star, Clock, Eye, Bed, Coffee } from 'lucide-react';
+import { Plane, Hotel, MapPin, ExternalLink, Star, Clock, Eye, Bed, Coffee, Tag } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
 import HotelQuickViewModal from './HotelQuickViewModal';
 
@@ -144,7 +144,26 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
 
           {/* Price - Right Side */}
           <div className="text-right flex-shrink-0">
-            <p className={`text-lg font-bold ${colors.icon}`}>
+            {/* Deal Badge - Show when tour has discount */}
+            {option.type === 'tour' && option.data.hasDiscount && (
+              <div className="flex items-center justify-end gap-1 mb-0.5">
+                <Tag className="w-3 h-3 text-orange-500" />
+                <span className="text-[10px] font-semibold text-orange-500 uppercase">Deal</span>
+              </div>
+            )}
+            
+            {/* Original Price (strikethrough) - Only for tours with discounts */}
+            {option.type === 'tour' && option.data.hasDiscount && option.data.originalPrice && (
+              <p className="text-sm text-gray-400 line-through">
+                {formatCurrency(
+                  option.data.pricingType === 'group' 
+                    ? option.data.originalPrice 
+                    : option.data.originalPrice * travelers
+                )}
+              </p>
+            )}
+            
+            <p className={`text-lg font-bold ${option.type === 'tour' && option.data.hasDiscount ? 'text-orange-500' : colors.icon}`}>
               {formatCurrency(
                 option.type === 'tour'
                   ? (option.data.pricingType === 'group' 
