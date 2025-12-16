@@ -708,23 +708,84 @@ export default function LandingPage({
               {/* Deals Tab */}
               {activeTab === 'deals' && (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex-1 flex items-center gap-3 px-4 py-3">
-                    <Tag className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Find Deals In</p>
-                      <input 
-                        type="text"
-                        placeholder="Enter a city to find deals..."
-                        value={destination}
-                        onChange={(e) => setDestination(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && destination.trim()) {
-                            handleDealsSearch(destination.trim());
-                          }
-                        }}
-                        className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
-                      />
+                  <div className="flex-1 relative" ref={destinationInputRef}>
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Tag className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">Find Deals In</p>
+                        <input 
+                          type="text"
+                          placeholder="Enter a city to find deals..."
+                          value={destination}
+                          onChange={(e) => {
+                            setDestination(e.target.value);
+                            setSelectedDestinationId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            // Handle autocomplete navigation
+                            if (showSuggestions && suggestions.length > 0) {
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+                                return;
+                              } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setSelectedIndex(prev => Math.max(prev - 1, -1));
+                                return;
+                              } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                                e.preventDefault();
+                                handleSelectSuggestion(suggestions[selectedIndex]);
+                                return;
+                              } else if (e.key === 'Escape') {
+                                setShowSuggestions(false);
+                                return;
+                              }
+                            }
+                            // Handle search on Enter
+                            if (e.key === 'Enter' && destination.trim()) {
+                              handleDealsSearch(destination.trim());
+                            }
+                          }}
+                          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                          autoComplete="off"
+                        />
+                      </div>
+                      {loadingSuggestions && (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      )}
                     </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div 
+                        ref={suggestionsRef}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                      >
+                        {suggestions.map((suggestion, index) => (
+                          <button
+                            key={suggestion.destinationId || index}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(suggestion)}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                              index === selectedIndex ? 'bg-orange-50' : ''
+                            } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                              index === suggestions.length - 1 ? 'rounded-b-xl' : ''
+                            }`}
+                          >
+                            <MapPin className="w-4 h-4 text-orange-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {suggestion.name || suggestion.displayName}
+                              </p>
+                              {suggestion.type && (
+                                <p className="text-xs text-gray-500">{suggestion.type}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <button 
                     onClick={() => destination.trim() && handleDealsSearch(destination.trim())}
