@@ -14,6 +14,7 @@ import ItineraryModal from './components/ItineraryModal';
 import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
 import WhereIsThis from './components/WhereIsThis';
+import LandingPage from './components/LandingPage';
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -26,6 +27,7 @@ export default function App() {
   
   const BACKEND_URL = 'https://viaggio-ai-backend-production.up.railway.app';
   
+  const [showLandingPage, setShowLandingPage] = useState(true);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showItinerary, setShowItinerary] = useState(false);
@@ -523,8 +525,52 @@ export default function App() {
   };
 
   // ============================================================================
+  // LANDING PAGE HANDLERS
+  // ============================================================================
+
+  const handleLandingPageSearch = (searchParams) => {
+    setShowLandingPage(false);
+    handlePanelSearch(searchParams);
+  };
+
+  const handleLandingPageDeals = (cityName) => {
+    setShowLandingPage(false);
+    // Search for deals in the selected city
+    handlePanelSearch({
+      type: 'tours',
+      destination: cityName,
+      flags: ['SPECIAL_OFFER']
+    });
+  };
+
+  const handleOpenWhereIsThis = () => {
+    setShowLandingPage(false);
+    setWhereIsThisOpen(true);
+  };
+
+  const handleOpenTripBuilder = () => {
+    setShowLandingPage(false);
+    setSidebarOpen(true);
+  };
+
+  // ============================================================================
   // RENDER
   // ============================================================================
+
+  // Show Landing Page
+  if (showLandingPage) {
+    return (
+      <LandingPage
+        onSearch={handleLandingPageSearch}
+        onSearchDeals={handleLandingPageDeals}
+        onOpenWhereIsThis={handleOpenWhereIsThis}
+        onOpenTripBuilder={handleOpenTripBuilder}
+        cart={cart}
+        isLoading={loading}
+        backendUrl={BACKEND_URL}
+      />
+    );
+  }
 
   if (showBookingPage) {
     return (
@@ -608,11 +654,17 @@ export default function App() {
         <header className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
           <div className="px-4 py-4">
             <div className="flex items-center gap-3">
-              <Plane className="w-8 h-8 text-blue-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900">Viaggio.ai</h1>
-                <p className="text-xs text-gray-500">Powered by Via, your AI travel expert</p>
-              </div>
+              <button
+                onClick={() => setShowLandingPage(true)}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                title="Back to Home"
+              >
+                <Plane className="w-8 h-8 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0 text-left">
+                  <h1 className="text-2xl font-bold text-gray-900">Viaggio.ai</h1>
+                  <p className="text-xs text-gray-500">Powered by Via, your AI travel expert</p>
+                </div>
+              </button>
             </div>
           </div>
         </header>
