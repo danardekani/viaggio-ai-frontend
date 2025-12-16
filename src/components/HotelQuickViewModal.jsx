@@ -87,7 +87,7 @@ export default function HotelQuickViewModal({
   }
 
   // Facilities/Amenities
-  const facilities = hotel.facilities || [];
+  const facilities = hotel.amenities || hotel.facilities || [];
 
   // Star rating display
   const renderStars = (rating) => {
@@ -188,9 +188,9 @@ export default function HotelQuickViewModal({
           </button>
           
           {/* Star Rating Badge */}
-          {hotel.rating && (
+          {(hotel.stars || hotel.rating) && (
             <div className="absolute bottom-3 right-3 bg-white bg-opacity-95 rounded-lg px-3 py-1.5 flex items-center gap-1 shadow-lg">
-              {renderStars(hotel.rating)}
+              {renderStars(hotel.stars || hotel.rating)}
             </div>
           )}
         </div>
@@ -230,18 +230,18 @@ export default function HotelQuickViewModal({
               )}
 
               {/* Room Type */}
-              {hotel.roomName && (
+              {hotel.roomType && (
                 <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
                   <Bed className="w-4 h-4" />
-                  <span>{hotel.roomName}</span>
+                  <span>{hotel.roomType}</span>
                 </div>
               )}
 
               {/* Board Type (Breakfast, etc.) */}
-              {hotel.boardName && (
+              {hotel.boardType && (
                 <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
                   <Coffee className="w-4 h-4" />
-                  <span>{hotel.boardName}</span>
+                  <span>{hotel.boardType}</span>
                 </div>
               )}
             </div>
@@ -306,20 +306,31 @@ export default function HotelQuickViewModal({
             {/* Price Breakdown */}
             <div className="bg-purple-50 rounded-lg p-4 mb-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Price Details</h3>
-              <div className="space-y-2">
-                {hotel.pricePerNight && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">
-                      {formatCurrency(parseFloat(hotel.pricePerNight))} × {hotel.nights || 1} night{(hotel.nights || 1) > 1 ? 's' : ''}
-                    </span>
-                    <span className="text-gray-900">{formatCurrency(hotel.price)}</span>
+              {(() => {
+                // Parse the total price (API returns it as string "totalPrice")
+                const totalPrice = parseFloat(hotel.totalPrice || hotel.price || 0);
+                const nights = hotel.nights || 1;
+                const pricePerNight = hotel.pricePerNight 
+                  ? parseFloat(hotel.pricePerNight) 
+                  : (totalPrice / nights);
+                
+                return (
+                  <div className="space-y-2">
+                    {totalPrice > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {formatCurrency(pricePerNight)} × {nights} night{nights > 1 ? 's' : ''}
+                        </span>
+                        <span className="text-gray-900">{formatCurrency(totalPrice)}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-purple-200 pt-2 flex justify-between">
+                      <span className="font-semibold text-gray-900">Total</span>
+                      <span className="font-bold text-xl text-purple-600">{formatCurrency(totalPrice)}</span>
+                    </div>
                   </div>
-                )}
-                <div className="border-t border-purple-200 pt-2 flex justify-between">
-                  <span className="font-semibold text-gray-900">Total</span>
-                  <span className="font-bold text-xl text-purple-600">{formatCurrency(hotel.price)}</span>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           </div>
         </div>
