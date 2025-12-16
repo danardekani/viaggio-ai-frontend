@@ -213,16 +213,32 @@ export default function App() {
             data: tour
           }));
 
+          // Check if this was a deals search
+          const isDealsSearch = searchParams.flags?.includes('SPECIAL_OFFER');
+          
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: `I found ${tours.length} great tours in ${searchParams.destination}! Here are some options:`,
+            content: isDealsSearch 
+              ? `🏷️ Great news! I found ${tours.length} tours on sale in ${searchParams.destination}! These have special discounts available right now:`
+              : `I found ${tours.length} great tours in ${searchParams.destination}! Here are some options:`,
             options
           }]);
         } else {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: `I couldn't find any tours matching your criteria in ${searchParams.destination}. Try adjusting your filters or searching for a different location.`
-          }]);
+          // Check if this was a deals search
+          const isDealsSearch = searchParams.flags?.includes('SPECIAL_OFFER');
+          
+          if (isDealsSearch) {
+            // Special message for no deals found
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `😕 No deals available in ${searchParams.destination} right now. Special offers change frequently, so check back soon!\n\nIn the meantime, try browsing deals in another city like Paris, Rome, or Barcelona - or I can search for all tours in ${searchParams.destination} (not just discounted ones). Would you like me to do that?`
+            }]);
+          } else {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `I couldn't find any tours matching your criteria in ${searchParams.destination}. Try adjusting your filters or searching for a different location.`
+            }]);
+          }
         }
       }
       /* MVP: Hotels search disabled for initial launch
