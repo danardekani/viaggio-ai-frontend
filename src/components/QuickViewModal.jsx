@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Star, Clock, MapPin, Users, CheckCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { X, Star, Clock, MapPin, Users, CheckCircle, ChevronDown, ChevronUp, ExternalLink, Tag } from 'lucide-react';
 
 export default function QuickViewModal({ 
   tour, 
@@ -47,6 +47,9 @@ export default function QuickViewModal({
   // Calculate the display price based on pricing type
   const isPerGroup = tour.pricingType === 'group';
   const displayPrice = isPerGroup ? tour.price : tour.price * travelers;
+  const displayOriginalPrice = tour.hasDiscount && tour.originalPrice 
+    ? (isPerGroup ? tour.originalPrice : tour.originalPrice * travelers)
+    : null;
   
   // Build the price description text
   const getPriceDescription = () => {
@@ -240,7 +243,22 @@ export default function QuickViewModal({
         {/* Footer with Price and Actions - Fixed */}
         <div className="border-t border-gray-200 bg-gray-50 px-5 py-4 flex items-center justify-between flex-shrink-0">
           <div>
-            <p className="text-2xl font-bold text-green-600">
+            {/* Deal Badge */}
+            {tour.hasDiscount && (
+              <div className="flex items-center gap-1 mb-1">
+                <Tag className="w-3.5 h-3.5 text-orange-500" />
+                <span className="text-xs font-semibold text-orange-500 uppercase">Special Offer</span>
+              </div>
+            )}
+            
+            {/* Original Price (strikethrough) */}
+            {displayOriginalPrice && (
+              <p className="text-sm text-gray-400 line-through">
+                {formatCurrency(displayOriginalPrice)}
+              </p>
+            )}
+            
+            <p className={`text-2xl font-bold ${tour.hasDiscount ? 'text-orange-500' : 'text-green-600'}`}>
               {formatCurrency(displayPrice)}
             </p>
             <p className="text-xs text-gray-500">
