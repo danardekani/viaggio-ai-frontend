@@ -150,7 +150,9 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
                   ? (option.data.pricingType === 'group' 
                       ? option.data.price  // Per group - don't multiply
                       : option.data.price * travelers)  // Per person - multiply
-                  : option.data.price
+                  : option.type === 'hotel'
+                    ? parseFloat(option.data.totalPrice || option.data.price || 0)  // Hotels use totalPrice (string)
+                    : option.data.price
               )}
             </p>
             {option.type === 'tour' && (
