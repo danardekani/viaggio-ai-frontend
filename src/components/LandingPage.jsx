@@ -307,9 +307,14 @@ export default function LandingPage({
 
   const handleSearchIdentifiedLocation = () => {
     if (identifiedLocation?.destination) {
+      // destination can be an object with fullName/name or a string
+      const destName = typeof identifiedLocation.destination === 'object' 
+        ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
+        : identifiedLocation.destination;
+      
       onSearch?.({
         type: 'tours',
-        destination: identifiedLocation.destination,
+        destination: destName,
         travelers
       });
     }
@@ -661,19 +666,32 @@ export default function LandingPage({
                               Try another image
                             </button>
                           </div>
-                        ) : identifiedLocation ? (
+                        ) : identifiedLocation?.destination ? (
                           <div>
                             <p className="text-sm text-gray-500">We found it!</p>
-                            <p className="text-xl font-bold text-gray-900">{identifiedLocation.destination}</p>
+                            <p className="text-xl font-bold text-gray-900">
+                              {typeof identifiedLocation.destination === 'object' 
+                                ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
+                                : identifiedLocation.destination}
+                            </p>
                             {identifiedLocation.landmark && (
-                              <p className="text-sm text-gray-600">{identifiedLocation.landmark}</p>
+                              <p className="text-sm text-gray-600">📍 {identifiedLocation.landmark}</p>
+                            )}
+                            {identifiedLocation.confidence && (
+                              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                                identifiedLocation.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                                identifiedLocation.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {identifiedLocation.confidence} confidence
+                              </span>
                             )}
                           </div>
                         ) : null}
                       </div>
                       
                       {/* Action Button */}
-                      {identifiedLocation && !identifiedLocation.error && (
+                      {identifiedLocation?.destination && !identifiedLocation.error && (
                         <button
                           onClick={handleSearchIdentifiedLocation}
                           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
