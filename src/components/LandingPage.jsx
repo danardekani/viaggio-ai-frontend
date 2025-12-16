@@ -93,10 +93,18 @@ export default function LandingPage({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [selectedDestinationId, setSelectedDestinationId] = useState(null);
   
+  // Where Is This state
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [identifyingLocation, setIdentifyingLocation] = useState(false);
+  const [identifiedLocation, setIdentifiedLocation] = useState(null);
+  
   const destinationInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const chatInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Hide intro tooltip after 6 seconds
   useEffect(() => {
@@ -222,6 +230,104 @@ export default function LandingPage({
   };
 
   // ============================================================================
+  // WHERE IS THIS - IMAGE UPLOAD HANDLERS
+  // ============================================================================
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      processImageFile(file);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      processImageFile(file);
+    }
+  };
+
+  const processImageFile = async (file) => {
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+    
+    setUploadedImage(file);
+    setIdentifiedLocation(null);
+    
+    // Auto-identify after upload
+    await identifyLocation(file);
+  };
+
+  const identifyLocation = async (file) => {
+    setIdentifyingLocation(true);
+    
+    try {
+      // Convert file to base64
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch(`${backendUrl}/api/vision/identify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64,
+          mediaType: file.type
+        })
+      });
+
+      if (!response.ok) throw new Error('Identification failed');
+
+      const data = await response.json();
+      setIdentifiedLocation(data);
+      
+    } catch (error) {
+      console.error('Location identification error:', error);
+      setIdentifiedLocation({ error: true, message: 'Could not identify location. Try another image.' });
+    } finally {
+      setIdentifyingLocation(false);
+    }
+  };
+
+  const handleSearchIdentifiedLocation = () => {
+    if (identifiedLocation?.destination) {
+      onSearch?.({
+        type: 'tours',
+        destination: identifiedLocation.destination,
+        travelers
+      });
+    }
+  };
+
+  const resetWhereIsThis = () => {
+    setUploadedImage(null);
+    setImagePreview(null);
+    setIdentifiedLocation(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // ============================================================================
   // CHAT HANDLERS
   // ============================================================================
 
@@ -317,10 +423,7 @@ export default function LandingPage({
               <span className="sm:hidden">Tours</span>
             </button>
             <button
-              onClick={() => {
-                setActiveTab('whereis');
-                onOpenWhereIsThis?.();
-              }}
+              onClick={() => setActiveTab('whereis')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 activeTab === 'whereis' 
                   ? 'bg-white text-gray-900 shadow-sm' 
@@ -483,20 +586,107 @@ export default function LandingPage({
 
               {/* Where Is This Tab */}
               {activeTab === 'whereis' && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 p-6">
-                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Camera className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <div className="text-center sm:text-left">
-                    <p className="text-gray-900 font-medium">Upload a photo to identify the location</p>
-                    <p className="text-sm text-gray-500">We'll find tours and experiences there</p>
-                  </div>
-                  <button 
-                    onClick={onOpenWhereIsThis}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-colors font-medium"
-                  >
-                    Upload Photo
-                  </button>
+                <div className="p-4">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  {!imagePreview ? (
+                    /* Upload Zone */
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                        isDragging 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-3">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
+                          isDragging ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}>
+                          <Camera className={`w-8 h-8 ${isDragging ? 'text-blue-600' : 'text-gray-400'}`} />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {isDragging ? 'Drop your image here!' : 'Upload a photo to identify the location'}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Drag & drop or click to browse
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Image Preview & Results */
+                    <div className="flex flex-col sm:flex-row gap-4 items-center">
+                      {/* Image Preview */}
+                      <div className="relative w-32 h-32 rounded-xl overflow-hidden flex-shrink-0">
+                        <img 
+                          src={imagePreview} 
+                          alt="Uploaded" 
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={resetWhereIsThis}
+                          className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                      
+                      {/* Status / Results */}
+                      <div className="flex-1 text-center sm:text-left">
+                        {identifyingLocation ? (
+                          <div className="flex items-center gap-3 justify-center sm:justify-start">
+                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                            <div>
+                              <p className="text-gray-900 font-medium">Identifying location...</p>
+                              <p className="text-sm text-gray-500">Analyzing your image</p>
+                            </div>
+                          </div>
+                        ) : identifiedLocation?.error ? (
+                          <div>
+                            <p className="text-gray-900 font-medium">Couldn't identify location</p>
+                            <p className="text-sm text-gray-500">{identifiedLocation.message}</p>
+                            <button
+                              onClick={resetWhereIsThis}
+                              className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Try another image
+                            </button>
+                          </div>
+                        ) : identifiedLocation ? (
+                          <div>
+                            <p className="text-sm text-gray-500">We found it!</p>
+                            <p className="text-xl font-bold text-gray-900">{identifiedLocation.destination}</p>
+                            {identifiedLocation.landmark && (
+                              <p className="text-sm text-gray-600">{identifiedLocation.landmark}</p>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                      
+                      {/* Action Button */}
+                      {identifiedLocation && !identifiedLocation.error && (
+                        <button
+                          onClick={handleSearchIdentifiedLocation}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
+                        >
+                          <Search className="w-5 h-5" />
+                          Find Tours
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
