@@ -282,17 +282,14 @@ export default function LandingPage({
       // Convert file to base64
       const base64 = await new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
 
-      const response = await fetch(`${backendUrl}/api/vision/identify`, {
+      const response = await fetch(`${backendUrl}/api/identify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64,
-          mediaType: file.type
-        })
+        body: JSON.stringify({ image: base64 })
       });
 
       if (!response.ok) throw new Error('Identification failed');
