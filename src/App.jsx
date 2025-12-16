@@ -267,7 +267,7 @@ export default function App() {
           content: `Flight search is coming soon! For now, I can provide general recommendations and information about flights. What else would you like to know?`
         }]);
       }
-      End of Hotels/Flights - MVP disabled */
+      */
     } catch (error) {
       console.error('Panel search error:', error);
       // Show the actual error message if available
