@@ -558,17 +558,19 @@ export default function LandingPage({
                     <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Travelers</p>
-                      <select
-                        value={travelers}
-                        onChange={(e) => setTravelers(parseInt(e.target.value))}
-                        className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-4"
-                      >
-                        {[1,2,3,4,5,6,7,8].map(n => (
-                          <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={travelers}
+                          onChange={(e) => setTravelers(parseInt(e.target.value))}
+                          className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-6 cursor-pointer"
+                        >
+                          {[1,2,3,4,5,6,7,8].map(n => (
+                            <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
                   </div>
                   
                   {/* Search Button */}
