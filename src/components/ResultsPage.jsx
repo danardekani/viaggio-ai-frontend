@@ -75,6 +75,7 @@ export default function ResultsPage({
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(true);
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   
   // QuickView Modal State
   const [quickViewTour, setQuickViewTour] = useState(null);
@@ -333,20 +334,30 @@ export default function ResultsPage({
       {/* TOP SEARCH BAR */}
       {/* ================================================================== */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Logo / Back */}
             <button
               onClick={onBackToHome}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
             >
-              <Plane className="w-6 h-6 text-blue-600" />
+              <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               <span className="font-bold text-gray-900 hidden sm:inline">Viaggio</span>
             </button>
 
-            {/* Search Form */}
-            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
-              <MapPin className="w-4 h-4 text-gray-400" />
+            {/* Mobile: Simplified Search Button */}
+            <button
+              onClick={() => setShowMobileSearch(true)}
+              className="sm:hidden flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 text-left"
+            >
+              <Search className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600 truncate">{searchDestination || 'Search...'}</span>
+              <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{travelers} guest{travelers > 1 ? 's' : ''}</span>
+            </button>
+
+            {/* Desktop: Full Search Form */}
+            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
                 value={searchDestination}
@@ -354,12 +365,12 @@ export default function ResultsPage({
                 placeholder="Where to?"
                 className="flex-1 bg-transparent focus:outline-none text-sm min-w-0"
               />
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden md:block">|</span>
               <input
                 type="date"
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
-                className="bg-transparent focus:outline-none text-sm text-gray-600 w-28"
+                className="hidden md:block bg-transparent focus:outline-none text-sm text-gray-600 w-28"
               />
               <span className="text-gray-300">|</span>
               <select
@@ -373,7 +384,7 @@ export default function ResultsPage({
               </select>
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors flex-shrink-0"
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -382,7 +393,7 @@ export default function ResultsPage({
             {/* Cart Button */}
             <button
               onClick={() => setCartSidebarOpen(!cartSidebarOpen)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors flex-shrink-0"
             >
               <ShoppingBag className="w-5 h-5 text-gray-600" />
               {cartItemCount > 0 && (
@@ -525,27 +536,27 @@ export default function ResultsPage({
         {/* MAIN RESULTS AREA */}
         {/* ============================================================== */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
             {/* Results Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   {searchParams?.destination || 'Tours'}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500">
                   {sortedResults.length} {sortedResults.length === 1 ? 'tour' : 'tours'} available
                   {hasActiveFilters && ` (filtered from ${results.length})`}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {/* Mobile Filter Button */}
                 <button
                   onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
+                  className="lg:hidden flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
-                  Filters
+                  <span className="hidden xs:inline">Filters</span>
                   {hasActiveFilters && (
                     <span className="bg-blue-600 text-white text-xs px-1.5 rounded-full">
                       {Object.values(filters).filter(v => v !== '' && v !== false).length}
@@ -558,7 +569,7 @@ export default function ResultsPage({
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="appearance-none bg-white border border-gray-200 rounded-lg px-3 sm:px-4 py-2 pr-8 sm:pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
                     <option value="popular">Most Popular</option>
                     <option value="rating">Highest Rated</option>
@@ -664,7 +675,7 @@ export default function ResultsPage({
                           </div>
 
                           {/* Content */}
-                          <div className="flex-1 p-5 flex flex-col">
+                          <div className="flex-1 p-3 sm:p-5 flex flex-col">
                             {/* Title & Rating Row */}
                             <div className="flex items-start justify-between gap-4 mb-2">
                               <h3 
@@ -758,10 +769,10 @@ export default function ResultsPage({
                                     {formatCurrency(tour.originalPrice)}
                                   </span>
                                 )}
-                                <span className={`text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
+                                <span className={`text-xl sm:text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
                                   {formatCurrency(tour.price)}
                                 </span>
-                                <span className="text-gray-500 text-sm ml-1">
+                                <span className="text-gray-500 text-xs sm:text-sm ml-1">
                                   {tour.pricingType === 'group' 
                                     ? 'per group' 
                                     : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : 'per person'
@@ -773,7 +784,7 @@ export default function ResultsPage({
                                 {/* Quick View Button */}
                                 <button
                                   onClick={() => openQuickView(tour)}
-                                  className="px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
+                                  className="p-2 sm:px-3 sm:py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
                                   title="Quick view"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -786,13 +797,15 @@ export default function ResultsPage({
                                     ? removeFromCart('tour', tour.id) 
                                     : addToCart('tour', tour)
                                   }
-                                  className={`px-5 py-2.5 rounded-lg font-semibold transition-colors ${
+                                  className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
                                     isSelected
                                       ? 'bg-red-500 hover:bg-red-600 text-white'
                                       : 'bg-green-500 hover:bg-green-600 text-white'
                                   }`}
                                 >
-                                  {isSelected ? 'Remove' : 'Add to Trip'}
+                                  {isSelected ? 'Remove' : 'Add'}
+                                </button>
+                              </div>
                                 </button>
                               </div>
                             </div>
@@ -963,7 +976,74 @@ export default function ResultsPage({
         .animate-slide-in-right {
           animation: slide-in-right 0.25s ease-out;
         }
+        @keyframes slide-down {
+          from { transform: translateY(-100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-down {
+          animation: slide-down 0.25s ease-out;
+        }
       `}</style>
+
+      {/* ================================================================== */}
+      {/* MOBILE SEARCH MODAL */}
+      {/* ================================================================== */}
+      {showMobileSearch && (
+        <div className="fixed inset-0 z-50 sm:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileSearch(false)} />
+          <div className="absolute inset-x-0 top-0 bg-white shadow-xl rounded-b-2xl p-4 animate-slide-down">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900">Search Tours</h2>
+              <button onClick={() => setShowMobileSearch(false)}>
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }} className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 font-medium">Destination</label>
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchDestination}
+                    onChange={(e) => setSearchDestination(e.target.value)}
+                    placeholder="Where to?"
+                    className="flex-1 bg-transparent focus:outline-none text-sm"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-medium">Date</label>
+                <input
+                  type="date"
+                  value={searchDate}
+                  onChange={(e) => setSearchDate(e.target.value)}
+                  className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-medium">Guests</label>
+                <select
+                  value={travelers}
+                  onChange={(e) => setTravelers(parseInt(e.target.value))}
+                  className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {[1,2,3,4,5,6,7,8].map(n => (
+                    <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ================================================================== */}
       {/* MOBILE FILTERS MODAL */}
@@ -1043,9 +1123,9 @@ export default function ResultsPage({
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center"
         >
-          <MessageCircle className="w-6 h-6 text-white" />
+          <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20" />
         </button>
       )}
@@ -1054,7 +1134,7 @@ export default function ResultsPage({
       {/* CHAT PANEL */}
       {/* ================================================================== */}
       {chatOpen && (
-        <div className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
+        <div className="fixed inset-4 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-96 sm:h-[500px] sm:max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
           {/* Chat Header */}
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -1068,9 +1148,9 @@ export default function ResultsPage({
             </div>
             <button
               onClick={() => setChatOpen(false)}
-              className="text-white/80 hover:text-white transition-colors"
+              className="text-white/80 hover:text-white transition-colors p-1"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
 
@@ -1133,7 +1213,7 @@ export default function ResultsPage({
       {/* QUICKVIEW MODAL */}
       {/* ================================================================== */}
       {quickViewTour && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -1141,11 +1221,11 @@ export default function ResultsPage({
           />
           
           {/* Modal Content */}
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="relative bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col rounded-t-2xl">
             {/* Close Button */}
             <button
               onClick={() => setQuickViewTour(null)}
-              className="absolute top-4 right-4 z-20 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
