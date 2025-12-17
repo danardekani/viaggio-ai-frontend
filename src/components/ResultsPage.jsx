@@ -16,9 +16,15 @@ import {
   Loader2,
   ShoppingBag,
   Plane,
-  ArrowLeft
+  ExternalLink,
+  Check,
+  Info,
+  Globe,
+  Users,
+  Calendar,
+  Shield,
+  Eye
 } from 'lucide-react';
-import OptionCard from './OptionCard';
 
 // ============================================================================
 // RESULTS PAGE COMPONENT
@@ -66,6 +72,10 @@ export default function ResultsPage({
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(true);
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  // QuickView Modal State
+  const [quickViewTour, setQuickViewTour] = useState(null);
+  const [quickViewImageIndex, setQuickViewImageIndex] = useState(0);
   
   // Chat State
   const [chatOpen, setChatOpen] = useState(false);
@@ -574,8 +584,14 @@ export default function ResultsPage({
                       >
                         <div className="flex flex-col md:flex-row">
                           {/* Image */}
-                          <div className="md:w-72 lg:w-80 flex-shrink-0">
-                            <div className="relative h-48 md:h-full">
+                          <div 
+                            className="md:w-72 lg:w-80 flex-shrink-0 cursor-pointer"
+                            onClick={() => {
+                              setQuickViewTour(tour);
+                              setQuickViewImageIndex(0);
+                            }}
+                          >
+                            <div className="relative h-48 md:h-full min-h-[200px]">
                               {tour.image ? (
                                 <img
                                   src={tour.image}
@@ -601,6 +617,12 @@ export default function ResultsPage({
                                   </span>
                                 )}
                               </div>
+                              {/* Image count badge */}
+                              {tour.images && tour.images.length > 1 && (
+                                <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
+                                  📷 {tour.images.length}
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -608,14 +630,20 @@ export default function ResultsPage({
                           <div className="flex-1 p-5 flex flex-col">
                             {/* Title & Rating Row */}
                             <div className="flex items-start justify-between gap-4 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
+                              <h3 
+                                className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
+                                onClick={() => {
+                                  setQuickViewTour(tour);
+                                  setQuickViewImageIndex(0);
+                                }}
+                              >
                                 {tour.name}
                               </h3>
-                              {tour.rating && (
+                              {tour.rating && tour.rating !== 'New' && (
                                 <div className="flex items-center gap-1 flex-shrink-0 bg-green-50 px-2 py-1 rounded-lg">
                                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                   <span className="font-semibold text-gray-900">{tour.rating}</span>
-                                  {tour.reviewCount && (
+                                  {tour.reviewCount > 0 && (
                                     <span className="text-gray-500 text-sm">({tour.reviewCount.toLocaleString()})</span>
                                   )}
                                 </div>
@@ -629,35 +657,61 @@ export default function ResultsPage({
                               </p>
                             )}
 
-                            {/* Features/Flags */}
-                            <div className="flex flex-wrap gap-2 mb-3">
+                            {/* Features/Flags Row 1 - Key Info */}
+                            <div className="flex flex-wrap gap-2 mb-2">
                               {tour.duration && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                                  <Clock className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                                  <Clock className="w-3.5 h-3.5" />
                                   {tour.duration}
                                 </span>
                               )}
+                              {tour.languages && tour.languages.length > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                                  <Globe className="w-3.5 h-3.5" />
+                                  {tour.languages.slice(0, 2).join(', ')}{tour.languages.length > 2 ? ` +${tour.languages.length - 2}` : ''}
+                                </span>
+                              )}
+                              {tour.maxGroupSize && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                                  <Users className="w-3.5 h-3.5" />
+                                  Up to {tour.maxGroupSize}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Features/Flags Row 2 - Highlights */}
+                            <div className="flex flex-wrap gap-2 mb-3">
                               {tourFlags.includes('FREE_CANCELLATION') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                                  ✓ Free cancellation
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                  <Check className="w-3.5 h-3.5" />
+                                  Free cancellation
                                 </span>
                               )}
                               {tourFlags.includes('SKIP_THE_LINE') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
                                   ⚡ Skip the line
                                 </span>
                               )}
                               {tourFlags.includes('PRIVATE_TOUR') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
                                   👤 Private tour
                                 </span>
                               )}
-                              {tour.pricingType === 'group' && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
+                              {tour.pricingType === 'group' && !tourFlags.includes('PRIVATE_TOUR') && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
                                   👥 Per group
                                 </span>
                               )}
                             </div>
+
+                            {/* Inclusions Preview */}
+                            {tour.inclusions && tour.inclusions.length > 0 && (
+                              <div className="text-xs text-gray-500 mb-3">
+                                <span className="font-medium text-gray-600">Includes:</span>{' '}
+                                {tour.inclusions.slice(0, 3).join(' • ')}
+                                {tour.inclusions.length > 3 && ` +${tour.inclusions.length - 3} more`}
+                              </div>
+                            )}
 
                             {/* Spacer */}
                             <div className="flex-1" />
@@ -676,19 +730,23 @@ export default function ResultsPage({
                                 <span className="text-gray-500 text-sm ml-1">
                                   {tour.pricingType === 'group' 
                                     ? 'per group' 
-                                    : `× ${travelers} = ${formatCurrency(tour.price * travelers)}`
+                                    : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : 'per person'
                                   }
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2">
-                                {/* Quick View */}
+                                {/* Quick View Button */}
                                 <button
-                                  onClick={() => window.open(tour.bookingLink || tour.link, '_blank')}
-                                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                  title="View details"
+                                  onClick={() => {
+                                    setQuickViewTour(tour);
+                                    setQuickViewImageIndex(0);
+                                  }}
+                                  className="px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
+                                  title="Quick view"
                                 >
-                                  <ArrowLeft className="w-5 h-5 rotate-[135deg]" />
+                                  <Eye className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Quick View</span>
                                 </button>
 
                                 {/* Add/Remove Button */}
@@ -713,6 +771,7 @@ export default function ResultsPage({
                     );
                   })}
                 </div>
+
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-8">
@@ -993,6 +1052,289 @@ export default function ResultsPage({
               >
                 <Send className="w-5 h-5" />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* QUICKVIEW MODAL */}
+      {/* ================================================================== */}
+      {quickViewTour && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setQuickViewTour(null)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Close Button */}
+            <button
+              onClick={() => setQuickViewTour(null)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {/* Modal Body - Scrollable */}
+            <div className="overflow-y-auto flex-1">
+              {/* Image Gallery */}
+              <div className="relative h-72 md:h-96 bg-gray-100">
+                {quickViewTour.images && quickViewTour.images.length > 0 ? (
+                  <>
+                    <img
+                      src={quickViewTour.images[quickViewImageIndex]}
+                      alt={quickViewTour.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Image Navigation */}
+                    {quickViewTour.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setQuickViewImageIndex(i => i === 0 ? quickViewTour.images.length - 1 : i - 1)}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                        {/* Image Dots */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {quickViewTour.images.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setQuickViewImageIndex(idx)}
+                              className={`w-2 h-2 rounded-full transition-colors ${
+                                idx === quickViewImageIndex ? 'bg-white' : 'bg-white/50'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : quickViewTour.image ? (
+                  <img
+                    src={quickViewTour.image}
+                    alt={quickViewTour.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                    <MapPin className="w-16 h-16 text-blue-300" />
+                  </div>
+                )}
+                
+                {/* Badges */}
+                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                  {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && (
+                    <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1">
+                      <Tag className="w-4 h-4" />
+                      DEAL
+                    </span>
+                  )}
+                  {quickViewTour.flags?.includes('LIKELY_TO_SELL_OUT') && (
+                    <span className="px-3 py-1.5 bg-red-500 text-white text-sm font-semibold rounded-full">
+                      🔥 Popular
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* Title & Rating */}
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {quickViewTour.name}
+                  </h2>
+                  {quickViewTour.rating && quickViewTour.rating !== 'New' && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0 bg-green-50 px-3 py-1.5 rounded-lg">
+                      <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                      <span className="font-bold text-gray-900 text-lg">{quickViewTour.rating}</span>
+                      {quickViewTour.reviewCount > 0 && (
+                        <span className="text-gray-500">({quickViewTour.reviewCount.toLocaleString()} reviews)</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Key Info Pills */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {quickViewTour.duration && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
+                      <Clock className="w-4 h-4" />
+                      {quickViewTour.duration}
+                    </span>
+                  )}
+                  {quickViewTour.languages && quickViewTour.languages.length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
+                      <Globe className="w-4 h-4" />
+                      {quickViewTour.languages.join(', ')}
+                    </span>
+                  )}
+                  {quickViewTour.maxGroupSize && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
+                      <Users className="w-4 h-4" />
+                      Max {quickViewTour.maxGroupSize} people
+                    </span>
+                  )}
+                  {quickViewTour.flags?.includes('FREE_CANCELLATION') && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-full font-medium">
+                      <Shield className="w-4 h-4" />
+                      Free cancellation
+                    </span>
+                  )}
+                  {quickViewTour.flags?.includes('SKIP_THE_LINE') && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-full font-medium">
+                      ⚡ Skip the line
+                    </span>
+                  )}
+                </div>
+
+                {/* Description */}
+                {quickViewTour.description && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2">About this tour</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      {quickViewTour.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Inclusions */}
+                {quickViewTour.inclusions && quickViewTour.inclusions.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-500" />
+                      What's included
+                    </h3>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {quickViewTour.inclusions.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-gray-600">
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Exclusions */}
+                {quickViewTour.exclusions && quickViewTour.exclusions.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <X className="w-5 h-5 text-red-500" />
+                      What's not included
+                    </h3>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {quickViewTour.exclusions.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-gray-600">
+                          <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Itinerary */}
+                {quickViewTour.itinerary && quickViewTour.itinerary.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-blue-500" />
+                      Itinerary
+                    </h3>
+                    <div className="space-y-3">
+                      {quickViewTour.itinerary.map((stop, idx) => (
+                        <div key={idx} className="flex gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{stop.name || stop.description}</p>
+                            {stop.duration && (
+                              <p className="text-sm text-gray-500">{Math.round(stop.duration / 60)} min</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Info */}
+                {quickViewTour.additionalInfo && quickViewTour.additionalInfo.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Info className="w-5 h-5 text-gray-500" />
+                      Additional information
+                    </h3>
+                    <ul className="space-y-1">
+                      {quickViewTour.additionalInfo.slice(0, 5).map((info, idx) => (
+                        <li key={idx} className="text-gray-600 text-sm">• {info}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sticky Footer with Price & Actions */}
+            <div className="border-t border-gray-200 bg-white p-4 flex items-center justify-between">
+              <div>
+                {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && quickViewTour.originalPrice && (
+                  <span className="text-gray-400 line-through text-sm mr-2">
+                    {formatCurrency(quickViewTour.originalPrice)}
+                  </span>
+                )}
+                <span className={`text-3xl font-bold ${
+                  (quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) ? 'text-orange-600' : 'text-green-600'
+                }`}>
+                  {formatCurrency(quickViewTour.price)}
+                </span>
+                <span className="text-gray-500 ml-2">
+                  {quickViewTour.pricingType === 'group' 
+                    ? 'per group' 
+                    : travelers > 1 ? `× ${travelers} = ${formatCurrency(quickViewTour.price * travelers)}` : 'per person'
+                  }
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* View on Viator */}
+                <button
+                  onClick={() => window.open(quickViewTour.bookingLink || quickViewTour.link, '_blank')}
+                  className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View on Viator
+                </button>
+
+                {/* Add to Trip */}
+                <button
+                  onClick={() => {
+                    if (isInCart('tour', quickViewTour.id)) {
+                      removeFromCart('tour', quickViewTour.id);
+                    } else {
+                      addToCart('tour', quickViewTour);
+                    }
+                  }}
+                  className={`px-6 py-2.5 rounded-lg font-semibold transition-colors ${
+                    isInCart('tour', quickViewTour.id)
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-green-500 hover:bg-green-600 text-white'
+                  }`}
+                >
+                  {isInCart('tour', quickViewTour.id) ? 'Remove from Trip' : 'Add to Trip'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
