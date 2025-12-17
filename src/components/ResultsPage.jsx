@@ -76,6 +76,38 @@ export default function ResultsPage({
   // QuickView Modal State
   const [quickViewTour, setQuickViewTour] = useState(null);
   const [quickViewImageIndex, setQuickViewImageIndex] = useState(0);
+  const [quickViewLoading, setQuickViewLoading] = useState(false);
+  
+  // Function to open QuickView with full details
+  const openQuickView = async (tour) => {
+    // Show modal immediately with basic info
+    setQuickViewTour(tour);
+    setQuickViewImageIndex(0);
+    setQuickViewLoading(true);
+    
+    try {
+      // Fetch full tour details for more images and info
+      const response = await fetch(`${backendUrl}/api/tours/${tour.productCode || tour.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const fullDetails = data.tour || data; // Handle both { tour: {...} } and direct response
+        // Merge full details with existing tour data
+        setQuickViewTour(prev => ({
+          ...prev,
+          ...fullDetails,
+          // Keep original price info if full details don't have it
+          price: fullDetails.price || prev.price,
+          originalPrice: fullDetails.originalPrice || prev.originalPrice,
+          hasDiscount: fullDetails.hasDiscount ?? prev.hasDiscount
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch tour details:', error);
+      // Keep showing the basic tour info
+    } finally {
+      setQuickViewLoading(false);
+    }
+  };
   
   // Chat State
   const [chatOpen, setChatOpen] = useState(false);
@@ -586,10 +618,7 @@ export default function ResultsPage({
                           {/* Image */}
                           <div 
                             className="md:w-72 lg:w-80 flex-shrink-0 cursor-pointer"
-                            onClick={() => {
-                              setQuickViewTour(tour);
-                              setQuickViewImageIndex(0);
-                            }}
+                            onClick={() => openQuickView(tour)}
                           >
                             <div className="relative h-48 md:h-full min-h-[200px]">
                               {tour.image ? (
@@ -632,10 +661,7 @@ export default function ResultsPage({
                             <div className="flex items-start justify-between gap-4 mb-2">
                               <h3 
                                 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
-                                onClick={() => {
-                                  setQuickViewTour(tour);
-                                  setQuickViewImageIndex(0);
-                                }}
+                                onClick={() => openQuickView(tour)}
                               >
                                 {tour.name}
                               </h3>
@@ -738,10 +764,7 @@ export default function ResultsPage({
                               <div className="flex items-center gap-2">
                                 {/* Quick View Button */}
                                 <button
-                                  onClick={() => {
-                                    setQuickViewTour(tour);
-                                    setQuickViewImageIndex(0);
-                                  }}
+                                  onClick={() => openQuickView(tour)}
                                   className="px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
                                   title="Quick view"
                                 >
@@ -1081,16 +1104,24 @@ export default function ResultsPage({
             {/* Modal Body - Scrollable */}
             <div className="overflow-y-auto flex-1">
               {/* Image Gallery Section */}
-              <div className="bg-gray-100">
+              <div className="bg-gray-900 relative">
+                {/* Loading indicator */}
+                {quickViewLoading && (
+                  <div className="absolute top-4 right-16 z-10 px-3 py-1.5 bg-white/90 rounded-full flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                    <span className="text-sm text-gray-600">Loading details...</span>
+                  </div>
+                )}
+                
                 {/* Main Image + Thumbnails Grid */}
                 {quickViewTour.images && quickViewTour.images.length > 1 ? (
-                  <div className="grid grid-cols-4 gap-1 h-80 md:h-96">
+                  <div className="flex flex-col md:flex-row h-auto md:h-96">
                     {/* Main Large Image */}
-                    <div className="col-span-4 md:col-span-2 row-span-2 relative">
+                    <div className="flex-1 relative bg-gray-900 flex items-center justify-center min-h-[280px] md:min-h-0">
                       <img
                         src={quickViewTour.images[quickViewImageIndex]}
                         alt={quickViewTour.name}
-                        className="w-full h-full object-cover cursor-pointer"
+                        className="max-w-full max-h-[380px] md:max-h-full w-auto h-auto object-contain cursor-pointer"
                         onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
                       />
                       {/* Badges on main image */}
@@ -1111,42 +1142,51 @@ export default function ResultsPage({
                       <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full">
                         {quickViewImageIndex + 1} / {quickViewTour.images.length}
                       </div>
+                      {/* Navigation arrows */}
+                      <button
+                        onClick={() => setQuickViewImageIndex(i => i === 0 ? quickViewTour.images.length - 1 : i - 1)}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
                     </div>
                     
-                    {/* Thumbnail Grid - Hidden on mobile */}
-                    <div className="hidden md:grid col-span-2 grid-cols-2 gap-1 h-full">
-                      {quickViewTour.images.slice(0, 4).map((img, idx) => (
-                        <div 
+                    {/* Thumbnail Strip - Right side on desktop, bottom on mobile */}
+                    <div className="flex md:flex-col gap-1 p-2 md:p-1 md:w-24 overflow-x-auto md:overflow-y-auto bg-gray-800">
+                      {quickViewTour.images.map((img, idx) => (
+                        <button 
                           key={idx}
-                          className={`relative cursor-pointer overflow-hidden ${idx === quickViewImageIndex ? 'ring-2 ring-blue-500' : ''}`}
+                          className={`flex-shrink-0 w-16 h-16 md:w-full md:h-20 rounded overflow-hidden ${
+                            idx === quickViewImageIndex ? 'ring-2 ring-blue-500' : 'opacity-70 hover:opacity-100'
+                          }`}
                           onClick={() => setQuickViewImageIndex(idx)}
                         >
                           <img
                             src={img}
                             alt={`${quickViewTour.name} ${idx + 1}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform"
+                            className="w-full h-full object-cover"
                           />
-                          {/* Show "+X more" on last visible thumbnail */}
-                          {idx === 3 && quickViewTour.images.length > 4 && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <span className="text-white font-semibold text-lg">+{quickViewTour.images.length - 4} more</span>
-                            </div>
-                          )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
                 ) : (
                   /* Single Image Fallback */
-                  <div className="relative h-72 md:h-80">
+                  <div className="relative flex items-center justify-center bg-gray-900 min-h-[280px] md:min-h-[320px]">
                     {quickViewTour.image ? (
                       <img
                         src={quickViewTour.image}
                         alt={quickViewTour.name}
-                        className="w-full h-full object-cover"
+                        className="max-w-full max-h-[320px] w-auto h-auto object-contain"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                      <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
                         <MapPin className="w-16 h-16 text-blue-300" />
                       </div>
                     )}
@@ -1159,23 +1199,6 @@ export default function ResultsPage({
                         </span>
                       )}
                     </div>
-                  </div>
-                )}
-                
-                {/* Mobile Image Navigation */}
-                {quickViewTour.images && quickViewTour.images.length > 1 && (
-                  <div className="md:hidden flex gap-1 p-2 overflow-x-auto">
-                    {quickViewTour.images.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setQuickViewImageIndex(idx)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden ${
-                          idx === quickViewImageIndex ? 'ring-2 ring-blue-500' : ''
-                        }`}
-                      >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
                   </div>
                 )}
               </div>
