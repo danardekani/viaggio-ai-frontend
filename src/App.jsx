@@ -15,6 +15,7 @@ import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
 import WhereIsThis from './components/WhereIsThis';
 import LandingPage from './components/LandingPage';
+import ResultsPage from './components/ResultsPage';
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -28,6 +29,9 @@ export default function App() {
   const BACKEND_URL = 'https://viaggio-ai-backend-production.up.railway.app';
   
   const [showLandingPage, setShowLandingPage] = useState(true);
+  const [showResultsPage, setShowResultsPage] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [currentSearchParams, setCurrentSearchParams] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showItinerary, setShowItinerary] = useState(false);
@@ -528,28 +532,90 @@ export default function App() {
   // LANDING PAGE HANDLERS
   // ============================================================================
 
+  // ============================================================================
+  // RESULTS PAGE SEARCH HANDLER
+  // ============================================================================
+
+  const handleResultsPageSearch = async (searchParams) => {
+    setLoading(true);
+    setCurrentSearchParams(searchParams);
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tours/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination: searchParams.destination,
+          destinationId: searchParams.destinationId,
+          searchTerms: searchParams.searchTerms,
+          resultCount: 50, // Get more results for pagination
+          sortBy: searchParams.sortBy || 'popular',
+          startDate: searchParams.startDate,
+          endDate: searchParams.endDate,
+          flags: searchParams.flags,
+          minPrice: searchParams.minPrice,
+          maxPrice: searchParams.maxPrice,
+          minDuration: searchParams.minDuration,
+          maxDuration: searchParams.maxDuration,
+          minRating: searchParams.minRating
+        })
+      });
+
+      if (!response.ok) throw new Error('Search failed');
+
+      const data = await response.json();
+      const tours = data.tours || [];
+
+      setSearchResults(tours);
+      setConversationContext(prev => ({
+        ...prev,
+        destination: searchParams.destination,
+        travelers: searchParams.travelers || prev.travelers,
+        searchTerms: searchParams.searchTerms || null,
+        sortBy: searchParams.sortBy || 'popular'
+      }));
+      
+      // Show results page
+      setShowLandingPage(false);
+      setShowResultsPage(true);
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLandingPageSearch = (searchParams) => {
-    setShowLandingPage(false);
-    handlePanelSearch(searchParams);
+    handleResultsPageSearch(searchParams);
   };
 
   const handleLandingPageDeals = (cityName) => {
-    setShowLandingPage(false);
     // Search for deals in the selected city
-    handlePanelSearch({
+    handleResultsPageSearch({
       type: 'tours',
       destination: cityName,
       flags: ['SPECIAL_OFFER']
     });
   };
 
+  const handleBackToHome = () => {
+    setShowLandingPage(true);
+    setShowResultsPage(false);
+    setSearchResults([]);
+    setCurrentSearchParams(null);
+  };
+
   const handleOpenWhereIsThis = () => {
     setShowLandingPage(false);
+    setShowResultsPage(false);
     setWhereIsThisOpen(true);
   };
 
   const handleOpenTripBuilder = () => {
     setShowLandingPage(false);
+    setShowResultsPage(false);
     setSidebarOpen(true);
   };
 
@@ -568,6 +634,27 @@ export default function App() {
         cart={cart}
         isLoading={loading}
         backendUrl={BACKEND_URL}
+      />
+    );
+  }
+
+  // Show Results Page (new Hopper-like layout)
+  if (showResultsPage) {
+    return (
+      <ResultsPage
+        searchParams={currentSearchParams}
+        results={searchResults}
+        isLoading={loading}
+        onNewSearch={handleResultsPageSearch}
+        onBackToHome={handleBackToHome}
+        cart={cart}
+        addToCart={addToCart}
+        removeFromCart={removeFromCart}
+        isInCart={isInCart}
+        formatCurrency={formatCurrency}
+        travelers={conversationContext.travelers || 2}
+        backendUrl={BACKEND_URL}
+        onCheckout={() => setShowBookingPage(true)}
       />
     );
   }
