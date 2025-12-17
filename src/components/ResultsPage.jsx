@@ -806,8 +806,6 @@ export default function ResultsPage({
                                   {isSelected ? 'Remove' : 'Add'}
                                 </button>
                               </div>
-                                </button>
-                              </div>
                             </div>
                           </div>
                         </div>
