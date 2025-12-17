@@ -276,9 +276,13 @@ export default function ResultsPage({
       if (!response.ok) throw new Error('Chat failed');
 
       const data = await response.json();
+      
+      // Store message along with any tours found
       setChatMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.message || "I'm not sure how to help with that. Could you try rephrasing?"
+        content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
+        tours: data.tours || [],  // Store tours for display
+        searchDestination: data.searchDestination || null  // For "View more" navigation
       }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -1205,12 +1209,113 @@ export default function ResultsPage({
                 key={index}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[85%] rounded-2xl p-3 ${
+                <div className={`max-w-[85%] ${
                   msg.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-br-none'
-                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                    ? 'bg-blue-600 text-white rounded-2xl rounded-br-none p-3'
+                    : 'space-y-2'
                 }`}>
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  {/* Text message */}
+                  {msg.role === 'user' ? (
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  ) : (
+                    <>
+                      <div className="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-none p-3">
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                      
+                      {/* Tour cards if available */}
+                      {msg.tours && msg.tours.length > 0 && (
+                        <div className="space-y-2 mt-2">
+                          {msg.tours.slice(0, 5).map((tour, tourIndex) => (
+                            <div 
+                              key={tour.productCode || tourIndex}
+                              className="bg-white border border-gray-200 rounded-xl p-2.5 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => setQuickViewTour(tour)}
+                            >
+                              <div className="flex gap-2.5">
+                                {/* Tour image */}
+                                <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                                  {tour.images?.[0]?.url ? (
+                                    <img 
+                                      src={tour.images[0].url} 
+                                      alt={tour.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                      <MapPin className="w-6 h-6" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Tour info */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-xs font-medium text-gray-900 line-clamp-2 leading-tight">
+                                    {tour.name}
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    {tour.rating && (
+                                      <div className="flex items-center gap-0.5">
+                                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                        <span className="text-xs text-gray-600">{tour.rating}</span>
+                                      </div>
+                                    )}
+                                    {tour.price && (
+                                      <span className="text-xs font-semibold text-blue-600">
+                                        ${tour.price}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* View more button */}
+                          {msg.tours.length > 5 && (
+                            <button
+                              onClick={() => {
+                                // Close chat and show all results
+                                setChatOpen(false);
+                                // If we have a destination from the search, trigger a new search
+                                if (msg.searchDestination || searchParams?.destination) {
+                                  onNewSearch({
+                                    type: 'tours',
+                                    destination: msg.searchDestination || searchParams?.destination,
+                                    travelers: travelers
+                                  });
+                                }
+                              }}
+                              className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-1"
+                            >
+                              View all {msg.tours.length} results
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          )}
+                          
+                          {/* View more even if 5 or fewer but tours exist */}
+                          {msg.tours.length > 0 && msg.tours.length <= 5 && (
+                            <button
+                              onClick={() => {
+                                setChatOpen(false);
+                                if (msg.searchDestination || searchParams?.destination) {
+                                  onNewSearch({
+                                    type: 'tours',
+                                    destination: msg.searchDestination || searchParams?.destination,
+                                    travelers: travelers
+                                  });
+                                }
+                              }}
+                              className="w-full py-2 px-3 bg-gray-50 hover:bg-gray-100 text-gray-600 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-1"
+                            >
+                              Search for more in this area
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             ))}
