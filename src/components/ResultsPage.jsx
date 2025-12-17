@@ -10,20 +10,13 @@ import {
   Star,
   Clock,
   Tag,
-  Sparkles,
   SlidersHorizontal,
-  LayoutGrid,
-  List,
   MessageCircle,
   Send,
   Loader2,
   ShoppingBag,
-  Calendar,
-  Users,
   Plane,
-  ArrowLeft,
-  Heart,
-  DollarSign
+  ArrowLeft
 } from 'lucide-react';
 import OptionCard from './OptionCard';
 
@@ -64,8 +57,7 @@ export default function ResultsPage({
     specialOffer: searchParams?.flags?.includes('SPECIAL_OFFER') || false
   });
   
-  // View & Pagination
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState(searchParams?.sortBy || 'popular');
   const resultsPerPage = 12;
@@ -528,22 +520,6 @@ export default function ResultsPage({
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-
-                {/* View Mode Toggle */}
-                <div className="hidden sm:flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -580,27 +556,163 @@ export default function ResultsPage({
               </div>
             )}
 
-            {/* Results Grid/List */}
+            {/* Results List */}
             {!isLoading && paginatedResults.length > 0 && (
               <>
-                <div className={
-                  viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-                    : 'space-y-4'
-                }>
-                  {paginatedResults.map((tour) => (
-                    <OptionCard
-                      key={tour.id || tour.productCode}
-                      option={{ type: 'tour', data: tour }}
-                      isSelected={isInCart('tour', tour.id)}
-                      onAdd={addToCart}
-                      onRemove={removeFromCart}
-                      formatCurrency={formatCurrency}
-                      travelers={travelers}
-                    />
-                  ))}
-                </div>
+                <div className="space-y-4">
+                  {paginatedResults.map((tour) => {
+                    const isSelected = isInCart('tour', tour.id);
+                    const hasDiscount = tour.hasDiscount || tour.flags?.includes('SPECIAL_OFFER');
+                    const tourFlags = tour.flags || [];
+                    
+                    return (
+                      <div
+                        key={tour.id || tour.productCode}
+                        className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${
+                          isSelected ? 'border-green-500 border-2 ring-2 ring-green-100' : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex flex-col md:flex-row">
+                          {/* Image */}
+                          <div className="md:w-72 lg:w-80 flex-shrink-0">
+                            <div className="relative h-48 md:h-full">
+                              {tour.image ? (
+                                <img
+                                  src={tour.image}
+                                  alt={tour.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                  <MapPin className="w-12 h-12 text-blue-300" />
+                                </div>
+                              )}
+                              {/* Badges on image */}
+                              <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                                {hasDiscount && (
+                                  <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                                    <Tag className="w-3 h-3" />
+                                    DEAL
+                                  </span>
+                                )}
+                                {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
+                                  <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+                                    🔥 Popular
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
 
+                          {/* Content */}
+                          <div className="flex-1 p-5 flex flex-col">
+                            {/* Title & Rating Row */}
+                            <div className="flex items-start justify-between gap-4 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
+                                {tour.name}
+                              </h3>
+                              {tour.rating && (
+                                <div className="flex items-center gap-1 flex-shrink-0 bg-green-50 px-2 py-1 rounded-lg">
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                  <span className="font-semibold text-gray-900">{tour.rating}</span>
+                                  {tour.reviewCount && (
+                                    <span className="text-gray-500 text-sm">({tour.reviewCount.toLocaleString()})</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Description */}
+                            {tour.description && (
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                                {tour.description}
+                              </p>
+                            )}
+
+                            {/* Features/Flags */}
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {tour.duration && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                                  <Clock className="w-3 h-3" />
+                                  {tour.duration}
+                                </span>
+                              )}
+                              {tourFlags.includes('FREE_CANCELLATION') && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                  ✓ Free cancellation
+                                </span>
+                              )}
+                              {tourFlags.includes('SKIP_THE_LINE') && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                  ⚡ Skip the line
+                                </span>
+                              )}
+                              {tourFlags.includes('PRIVATE_TOUR') && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                  👤 Private tour
+                                </span>
+                              )}
+                              {tour.pricingType === 'group' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
+                                  👥 Per group
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Spacer */}
+                            <div className="flex-1" />
+
+                            {/* Price & Actions Row */}
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                              <div>
+                                {hasDiscount && tour.originalPrice && (
+                                  <span className="text-gray-400 line-through text-sm mr-2">
+                                    {formatCurrency(tour.originalPrice)}
+                                  </span>
+                                )}
+                                <span className={`text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
+                                  {formatCurrency(tour.price)}
+                                </span>
+                                <span className="text-gray-500 text-sm ml-1">
+                                  {tour.pricingType === 'group' 
+                                    ? 'per group' 
+                                    : `× ${travelers} = ${formatCurrency(tour.price * travelers)}`
+                                  }
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {/* Quick View */}
+                                <button
+                                  onClick={() => window.open(tour.bookingLink || tour.link, '_blank')}
+                                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                  title="View details"
+                                >
+                                  <ArrowLeft className="w-5 h-5 rotate-[135deg]" />
+                                </button>
+
+                                {/* Add/Remove Button */}
+                                <button
+                                  onClick={() => isSelected 
+                                    ? removeFromCart('tour', tour.id) 
+                                    : addToCart('tour', tour)
+                                  }
+                                  className={`px-5 py-2.5 rounded-lg font-semibold transition-colors ${
+                                    isSelected
+                                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                                      : 'bg-green-500 hover:bg-green-600 text-white'
+                                  }`}
+                                >
+                                  {isSelected ? 'Remove' : 'Add to Trip'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-8">
