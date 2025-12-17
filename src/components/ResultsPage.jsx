@@ -843,74 +843,96 @@ export default function ResultsPage({
           </div>
         </main>
 
-        {/* ============================================================== */}
-        {/* RIGHT SIDEBAR - CART */}
-        {/* ============================================================== */}
-        <aside className={`hidden xl:block bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0 transition-all duration-300 ${
-          cartSidebarOpen ? 'w-80' : 'w-0 overflow-hidden'
-        }`}>
-          <div className="w-80 p-4">
-            <div className="flex items-center justify-between mb-4">
+        {/* Note: Cart is now a floating panel, not an inline sidebar */}
+      </div>
+
+      {/* ================================================================== */}
+      {/* FLOATING CART PANEL */}
+      {/* ================================================================== */}
+      {cartSidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setCartSidebarOpen(false)}
+          />
+          
+          {/* Floating Panel */}
+          <div className="absolute right-4 top-4 bottom-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-in-right">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4" />
                 My Trip ({cartItemCount})
               </h2>
               <button
                 onClick={() => setCartSidebarOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4 text-gray-500" />
               </button>
             </div>
             
-            {/* Simple Cart Items List */}
-            {cartItemCount === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">Your trip is empty</p>
-                <p className="text-xs mt-1">Add tours to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {cart.tours.map(tour => (
-                  <div key={tour.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
-                    {tour.image && (
-                      <img src={tour.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 line-clamp-2">{tour.name}</p>
-                      <p className="text-sm text-green-600 font-semibold mt-1">{formatCurrency(tour.price)}</p>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart('tour', tour.id)}
-                      className="text-gray-400 hover:text-red-500 flex-shrink-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                
-                {/* Total */}
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-700">Total</span>
-                    <span className="text-lg font-bold text-gray-900">{formatCurrency(cartTotal)}</span>
-                  </div>
+            {/* Cart Content */}
+            <div className="flex-1 overflow-y-auto p-3">
+              {cartItemCount === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p className="font-medium">Your trip is empty</p>
+                  <p className="text-xs mt-1">Add tours to get started</p>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-2">
+                  {cart.tours.map(tour => (
+                    <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl">
+                      {tour.image && (
+                        <img src={tour.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{tour.name}</p>
+                        <p className="text-sm text-green-600 font-semibold mt-1">{formatCurrency(tour.price)}</p>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart('tour', tour.id)}
+                        className="text-gray-400 hover:text-red-500 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             
+            {/* Footer with Total and Checkout */}
             {cartItemCount > 0 && (
-              <button
-                onClick={onCheckout}
-                className="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors"
-              >
-                Continue to Checkout
-              </button>
+              <div className="border-t border-gray-100 p-3 bg-white">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-medium text-gray-600">Total</span>
+                  <span className="text-lg font-bold text-gray-900">{formatCurrency(cartTotal)}</span>
+                </div>
+                <button
+                  onClick={onCheckout}
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors"
+                >
+                  Continue to Checkout
+                </button>
+              </div>
             )}
           </div>
-        </aside>
-      </div>
+        </div>
+      )}
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes slide-in-right {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.25s ease-out;
+        }
+      `}</style>
 
       {/* ================================================================== */}
       {/* MOBILE FILTERS MODAL */}
