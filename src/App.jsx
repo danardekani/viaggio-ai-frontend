@@ -109,12 +109,45 @@ export default function App() {
   };
   */
 
-  const handleWhereIsThisTours = (destination, viatorDestinationId = null) => {
-  handlePanelSearch({
+  const handleWhereIsThisTours = (destination, viatorDestinationId = null, preloadedData = null) => {
+  // If we have preloaded tours from WhereIsThis, use them directly (INSTANT!)
+  if (preloadedData?.tours?.length > 0) {
+    console.log(`Using ${preloadedData.tours.length} preloaded tours for ${destination}`);
+    
+    // Set results directly without making another API call
+    setSearchResults(preloadedData.tours);
+    setCurrentSearchParams({
+      type: 'tours',
+      destination: destination,
+      destinationId: viatorDestinationId,
+      travelers: conversationContext.travelers || 2
+    });
+    
+    // Update context
+    setConversationContext(prev => ({
+      ...prev,
+      destination: destination,
+      travelers: prev.travelers || 2
+    }));
+    
+    // Show results page immediately
+    setShowLandingPage(false);
+    setShowResultsPage(true);
+    setWhereIsThisOpen(false);
+    setLoading(false);
+    return;
+  }
+  
+  // Fallback: No preloaded data, use the results page search
+  // Close WhereIsThis panel and navigate to results
+  setWhereIsThisOpen(false);
+  
+  handleResultsPageSearch({
     type: 'tours',
     destination: destination,
-    destinationId: viatorDestinationId,  // NEW: Pass directly to API
-    travelers: conversationContext.travelers || 2
+    destinationId: viatorDestinationId,
+    travelers: conversationContext.travelers || 2,
+    sortBy: 'popular'
   });
 };
 
