@@ -632,6 +632,12 @@ export default function App() {
         onOpenWhereIsThis={handleOpenWhereIsThis}
         onOpenTripBuilder={handleOpenTripBuilder}
         cart={cart}
+        removeFromCart={removeFromCart}
+        formatCurrency={formatCurrency}
+        onCheckout={() => {
+          setShowLandingPage(false);
+          setShowBookingPage(true);
+        }}
         isLoading={loading}
         backendUrl={BACKEND_URL}
       />
