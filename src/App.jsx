@@ -1,4 +1,3 @@
-// Results page //
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Send,
@@ -549,7 +548,7 @@ export default function App() {
           destination: searchParams.destination,
           destinationId: searchParams.destinationId,
           searchTerms: searchParams.searchTerms,
-          resultCount: 50, // Get more results for pagination
+          resultCount: 10000, // Request all available results
           sortBy: searchParams.sortBy || 'popular',
           startDate: searchParams.startDate,
           endDate: searchParams.endDate,
