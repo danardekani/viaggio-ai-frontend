@@ -343,9 +343,11 @@ export default function WhereIsThis({
                         <span>Find Hotels</span>
                       </button>
                       )}
-                      
                       <button
-                        onClick={() => onSearchTours?.(result.destination?.fullName || result.destination?.name)}
+                        onClick={() => onSearchTours?.(
+                          result.destination?.fullName || result.destination?.name,
+                          result.viatorDestinationId  // NEW: Pass the Viator ID
+                        )}
                         className="w-full py-3 px-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl font-medium transition-colors flex items-center gap-3"
                       >
                         <div className="p-2 bg-green-100 rounded-lg">
