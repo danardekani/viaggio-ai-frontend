@@ -24,7 +24,6 @@ import {
 
 const HERO_IMAGE = 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=80';
 const HERO_DESTINATION = 'Maldives';
-const HERO_DESTINATION = 'Maldives'; // Destination shown in hero image
 
 const FEATURED_DESTINATIONS = [
   { 
