@@ -41,7 +41,7 @@ export default function ResultsPage({
   removeFromCart,
   isInCart,
   formatCurrency,
-  travelers,
+  travelers: initialTravelers = 2,
   backendUrl,
   onCheckout
 }) {
@@ -49,7 +49,10 @@ export default function ResultsPage({
   // STATE
   // ============================================================================
   
-  // Filters
+  // Travelers (editable)
+  const [travelers, setTravelers] = useState(initialTravelers);
+  
+  // Filters - check prefilter for initial state (not flags, since we want all results)
   const [filters, setFilters] = useState({
     minPrice: '',
     maxPrice: '',
@@ -60,7 +63,7 @@ export default function ResultsPage({
     skipLine: false,
     privateTour: false,
     likelyToSellOut: false,
-    specialOffer: searchParams?.flags?.includes('SPECIAL_OFFER') || false
+    specialOffer: searchParams?.prefilter === 'SPECIAL_OFFER' || searchParams?.flags?.includes('SPECIAL_OFFER') || false
   });
   
   // Pagination
@@ -123,7 +126,6 @@ export default function ResultsPage({
   // Search bar state
   const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
   const [searchDate, setSearchDate] = useState(searchParams?.startDate || '');
-  const [searchTravelers, setSearchTravelers] = useState(travelers || 2);
   
   // Refs
   const chatMessagesRef = useRef(null);
@@ -236,7 +238,7 @@ export default function ResultsPage({
     onNewSearch({
       type: 'tours',
       destination: searchDestination.trim(),
-      travelers: searchTravelers,
+      travelers: travelers,
       startDate: searchDate || undefined,
       sortBy
     });
@@ -309,7 +311,17 @@ export default function ResultsPage({
   // ============================================================================
 
   const cartItemCount = cart.tours.length + cart.hotels.length + cart.flights.length;
-  const cartTotal = cart.tours.reduce((sum, t) => sum + (t.price || 0), 0);
+  
+  // Calculate cart total with proper pricing (per-person × travelers, or per-group as-is)
+  const cartTotal = cart.tours.reduce((sum, t) => {
+    const price = t.price || 0;
+    // Per-group pricing doesn't multiply by travelers
+    if (t.pricingType === 'group') {
+      return sum + price;
+    }
+    // Per-person pricing multiplies by travelers
+    return sum + (price * travelers);
+  }, 0);
 
   // ============================================================================
   // RENDER
@@ -351,9 +363,9 @@ export default function ResultsPage({
               />
               <span className="text-gray-300">|</span>
               <select
-                value={searchTravelers}
-                onChange={(e) => setSearchTravelers(parseInt(e.target.value))}
-                className="bg-transparent focus:outline-none text-sm text-gray-600"
+                value={travelers}
+                onChange={(e) => setTravelers(parseInt(e.target.value))}
+                className="bg-transparent focus:outline-none text-sm text-gray-600 cursor-pointer"
               >
                 {[1,2,3,4,5,6,7,8].map(n => (
                   <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>
@@ -883,23 +895,39 @@ export default function ResultsPage({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {cart.tours.map(tour => (
-                    <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl">
-                      {tour.image && (
-                        <img src={tour.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{tour.name}</p>
-                        <p className="text-sm text-green-600 font-semibold mt-1">{formatCurrency(tour.price)}</p>
+                  {cart.tours.map(tour => {
+                    const isGroupPricing = tour.pricingType === 'group';
+                    const itemTotal = isGroupPricing ? tour.price : (tour.price * travelers);
+                    return (
+                      <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl">
+                        {tour.image && (
+                          <img src={tour.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{tour.name}</p>
+                          <div className="mt-1">
+                            <span className="text-sm text-green-600 font-semibold">
+                              {formatCurrency(itemTotal)}
+                            </span>
+                            {!isGroupPricing && travelers > 1 && (
+                              <span className="text-xs text-gray-500 ml-1">
+                                ({formatCurrency(tour.price)} × {travelers})
+                              </span>
+                            )}
+                            {isGroupPricing && (
+                              <span className="text-xs text-gray-500 ml-1">per group</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFromCart('tour', tour.id)}
+                          className="text-gray-400 hover:text-red-500 flex-shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removeFromCart('tour', tour.id)}
-                        className="text-gray-400 hover:text-red-500 flex-shrink-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -908,7 +936,10 @@ export default function ResultsPage({
             {cartItemCount > 0 && (
               <div className="border-t border-gray-100 p-3 bg-white">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium text-gray-600">Total</span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Total</span>
+                    <span className="text-xs text-gray-400 ml-1">for {travelers} guest{travelers > 1 ? 's' : ''}</span>
+                  </div>
                   <span className="text-lg font-bold text-gray-900">{formatCurrency(cartTotal)}</span>
                 </div>
                 <button
