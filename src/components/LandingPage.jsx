@@ -68,6 +68,9 @@ export default function LandingPage({
   onOpenChat,
   onOpenTripBuilder,
   cart = { tours: [], hotels: [], flights: [] },
+  removeFromCart,
+  formatCurrency = (amount) => `$${(amount || 0).toFixed(2)}`,
+  onCheckout,
   isLoading = false,
   backendUrl
 }) {
@@ -85,6 +88,9 @@ export default function LandingPage({
     }
   ]);
   const [chatLoading, setChatLoading] = useState(false);
+  
+  // Cart sidebar state
+  const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -451,7 +457,7 @@ export default function LandingPage({
 
           {/* My Trip Button */}
           <button 
-            onClick={onOpenTripBuilder}
+            onClick={() => setCartSidebarOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all"
           >
             <ShoppingBag className="w-4 h-4" />
@@ -979,6 +985,90 @@ export default function LandingPage({
         </div>
       )}
 
+      {/* ================================================================== */}
+      {/* CART SIDEBAR MODAL */}
+      {/* ================================================================== */}
+      {cartSidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setCartSidebarOpen(false)}
+          />
+          
+          {/* Sidebar */}
+          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col animate-slide-in-right">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-lg">
+                <ShoppingBag className="w-5 h-5" />
+                My Trip ({tripItemCount})
+              </h2>
+              <button
+                onClick={() => setCartSidebarOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            {/* Cart Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {tripItemCount === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">Your trip is empty</p>
+                  <p className="text-sm mt-1">Add tours to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cart.tours.map(tour => (
+                    <div key={tour.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                      {tour.image && (
+                        <img src={tour.image} alt="" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2">{tour.name}</p>
+                        <p className="text-sm text-green-600 font-semibold mt-1">{formatCurrency(tour.price)}</p>
+                      </div>
+                      {removeFromCart && (
+                        <button
+                          onClick={() => removeFromCart('tour', tour.id)}
+                          className="text-gray-400 hover:text-red-500 flex-shrink-0 p-1"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Footer with Total and Checkout */}
+            {tripItemCount > 0 && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="font-medium text-gray-700">Total</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {formatCurrency(cart.tours.reduce((sum, t) => sum + (t.price || 0), 0))}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setCartSidebarOpen(false);
+                    if (onCheckout) onCheckout();
+                  }}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors"
+                >
+                  Continue to Checkout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Animation Styles */}
       <style>{`
         @keyframes fade-in {
@@ -987,6 +1077,13 @@ export default function LandingPage({
         }
         .animate-fade-in {
           animation: fade-in 0.3s ease-out;
+        }
+        @keyframes slide-in-right {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.3s ease-out;
         }
       `}</style>
     </div>
