@@ -12,7 +12,7 @@ import {
   Tag,
   Sparkles,
   SlidersHorizontal,
-  Grid3X3,
+  LayoutGrid,
   List,
   MessageCircle,
   Send,
@@ -535,7 +535,7 @@ export default function ResultsPage({
                     onClick={() => setViewMode('grid')}
                     className={`p-2 ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
                   >
-                    <Grid3X3 className="w-4 h-4" />
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
