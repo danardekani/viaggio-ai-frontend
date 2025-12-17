@@ -666,7 +666,7 @@ export default function LandingPage({
                         ) : identifiedLocation?.error ? (
                           <div>
                             <p className="text-gray-900 font-medium">Couldn't identify location</p>
-                            <p className="text-sm text-gray-500">{identifiedLocation.message}</p>
+                            <p className="text-sm text-gray-500">{identifiedLocation.message || 'Unable to recognize this location'}</p>
                             <button
                               onClick={resetWhereIsThis}
                               className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -694,6 +694,18 @@ export default function LandingPage({
                                 {identifiedLocation.confidence} confidence
                               </span>
                             )}
+                          </div>
+                        ) : identifiedLocation ? (
+                          // Fallback: API returned something but no destination
+                          <div>
+                            <p className="text-gray-900 font-medium">Location not recognized</p>
+                            <p className="text-sm text-gray-500">We couldn't identify a specific destination in this image. Try a photo of a famous landmark or tourist attraction.</p>
+                            <button
+                              onClick={resetWhereIsThis}
+                              className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Try another image
+                            </button>
                           </div>
                         ) : null}
                       </div>
