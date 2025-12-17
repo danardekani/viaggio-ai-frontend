@@ -1049,61 +1049,107 @@ export default function ResultsPage({
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileFilters(false)} />
-          <div className="absolute inset-y-0 left-0 w-80 max-w-full bg-white shadow-xl overflow-y-auto">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+          <div className="absolute inset-y-0 left-0 w-[85vw] max-w-sm bg-white shadow-xl flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h2 className="font-semibold text-gray-900">Filters</h2>
               <button onClick={() => setShowMobileFilters(false)}>
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
-            {/* Same filter content as desktop sidebar */}
-            <div className="p-4">
+            
+            {/* Scrollable Filter Content */}
+            <div className="flex-1 overflow-y-auto p-4">
               {/* Price Range */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Your budget</h3>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="number"
                     placeholder="Min"
                     value={filters.minPrice}
                     onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm"
                   />
-                  <span className="text-gray-400 self-center">-</span>
+                  <span className="text-gray-400 flex-shrink-0">-</span>
                   <input
                     type="number"
                     placeholder="Max"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm"
                   />
                 </div>
               </div>
               
-              {/* More filters... abbreviated for mobile */}
+              {/* Tour features - ALL filters */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Tour features</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Tour features</h3>
+                <div className="space-y-3">
                   {[
-                    { key: 'freeCancel', label: 'Free cancellation' },
-                    { key: 'skipLine', label: 'Skip the line' },
-                    { key: 'specialOffer', label: 'Special offer' }
+                    { key: 'freeCancel', label: 'Free cancellation', icon: '✓' },
+                    { key: 'skipLine', label: 'Skip the line', icon: '⚡' },
+                    { key: 'privateTour', label: 'Private tour', icon: '👤' },
+                    { key: 'likelyToSellOut', label: 'Likely to sell out', icon: '🔥' },
+                    { key: 'specialOffer', label: 'Special offer', icon: '🏷️' }
                   ].map(feature => (
-                    <label key={feature.key} className="flex items-center gap-2">
+                    <label key={feature.key} className="flex items-center gap-3 py-1">
                       <input
                         type="checkbox"
                         checked={filters[feature.key]}
                         onChange={(e) => setFilters(f => ({ ...f, [feature.key]: e.target.checked }))}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                        className="w-5 h-5 rounded border-gray-300 text-blue-600 flex-shrink-0"
                       />
-                      <span className="text-sm text-gray-700">{feature.label}</span>
+                      <span className="text-sm text-gray-700">{feature.icon} {feature.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
+
+              {/* Rating Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Rating</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['', '3', '4', '4.5'].map(rating => (
+                    <button
+                      key={rating}
+                      onClick={() => setFilters(f => ({ ...f, minRating: f.minRating === rating ? '' : rating }))}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        filters.minRating === rating
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {rating === '' ? 'Any' : `${rating}+ ★`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={() => setFilters({
+                    minPrice: '',
+                    maxPrice: '',
+                    minRating: '',
+                    minDuration: '',
+                    maxDuration: '',
+                    freeCancel: false,
+                    skipLine: false,
+                    privateTour: false,
+                    likelyToSellOut: false,
+                    specialOffer: false
+                  })}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
             
-            <div className="p-4 border-t border-gray-200 sticky bottom-0 bg-white">
+            {/* Fixed Footer */}
+            <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
               <button
                 onClick={() => setShowMobileFilters(false)}
                 className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold"
