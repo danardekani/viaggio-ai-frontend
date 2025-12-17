@@ -2,7 +2,7 @@
 // VIATOR AFFILIATE API SERVICE
 // ============================================================================
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 const VIATOR_API_BASE = 'https://api.sandbox.viator.com/partner';
 const API_KEY = process.env.VIATOR_API_KEY;
