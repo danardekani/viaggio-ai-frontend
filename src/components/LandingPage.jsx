@@ -409,48 +409,48 @@ export default function LandingPage({
         </div>
 
         {/* Top Navigation */}
-        <nav className="relative z-10 flex items-center justify-between px-6 py-4">
+        <nav className="relative z-10 flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Plane className="w-6 h-6 text-white" />
-            <span className="text-xl font-bold text-white tracking-tight">Viaggio</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
           </div>
 
-          {/* Center Tabs */}
-          <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full p-1">
+          {/* Center Tabs - scrollable on mobile */}
+          <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full p-0.5 sm:p-1 mx-2 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('tours')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === 'tours' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Tours & Experiences</span>
               <span className="sm:hidden">Tours</span>
             </button>
             <button
               onClick={() => setActiveTab('whereis')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === 'whereis' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Where is This?</span>
               <span className="sm:hidden">Identify</span>
             </button>
             <button
               onClick={() => setActiveTab('deals')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === 'deals' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              <Tag className="w-4 h-4" />
+              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Deals
             </button>
           </div>
@@ -458,12 +458,12 @@ export default function LandingPage({
           {/* My Trip Button */}
           <button 
             onClick={() => setCartSidebarOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all flex-shrink-0"
           >
             <ShoppingBag className="w-4 h-4" />
             <span className="text-sm font-medium hidden sm:inline">My Trip</span>
             {tripItemCount > 0 && (
-              <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-green-500 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
                 {tripItemCount}
               </span>
             )}
@@ -471,18 +471,18 @@ export default function LandingPage({
         </nav>
 
         {/* Hero Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-4 px-4">
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2 sm:pt-4 px-3 sm:px-4">
           {/* Tagline */}
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-2 drop-shadow-lg">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white text-center mb-1 sm:mb-2 drop-shadow-lg">
             Discover Your Next Adventure
           </h1>
-          <p className="text-lg text-white/90 mb-8 drop-shadow text-center">
+          <p className="text-sm sm:text-lg text-white/90 mb-4 sm:mb-8 drop-shadow text-center">
             Find and book amazing tours & experiences worldwide
           </p>
 
           {/* Search Panel */}
           <div className="w-full max-w-3xl">
-            <div className="bg-white rounded-2xl shadow-2xl p-2">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-1.5 sm:p-2">
               
               {/* Tours Search Tab */}
               {activeTab === 'tours' && (
@@ -824,25 +824,25 @@ export default function LandingPage({
       {/* ================================================================== */}
       {/* FEATURED DESTINATIONS */}
       {/* ================================================================== */}
-      <div className="max-w-7xl mx-auto px-6 py-12 mt-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Featured Deals</h2>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-4 sm:mt-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Deals</h2>
           <div className="flex gap-2">
-            <button className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
-            <button className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
-              <ChevronRight className="w-5 h-5 text-gray-600" />
+            <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {FEATURED_DESTINATIONS.map((dest) => (
             <div 
               key={dest.name}
               onClick={() => handleFeaturedDealClick(dest)}
-              className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer"
+              className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer"
             >
               <div className="aspect-[4/3] overflow-hidden">
                 <img 
@@ -851,13 +851,13 @@ export default function LandingPage({
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
               </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900">{dest.name}</h3>
-                <p className="text-sm text-orange-600 font-medium">{dest.deal}</p>
+              <div className="p-2.5 sm:p-4">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{dest.name}</h3>
+                <p className="text-xs sm:text-sm text-orange-600 font-medium">{dest.deal}</p>
               </div>
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                <span className="text-white font-medium flex items-center gap-1">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                <span className="text-white font-medium flex items-center gap-1 text-sm sm:text-base">
                   View Deals <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -870,23 +870,23 @@ export default function LandingPage({
       {/* VIA CHAT BUBBLE */}
       {/* ================================================================== */}
       {!chatOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
           {/* Intro Tooltip */}
           {showChatIntro && (
-            <div className="absolute bottom-full right-0 mb-3 w-64 bg-white rounded-2xl shadow-2xl p-4 animate-fade-in">
+            <div className="absolute bottom-full right-0 mb-3 w-56 sm:w-64 bg-white rounded-2xl shadow-2xl p-3 sm:p-4 animate-fade-in">
               <button 
                 onClick={() => setShowChatIntro(false)}
                 className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg">✨</span>
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm sm:text-lg">✨</span>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">Hi, I'm Via!</p>
-                  <p className="text-sm text-gray-600">Your AI travel assistant. Ask me anything about destinations, tours, or trip planning!</p>
+                  <p className="font-semibold text-gray-900 text-sm sm:text-base">Hi, I'm Via!</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Your AI travel assistant. Ask me anything!</p>
                 </div>
               </div>
               <div className="absolute bottom-0 right-8 transform translate-y-1/2 rotate-45 w-3 h-3 bg-white" />
@@ -896,15 +896,15 @@ export default function LandingPage({
           {/* Chat Bubble Button */}
           <button
             onClick={() => setChatOpen(true)}
-            className="relative w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center group"
+            className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center group"
           >
-            <MessageCircle className="w-7 h-7 text-white" />
+            <MessageCircle className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
             
             {/* Pulse animation */}
             <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-25" />
             
             {/* "Ask Via" label on hover */}
-            <span className="absolute right-full mr-3 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            <span className="absolute right-full mr-3 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden sm:block">
               Ask Via ✨
             </span>
           </button>
@@ -915,7 +915,7 @@ export default function LandingPage({
       {/* CHAT PANEL (When Open) */}
       {/* ================================================================== */}
       {chatOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
+        <div className="fixed inset-4 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-96 sm:h-[500px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
           {/* Chat Header */}
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -1106,6 +1106,13 @@ export default function LandingPage({
         }
         .animate-slide-in-right {
           animation: slide-in-right 0.3s ease-out;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>
