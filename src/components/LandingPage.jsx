@@ -986,57 +986,57 @@ export default function LandingPage({
       )}
 
       {/* ================================================================== */}
-      {/* CART SIDEBAR MODAL */}
+      {/* FLOATING CART PANEL */}
       {/* ================================================================== */}
       {cartSidebarOpen && (
         <div className="fixed inset-0 z-50">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setCartSidebarOpen(false)}
           />
           
-          {/* Sidebar */}
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col animate-slide-in-right">
+          {/* Floating Panel */}
+          <div className="absolute right-4 top-4 bottom-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl flex flex-col animate-slide-in-right overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2 text-lg">
-                <ShoppingBag className="w-5 h-5" />
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4" />
                 My Trip ({tripItemCount})
               </h2>
               <button
                 onClick={() => setCartSidebarOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-4 h-4 text-gray-500" />
               </button>
             </div>
             
             {/* Cart Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-3">
               {tripItemCount === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium">Your trip is empty</p>
-                  <p className="text-sm mt-1">Add tours to get started</p>
+                <div className="text-center py-8 text-gray-500">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p className="font-medium">Your trip is empty</p>
+                  <p className="text-xs mt-1">Add tours to get started</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {cart.tours.map(tour => (
-                    <div key={tour.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl">
                       {tour.image && (
-                        <img src={tour.image} alt="" className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                        <img src={tour.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-2">{tour.name}</p>
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{tour.name}</p>
                         <p className="text-sm text-green-600 font-semibold mt-1">{formatCurrency(tour.price)}</p>
                       </div>
                       {removeFromCart && (
                         <button
                           onClick={() => removeFromCart('tour', tour.id)}
-                          className="text-gray-400 hover:text-red-500 flex-shrink-0 p-1"
+                          className="text-gray-400 hover:text-red-500 flex-shrink-0"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -1047,10 +1047,10 @@ export default function LandingPage({
             
             {/* Footer with Total and Checkout */}
             {tripItemCount > 0 && (
-              <div className="border-t border-gray-200 p-4 bg-gray-50">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-medium text-gray-700">Total</span>
-                  <span className="text-xl font-bold text-gray-900">
+              <div className="border-t border-gray-100 p-3 bg-white">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-medium text-gray-600">Total</span>
+                  <span className="text-lg font-bold text-gray-900">
                     {formatCurrency(cart.tours.reduce((sum, t) => sum + (t.price || 0), 0))}
                   </span>
                 </div>
