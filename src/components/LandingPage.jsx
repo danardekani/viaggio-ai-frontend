@@ -106,12 +106,6 @@ export default function LandingPage({
   const [identifyingLocation, setIdentifyingLocation] = useState(false);
   const [identifiedLocation, setIdentifiedLocation] = useState(null);
   
-  // ============================================================================
-  // NEW: Tour Preloading State
-  // ============================================================================
-  const [preloadedTours, setPreloadedTours] = useState(null);
-  const [isPreloadingTours, setIsPreloadingTours] = useState(false);
-  
   const destinationInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const chatInputRef = useRef(null);
@@ -151,54 +145,6 @@ export default function LandingPage({
       textarea.style.height = `${newHeight}px`;
     }
   }, [chatInput]);
-
-  // ============================================================================
-  // NEW: Preload tours when location is identified
-  // ============================================================================
-  useEffect(() => {
-    // Only preload if we have a successful identification and haven't already preloaded
-    if (identifiedLocation?.destination && !identifiedLocation?.error && !preloadedTours && !isPreloadingTours) {
-      const preloadTours = async () => {
-        setIsPreloadingTours(true);
-        try {
-          const destName = typeof identifiedLocation.destination === 'object' 
-            ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
-            : identifiedLocation.destination;
-          
-          console.log(`Preloading tours for ${destName}...`);
-          
-          const response = await fetch(`${backendUrl}/api/tours/search`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              destination: destName,
-              destinationId: identifiedLocation.viatorDestinationId || null,
-              resultCount: 100,
-              sortBy: 'popular'
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setPreloadedTours({
-              tours: data.tours || [],
-              totalCount: data.totalCount || 0,
-              destination: destName,
-              destinationId: identifiedLocation.viatorDestinationId
-            });
-            console.log(`✓ Preloaded ${data.tours?.length || 0} tours for ${destName}`);
-          }
-        } catch (err) {
-          console.error('Tour preload failed:', err);
-          // Not critical - user can still click Find Tours and it will fetch
-        } finally {
-          setIsPreloadingTours(false);
-        }
-      };
-      
-      preloadTours();
-    }
-  }, [identifiedLocation, backendUrl, preloadedTours, isPreloadingTours]);
 
   // ============================================================================
   // DESTINATION AUTOCOMPLETE
@@ -330,7 +276,6 @@ export default function LandingPage({
     
     setUploadedImage(file);
     setIdentifiedLocation(null);
-    setPreloadedTours(null); // Clear previous preloaded tours
     
     // Auto-identify after upload
     await identifyLocation(file);
@@ -357,7 +302,6 @@ export default function LandingPage({
 
       const data = await response.json();
       setIdentifiedLocation(data);
-      // Preloading will start automatically via useEffect
       
     } catch (error) {
       console.error('Location identification error:', error);
@@ -367,35 +311,25 @@ export default function LandingPage({
     }
   };
 
-  // ============================================================================
-  // UPDATED: Handle search with preloaded tours and viatorDestinationId
-  // ============================================================================
   const handleSearchIdentifiedLocation = () => {
     if (identifiedLocation?.destination) {
+      // destination can be an object with fullName/name or a string
       const destName = typeof identifiedLocation.destination === 'object' 
         ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
         : identifiedLocation.destination;
       
-      // Pass preloaded tours if available for instant results
       onSearch?.({
         type: 'tours',
         destination: destName,
-        destinationId: identifiedLocation.viatorDestinationId || null,
-        travelers,
-        preloadedTours: preloadedTours // Pass preloaded data for instant display
+        travelers
       });
     }
   };
 
-  // ============================================================================
-  // UPDATED: Reset also clears preloaded tours
-  // ============================================================================
   const resetWhereIsThis = () => {
     setUploadedImage(null);
     setImagePreview(null);
     setIdentifiedLocation(null);
-    setPreloadedTours(null);
-    setIsPreloadingTours(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -465,522 +399,526 @@ export default function LandingPage({
       {/* ================================================================== */}
       {/* HERO SECTION */}
       {/* ================================================================== */}
-      <div className="relative">
-        {/* Hero Image */}
-        <div className="absolute inset-0 h-[400px] md:h-[500px]">
-          <img 
-            src={HERO_IMAGE} 
-            alt="Beautiful beach destination" 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-gray-50" />
+      <div className="relative h-[70vh] min-h-[550px]">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${HERO_IMAGE})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
         </div>
 
-        {/* Header */}
-        <div className="relative z-10 px-4 pt-4 pb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Plane className="w-7 h-7 text-white" />
-            <span className="text-xl font-bold text-white">Viaggio.ai</span>
+        {/* Top Navigation */}
+        <nav className="relative z-10 flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
+          {/* Logo */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
           </div>
-          
-          {/* Cart Button */}
-          <button
+
+          {/* Center Tabs - scrollable on mobile */}
+          <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full p-0.5 sm:p-1 mx-2 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => setActiveTab('tours')}
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === 'tours' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Tours & Experiences</span>
+              <span className="sm:hidden">Tours</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('whereis')}
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === 'whereis' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Where is This?</span>
+              <span className="sm:hidden">Identify</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('deals')}
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === 'deals' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              Deals
+            </button>
+          </div>
+
+          {/* My Trip Button */}
+          <button 
             onClick={() => setCartSidebarOpen(true)}
-            className="relative p-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all flex-shrink-0"
           >
-            <ShoppingBag className="w-5 h-5 text-white" />
+            <ShoppingBag className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">My Trip</span>
             {tripItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-medium">
+              <span className="bg-green-500 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
                 {tripItemCount}
               </span>
             )}
           </button>
-        </div>
+        </nav>
 
         {/* Hero Content */}
-        <div className="relative z-10 px-4 pt-8 md:pt-16 pb-24 md:pb-32 text-center">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">
-            <span className="italic">Discover Your Next Adventure</span>
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2 sm:pt-4 px-3 sm:px-4">
+          {/* Tagline */}
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white text-center mb-1 sm:mb-2 drop-shadow-lg">
+            Discover Your Next Adventure
           </h1>
-          <p className="text-lg text-white/90 drop-shadow">
+          <p className="text-sm sm:text-lg text-white/90 mb-4 sm:mb-8 drop-shadow text-center">
             Find and book amazing tours & experiences worldwide
           </p>
+
+          {/* Search Panel */}
+          <div className="w-full max-w-3xl">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-1.5 sm:p-2">
+              
+              {/* Tours Search Tab */}
+              {activeTab === 'tours' && (
+                <form onSubmit={handleToursSearch} className="flex flex-col sm:flex-row items-stretch">
+                  {/* Destination */}
+                  <div className="flex-1 relative" ref={destinationInputRef}>
+                    <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                      <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">Where</p>
+                        <input 
+                          type="text"
+                          placeholder="Search destination"
+                          value={destination}
+                          onChange={(e) => {
+                            setDestination(e.target.value);
+                            setSelectedDestinationId(null);
+                          }}
+                          onKeyDown={handleDestinationKeyDown}
+                          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                          autoComplete="off"
+                        />
+                      </div>
+                      {loadingSuggestions && (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      )}
+                    </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div 
+                        ref={suggestionsRef}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                      >
+                        {suggestions.map((suggestion, index) => (
+                          <button
+                            key={suggestion.destinationId || index}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(suggestion)}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                              index === selectedIndex ? 'bg-blue-50' : ''
+                            } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                              index === suggestions.length - 1 ? 'rounded-b-xl' : ''
+                            }`}
+                          >
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {suggestion.displayName || suggestion.name}
+                              </p>
+                              {suggestion.type && (
+                                <p className="text-xs text-gray-500">{suggestion.type}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Dates */}
+                  <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                    <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Dates</p>
+                      <input
+                        type="date"
+                        value={travelDates}
+                        onChange={(e) => setTravelDates(e.target.value)}
+                        className="text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent"
+                        placeholder="Add dates"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Travelers */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Travelers</p>
+                      <div className="relative">
+                        <select
+                          value={travelers}
+                          onChange={(e) => setTravelers(parseInt(e.target.value))}
+                          className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-6 cursor-pointer"
+                        >
+                          {[1,2,3,4,5,6,7,8].map(n => (
+                            <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Search Button */}
+                  <button 
+                    type="submit"
+                    disabled={!destination.trim() || isLoading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Search className="w-5 h-5" />
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Where Is This Tab */}
+              {activeTab === 'whereis' && (
+                <div className="p-4">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  {!imagePreview ? (
+                    /* Upload Zone */
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                        isDragging 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-3">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
+                          isDragging ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}>
+                          <Camera className={`w-8 h-8 ${isDragging ? 'text-blue-600' : 'text-gray-400'}`} />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {isDragging ? 'Drop your image here!' : 'Upload a photo to identify the location'}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Drag & drop or click to browse
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Image Preview & Results */
+                    <div className="flex flex-col sm:flex-row gap-4 items-center">
+                      {/* Image Preview */}
+                      <div className="relative w-32 h-32 rounded-xl overflow-hidden flex-shrink-0">
+                        <img 
+                          src={imagePreview} 
+                          alt="Uploaded" 
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={resetWhereIsThis}
+                          className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                      
+                      {/* Status / Results */}
+                      <div className="flex-1 text-center sm:text-left">
+                        {identifyingLocation ? (
+                          <div className="flex items-center gap-3 justify-center sm:justify-start">
+                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                            <div>
+                              <p className="text-gray-900 font-medium">Identifying location...</p>
+                              <p className="text-sm text-gray-500">Analyzing your image</p>
+                            </div>
+                          </div>
+                        ) : identifiedLocation?.error ? (
+                          <div>
+                            <p className="text-gray-900 font-medium">Couldn't identify location</p>
+                            <p className="text-sm text-gray-500">{identifiedLocation.message || 'Unable to recognize this location'}</p>
+                            <button
+                              onClick={resetWhereIsThis}
+                              className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Try another image
+                            </button>
+                          </div>
+                        ) : identifiedLocation?.destination ? (
+                          <div>
+                            <p className="text-sm text-gray-500">We found it!</p>
+                            <p className="text-xl font-bold text-gray-900">
+                              {typeof identifiedLocation.destination === 'object' 
+                                ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
+                                : identifiedLocation.destination}
+                            </p>
+                            {identifiedLocation.landmark && (
+                              <p className="text-sm text-gray-600">📍 {identifiedLocation.landmark}</p>
+                            )}
+                            {identifiedLocation.confidence && (
+                              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                                identifiedLocation.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                                identifiedLocation.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {identifiedLocation.confidence} confidence
+                              </span>
+                            )}
+                          </div>
+                        ) : identifiedLocation ? (
+                          // Fallback: API returned something but no destination
+                          <div>
+                            <p className="text-gray-900 font-medium">Location not recognized</p>
+                            <p className="text-sm text-gray-500">We couldn't identify a specific destination in this image. Try a photo of a famous landmark or tourist attraction.</p>
+                            <button
+                              onClick={resetWhereIsThis}
+                              className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Try another image
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                      
+                      {/* Action Button */}
+                      {identifiedLocation?.destination && !identifiedLocation.error && (
+                        <button
+                          onClick={handleSearchIdentifiedLocation}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
+                        >
+                          <Search className="w-5 h-5" />
+                          Find Tours
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Deals Tab */}
+              {activeTab === 'deals' && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="flex-1 relative" ref={destinationInputRef}>
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Tag className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">Find Deals In</p>
+                        <input 
+                          type="text"
+                          placeholder="Enter a city to find deals..."
+                          value={destination}
+                          onChange={(e) => {
+                            setDestination(e.target.value);
+                            setSelectedDestinationId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            // Handle autocomplete navigation
+                            if (showSuggestions && suggestions.length > 0) {
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+                                return;
+                              } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setSelectedIndex(prev => Math.max(prev - 1, -1));
+                                return;
+                              } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                                e.preventDefault();
+                                handleSelectSuggestion(suggestions[selectedIndex]);
+                                return;
+                              } else if (e.key === 'Escape') {
+                                setShowSuggestions(false);
+                                return;
+                              }
+                            }
+                            // Handle search on Enter
+                            if (e.key === 'Enter' && destination.trim()) {
+                              handleDealsSearch(destination.trim());
+                            }
+                          }}
+                          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                          autoComplete="off"
+                        />
+                      </div>
+                      {loadingSuggestions && (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      )}
+                    </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div 
+                        ref={suggestionsRef}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                      >
+                        {suggestions.map((suggestion, index) => (
+                          <button
+                            key={suggestion.destinationId || index}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(suggestion)}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                              index === selectedIndex ? 'bg-orange-50' : ''
+                            } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                              index === suggestions.length - 1 ? 'rounded-b-xl' : ''
+                            }`}
+                          >
+                            <MapPin className="w-4 h-4 text-orange-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {suggestion.displayName || suggestion.name}
+                              </p>
+                              {suggestion.type && (
+                                <p className="text-xs text-gray-500">{suggestion.type}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => destination.trim() && handleDealsSearch(destination.trim())}
+                    disabled={!destination.trim() || isLoading}
+                    className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-300 text-white px-6 py-4 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 m-1"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        Find Deals
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* ================================================================== */}
-        {/* SEARCH BOX */}
-        {/* ================================================================== */}
-        <div className="relative z-20 px-4 -mt-12 md:-mt-16 max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Tabs */}
-            <div className="flex border-b border-gray-100">
-              {[
-                { id: 'tours', label: 'Tours', icon: MapPin },
-                { id: 'whereis', label: 'Where Is This?', icon: Camera },
-                { id: 'deals', label: 'Deals', icon: Tag }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === tab.id 
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' 
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Tours Tab */}
-            {activeTab === 'tours' && (
-              <form onSubmit={handleToursSearch} className="flex flex-col sm:flex-row items-stretch">
-                {/* Destination Input */}
-                <div className="flex-1 relative" ref={destinationInputRef}>
-                  <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-100">
-                    <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Where to?</p>
-                      <input 
-                        type="text"
-                        placeholder="Search destinations..."
-                        value={destination}
-                        onChange={(e) => {
-                          setDestination(e.target.value);
-                          setSelectedDestinationId(null);
-                        }}
-                        onKeyDown={handleDestinationKeyDown}
-                        className="w-full text-gray-900 font-medium focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
-                      />
-                    </div>
-                    {loadingSuggestions && (
-                      <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                    )}
-                  </div>
-                  
-                  {/* Autocomplete Dropdown */}
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div 
-                      ref={suggestionsRef}
-                      className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-xl shadow-lg z-50 max-h-64 overflow-y-auto"
-                    >
-                      {suggestions.map((suggestion, index) => (
-                        <button
-                          key={suggestion.destinationId || index}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors ${
-                            index === selectedIndex ? 'bg-blue-50' : ''
-                          }`}
-                        >
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <div>
-                            <p className="font-medium text-gray-900">{suggestion.displayName || suggestion.name}</p>
-                            {suggestion.type && (
-                              <p className="text-xs text-gray-500 capitalize">{suggestion.type}</p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Date Input */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-100">
-                  <Calendar className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-medium">When?</p>
-                    <input 
-                      type="date"
-                      value={travelDates}
-                      onChange={(e) => setTravelDates(e.target.value)}
-                      className="w-full text-gray-900 font-medium focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Travelers */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-100">
-                  <Users className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-medium">Travelers</p>
-                    <div className="relative">
-                      <select
-                        value={travelers}
-                        onChange={(e) => setTravelers(parseInt(e.target.value))}
-                        className="w-full text-gray-900 font-medium focus:outline-none appearance-none bg-transparent pr-6 cursor-pointer"
-                      >
-                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                          <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Search Button */}
-                <button 
-                  type="submit"
-                  disabled={!destination.trim() || isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Search className="w-5 h-5" />
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* Where Is This Tab */}
-            {activeTab === 'whereis' && (
-              <div className="p-4">
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                
-                {!imagePreview ? (
-                  /* Upload Zone */
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                      isDragging 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-3">
-                      <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
-                        isDragging ? 'bg-blue-100' : 'bg-gray-100'
-                      }`}>
-                        <Camera className={`w-8 h-8 ${isDragging ? 'text-blue-600' : 'text-gray-400'}`} />
-                      </div>
-                      <div>
-                        <p className="text-gray-900 font-medium">
-                          {isDragging ? 'Drop your image here!' : 'Upload a photo to identify the location'}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Drag & drop or click to browse
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Image Preview & Results */
-                  <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    {/* Image Preview */}
-                    <div className="relative w-32 h-32 rounded-xl overflow-hidden flex-shrink-0">
-                      <img 
-                        src={imagePreview} 
-                        alt="Uploaded" 
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={resetWhereIsThis}
-                        className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-                      >
-                        <X className="w-4 h-4 text-white" />
-                      </button>
-                    </div>
-                    
-                    {/* Status / Results */}
-                    <div className="flex-1 text-center sm:text-left">
-                      {identifyingLocation ? (
-                        <div className="flex items-center gap-3 justify-center sm:justify-start">
-                          <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                          <div>
-                            <p className="text-gray-900 font-medium">Identifying location...</p>
-                            <p className="text-sm text-gray-500">Analyzing your image</p>
-                          </div>
-                        </div>
-                      ) : identifiedLocation?.error ? (
-                        <div>
-                          <p className="text-gray-900 font-medium">Couldn't identify location</p>
-                          <p className="text-sm text-gray-500">{identifiedLocation.message || 'Unable to recognize this location'}</p>
-                          <button
-                            onClick={resetWhereIsThis}
-                            className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            Try another image
-                          </button>
-                        </div>
-                      ) : identifiedLocation?.destination ? (
-                        <div>
-                          <p className="text-sm text-gray-500">We found it!</p>
-                          <p className="text-xl font-bold text-gray-900">
-                            {typeof identifiedLocation.destination === 'object' 
-                              ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
-                              : identifiedLocation.destination}
-                          </p>
-                          {identifiedLocation.landmark && (
-                            <p className="text-sm text-gray-600">📍 {identifiedLocation.landmark}</p>
-                          )}
-                          {identifiedLocation.confidence && (
-                            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
-                              identifiedLocation.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                              identifiedLocation.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {identifiedLocation.confidence} confidence
-                            </span>
-                          )}
-                          {/* Preloading status */}
-                          {isPreloadingTours && (
-                            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              Loading tours...
-                            </p>
-                          )}
-                          {preloadedTours && !isPreloadingTours && (
-                            <p className="text-xs text-green-600 mt-1">
-                              ✓ {preloadedTours.tours.length} tours ready
-                            </p>
-                          )}
-                        </div>
-                      ) : identifiedLocation ? (
-                        // Fallback: API returned something but no destination
-                        <div>
-                          <p className="text-gray-900 font-medium">Location not recognized</p>
-                          <p className="text-sm text-gray-500">We couldn't identify a specific destination in this image. Try a photo of a famous landmark or tourist attraction.</p>
-                          <button
-                            onClick={resetWhereIsThis}
-                            className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            Try another image
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                    
-                    {/* Action Button - UPDATED with preload status */}
-                    {identifiedLocation?.destination && !identifiedLocation.error && (
-                      <button
-                        onClick={handleSearchIdentifiedLocation}
-                        disabled={isPreloadingTours}
-                        className={`px-6 py-3 rounded-xl transition-colors font-medium flex items-center gap-2 whitespace-nowrap ${
-                          preloadedTours 
-                            ? 'bg-green-600 hover:bg-green-700 text-white' 
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        } ${isPreloadingTours ? 'opacity-75' : ''}`}
-                      >
-                        {isPreloadingTours ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Loading...
-                          </>
-                        ) : preloadedTours ? (
-                          <>
-                            <Search className="w-5 h-5" />
-                            Find {preloadedTours.tours.length} Tours
-                          </>
-                        ) : (
-                          <>
-                            <Search className="w-5 h-5" />
-                            Find Tours
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Deals Tab */}
-            {activeTab === 'deals' && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <div className="flex-1 relative" ref={destinationInputRef}>
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <Tag className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Find Deals In</p>
-                      <input 
-                        type="text"
-                        placeholder="Enter a city to find deals..."
-                        value={destination}
-                        onChange={(e) => {
-                          setDestination(e.target.value);
-                          setSelectedDestinationId(null);
-                        }}
-                        onKeyDown={(e) => {
-                          // Handle autocomplete navigation
-                          if (showSuggestions && suggestions.length > 0) {
-                            if (e.key === 'ArrowDown') {
-                              e.preventDefault();
-                              setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
-                              return;
-                            } else if (e.key === 'ArrowUp') {
-                              e.preventDefault();
-                              setSelectedIndex(prev => Math.max(prev - 1, -1));
-                              return;
-                            } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                              e.preventDefault();
-                              handleSelectSuggestion(suggestions[selectedIndex]);
-                              return;
-                            } else if (e.key === 'Escape') {
-                              setShowSuggestions(false);
-                              return;
-                            }
-                          }
-                          // Submit on Enter if no suggestion selected
-                          if (e.key === 'Enter' && destination.trim()) {
-                            e.preventDefault();
-                            handleDealsSearch(destination.trim());
-                          }
-                        }}
-                        className="w-full text-gray-900 font-medium focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
-                      />
-                    </div>
-                    {loadingSuggestions && (
-                      <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                    )}
-                  </div>
-                  
-                  {/* Autocomplete Dropdown for Deals */}
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div 
-                      ref={suggestionsRef}
-                      className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-xl shadow-lg z-50 max-h-64 overflow-y-auto"
-                    >
-                      {suggestions.map((suggestion, index) => (
-                        <button
-                          key={suggestion.destinationId || index}
-                          type="button"
-                          onClick={() => {
-                            handleSelectSuggestion(suggestion);
-                            // Auto-search for deals after selecting
-                            setTimeout(() => handleDealsSearch(suggestion.displayName || suggestion.name), 100);
-                          }}
-                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors ${
-                            index === selectedIndex ? 'bg-orange-50' : ''
-                          }`}
-                        >
-                          <Tag className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                          <div>
-                            <p className="font-medium text-gray-900">{suggestion.displayName || suggestion.name}</p>
-                            {suggestion.type && (
-                              <p className="text-xs text-gray-500 capitalize">{suggestion.type}</p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Search Deals Button */}
-                <button
-                  onClick={() => destination.trim() && handleDealsSearch(destination.trim())}
-                  disabled={!destination.trim() || isLoading}
-                  className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Search className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Photo Credit */}
+        <div className="absolute bottom-4 right-4 text-white/60 text-xs">
+          📍 Maldives
         </div>
       </div>
 
       {/* ================================================================== */}
       {/* FEATURED DESTINATIONS */}
       {/* ================================================================== */}
-      <div className="px-4 py-12 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Featured Deals</h2>
-            <p className="text-gray-500 text-sm mt-1">Special offers on popular destinations</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-4 sm:mt-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Deals</h2>
+          <div className="flex gap-2">
+            <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+            </button>
+            <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {FEATURED_DESTINATIONS.map((dest, index) => (
-            <button
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          {FEATURED_DESTINATIONS.map((dest) => (
+            <div 
               key={dest.name}
               onClick={() => handleFeaturedDealClick(dest)}
-              className="group relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer"
             >
-              <img 
-                src={dest.image} 
-                alt={dest.name}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-                <p className="text-white font-bold text-lg">{dest.name}</p>
-                <p className="text-white/80 text-xs">{dest.country}</p>
-                <div className="mt-2 inline-flex items-center gap-1 bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-full">
-                  <Tag className="w-3 h-3" />
-                  {dest.deal}
-                </div>
+              <div className="aspect-[4/3] overflow-hidden">
+                <img 
+                  src={dest.image} 
+                  alt={dest.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
               </div>
-            </button>
+              <div className="p-2.5 sm:p-4">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{dest.name}</h3>
+                <p className="text-xs sm:text-sm text-orange-600 font-medium">{dest.deal}</p>
+              </div>
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                <span className="text-white font-medium flex items-center gap-1 text-sm sm:text-base">
+                  View Deals <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
       {/* ================================================================== */}
-      {/* FLOATING CHAT BUTTON */}
+      {/* VIA CHAT BUBBLE */}
       {/* ================================================================== */}
       {!chatOpen && (
-        <div className="fixed bottom-6 right-6 z-40">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
           {/* Intro Tooltip */}
           {showChatIntro && (
-            <div className="absolute bottom-full right-0 mb-3 animate-fade-in">
-              <div className="bg-white rounded-xl shadow-lg p-3 max-w-[200px] relative">
-                <button 
-                  onClick={() => setShowChatIntro(false)}
-                  className="absolute -top-2 -right-2 w-5 h-5 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center"
-                >
-                  <X className="w-3 h-3 text-gray-600" />
-                </button>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Need help planning?</span> Chat with Via, your AI travel assistant! ✨
-                </p>
-                <div className="absolute bottom-0 right-6 translate-y-full">
-                  <div className="w-3 h-3 bg-white transform rotate-45 -translate-y-1.5 shadow-lg" />
+            <div className="absolute bottom-full right-0 mb-3 w-56 sm:w-64 bg-white rounded-2xl shadow-2xl p-3 sm:p-4 animate-fade-in">
+              <button 
+                onClick={() => setShowChatIntro(false)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm sm:text-lg">✨</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm sm:text-base">Hi, I'm Via!</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Your AI travel assistant. Ask me anything!</p>
                 </div>
               </div>
+              <div className="absolute bottom-0 right-8 transform translate-y-1/2 rotate-45 w-3 h-3 bg-white" />
             </div>
           )}
-          
-          {/* Chat Button */}
+
+          {/* Chat Bubble Button */}
           <button
-            onClick={() => {
-              setChatOpen(true);
-              setShowChatIntro(false);
-            }}
-            className="w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+            onClick={() => setChatOpen(true)}
+            className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center group"
           >
-            <span className="text-2xl">✨</span>
-          </button>
-          
-          {/* Label */}
-          <button
-            onClick={() => {
-              setChatOpen(true);
-              setShowChatIntro(false);
-            }}
-            className="absolute -left-20 top-1/2 -translate-y-1/2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
-          >
-            Ask Via ✨
+            <MessageCircle className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+            
+            {/* Pulse animation */}
+            <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-25" />
+            
+            {/* "Ask Via" label on hover */}
+            <span className="absolute right-full mr-3 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden sm:block">
+              Ask Via ✨
+            </span>
           </button>
         </div>
       )}
