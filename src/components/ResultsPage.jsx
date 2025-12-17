@@ -1069,82 +1069,115 @@ export default function ResultsPage({
           />
           
           {/* Modal Content */}
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Close Button */}
             <button
               onClick={() => setQuickViewTour(null)}
-              className="absolute top-4 right-4 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+              className="absolute top-4 right-4 z-20 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
 
             {/* Modal Body - Scrollable */}
             <div className="overflow-y-auto flex-1">
-              {/* Image Gallery */}
-              <div className="relative h-72 md:h-96 bg-gray-100">
-                {quickViewTour.images && quickViewTour.images.length > 0 ? (
-                  <>
-                    <img
-                      src={quickViewTour.images[quickViewImageIndex]}
-                      alt={quickViewTour.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Image Navigation */}
-                    {quickViewTour.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setQuickViewImageIndex(i => i === 0 ? quickViewTour.images.length - 1 : i - 1)}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+              {/* Image Gallery Section */}
+              <div className="bg-gray-100">
+                {/* Main Image + Thumbnails Grid */}
+                {quickViewTour.images && quickViewTour.images.length > 1 ? (
+                  <div className="grid grid-cols-4 gap-1 h-80 md:h-96">
+                    {/* Main Large Image */}
+                    <div className="col-span-4 md:col-span-2 row-span-2 relative">
+                      <img
+                        src={quickViewTour.images[quickViewImageIndex]}
+                        alt={quickViewTour.name}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
+                      />
+                      {/* Badges on main image */}
+                      <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                        {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && (
+                          <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1">
+                            <Tag className="w-4 h-4" />
+                            DEAL
+                          </span>
+                        )}
+                        {quickViewTour.flags?.includes('LIKELY_TO_SELL_OUT') && (
+                          <span className="px-3 py-1.5 bg-red-500 text-white text-sm font-semibold rounded-full">
+                            🔥 Popular
+                          </span>
+                        )}
+                      </div>
+                      {/* Image counter */}
+                      <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full">
+                        {quickViewImageIndex + 1} / {quickViewTour.images.length}
+                      </div>
+                    </div>
+                    
+                    {/* Thumbnail Grid - Hidden on mobile */}
+                    <div className="hidden md:grid col-span-2 grid-cols-2 gap-1 h-full">
+                      {quickViewTour.images.slice(0, 4).map((img, idx) => (
+                        <div 
+                          key={idx}
+                          className={`relative cursor-pointer overflow-hidden ${idx === quickViewImageIndex ? 'ring-2 ring-blue-500' : ''}`}
+                          onClick={() => setQuickViewImageIndex(idx)}
                         >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-                        {/* Image Dots */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                          {quickViewTour.images.map((_, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setQuickViewImageIndex(idx)}
-                              className={`w-2 h-2 rounded-full transition-colors ${
-                                idx === quickViewImageIndex ? 'bg-white' : 'bg-white/50'
-                              }`}
-                            />
-                          ))}
+                          <img
+                            src={img}
+                            alt={`${quickViewTour.name} ${idx + 1}`}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform"
+                          />
+                          {/* Show "+X more" on last visible thumbnail */}
+                          {idx === 3 && quickViewTour.images.length > 4 && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <span className="text-white font-semibold text-lg">+{quickViewTour.images.length - 4} more</span>
+                            </div>
+                          )}
                         </div>
-                      </>
-                    )}
-                  </>
-                ) : quickViewTour.image ? (
-                  <img
-                    src={quickViewTour.image}
-                    alt={quickViewTour.name}
-                    className="w-full h-full object-cover"
-                  />
+                      ))}
+                    </div>
+                  </div>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                    <MapPin className="w-16 h-16 text-blue-300" />
+                  /* Single Image Fallback */
+                  <div className="relative h-72 md:h-80">
+                    {quickViewTour.image ? (
+                      <img
+                        src={quickViewTour.image}
+                        alt={quickViewTour.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                        <MapPin className="w-16 h-16 text-blue-300" />
+                      </div>
+                    )}
+                    {/* Badges */}
+                    <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                      {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && (
+                        <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1">
+                          <Tag className="w-4 h-4" />
+                          DEAL
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
                 
-                {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && (
-                    <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1">
-                      <Tag className="w-4 h-4" />
-                      DEAL
-                    </span>
-                  )}
-                  {quickViewTour.flags?.includes('LIKELY_TO_SELL_OUT') && (
-                    <span className="px-3 py-1.5 bg-red-500 text-white text-sm font-semibold rounded-full">
-                      🔥 Popular
-                    </span>
-                  )}
-                </div>
+                {/* Mobile Image Navigation */}
+                {quickViewTour.images && quickViewTour.images.length > 1 && (
+                  <div className="md:hidden flex gap-1 p-2 overflow-x-auto">
+                    {quickViewTour.images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setQuickViewImageIndex(idx)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden ${
+                          idx === quickViewImageIndex ? 'ring-2 ring-blue-500' : ''
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Content */}
@@ -1159,14 +1192,14 @@ export default function ResultsPage({
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                       <span className="font-bold text-gray-900 text-lg">{quickViewTour.rating}</span>
                       {quickViewTour.reviewCount > 0 && (
-                        <span className="text-gray-500">({quickViewTour.reviewCount.toLocaleString()} reviews)</span>
+                        <span className="text-gray-500">({quickViewTour.reviewCount.toLocaleString()})</span>
                       )}
                     </div>
                   )}
                 </div>
 
                 {/* Key Info Pills */}
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mb-6">
                   {quickViewTour.duration && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
                       <Clock className="w-4 h-4" />
@@ -1196,89 +1229,156 @@ export default function ResultsPage({
                       ⚡ Skip the line
                     </span>
                   )}
+                  {quickViewTour.pricingType === 'group' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-sm rounded-full font-medium">
+                      👥 Per group pricing
+                    </span>
+                  )}
                 </div>
 
-                {/* Description */}
-                {quickViewTour.description && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-2">About this tour</h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {quickViewTour.description}
-                    </p>
-                  </div>
-                )}
+                {/* Two Column Layout for Content */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column - About */}
+                  <div>
+                    {/* About This Tour */}
+                    {quickViewTour.description && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Info className="w-5 h-5 text-blue-500" />
+                          About this tour
+                        </h3>
+                        <p className="text-gray-600 leading-relaxed">
+                          {quickViewTour.description}
+                        </p>
+                      </div>
+                    )}
 
-                {/* Inclusions */}
-                {quickViewTour.inclusions && quickViewTour.inclusions.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Check className="w-5 h-5 text-green-500" />
-                      What's included
-                    </h3>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {quickViewTour.inclusions.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-gray-600">
-                          <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Exclusions */}
-                {quickViewTour.exclusions && quickViewTour.exclusions.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <X className="w-5 h-5 text-red-500" />
-                      What's not included
-                    </h3>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {quickViewTour.exclusions.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-gray-600">
-                          <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Itinerary */}
-                {quickViewTour.itinerary && quickViewTour.itinerary.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-blue-500" />
-                      Itinerary
-                    </h3>
-                    <div className="space-y-3">
-                      {quickViewTour.itinerary.map((stop, idx) => (
-                        <div key={idx} className="flex gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
-                            {idx + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{stop.name || stop.description}</p>
-                            {stop.duration && (
-                              <p className="text-sm text-gray-500">{Math.round(stop.duration / 60)} min</p>
-                            )}
-                          </div>
+                    {/* Itinerary / What You'll See */}
+                    {quickViewTour.itinerary && quickViewTour.itinerary.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-blue-500" />
+                          What you'll see
+                        </h3>
+                        <div className="space-y-3">
+                          {quickViewTour.itinerary.map((stop, idx) => (
+                            <div key={idx} className="flex gap-3">
+                              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold">
+                                {idx + 1}
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{stop.name || stop.description}</p>
+                                {stop.duration && (
+                                  <p className="text-sm text-gray-500">{Math.round(stop.duration / 60)} min</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* Right Column - Highlights */}
+                  <div>
+                    {/* Highlights Section */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-500" />
+                        Highlights
+                      </h3>
+                      <ul className="space-y-2">
+                        {/* Generate highlights from flags and features */}
+                        {quickViewTour.flags?.includes('FREE_CANCELLATION') && (
+                          <li className="flex items-start gap-2 text-gray-700">
+                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span>Free cancellation up to 24 hours before</span>
+                          </li>
+                        )}
+                        {quickViewTour.flags?.includes('SKIP_THE_LINE') && (
+                          <li className="flex items-start gap-2 text-gray-700">
+                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span>Skip-the-line access included</span>
+                          </li>
+                        )}
+                        {quickViewTour.flags?.includes('LIKELY_TO_SELL_OUT') && (
+                          <li className="flex items-start gap-2 text-gray-700">
+                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span>Highly rated and popular experience</span>
+                          </li>
+                        )}
+                        {quickViewTour.isPrivateTour && (
+                          <li className="flex items-start gap-2 text-gray-700">
+                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span>Private tour - just you and your group</span>
+                          </li>
+                        )}
+                        {quickViewTour.languages && quickViewTour.languages.length > 0 && (
+                          <li className="flex items-start gap-2 text-gray-700">
+                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span>Available in {quickViewTour.languages.length} language{quickViewTour.languages.length > 1 ? 's' : ''}</span>
+                          </li>
+                        )}
+                        {quickViewTour.duration && (
+                          <li className="flex items-start gap-2 text-gray-700">
+                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span>{quickViewTour.duration} experience</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* What's Included */}
+                    {quickViewTour.inclusions && quickViewTour.inclusions.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Check className="w-5 h-5 text-green-500" />
+                          What's included
+                        </h3>
+                        <ul className="space-y-2">
+                          {quickViewTour.inclusions.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-gray-700">
+                              <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-1" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* What's Not Included */}
+                    {quickViewTour.exclusions && quickViewTour.exclusions.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <X className="w-5 h-5 text-red-500" />
+                          Not included
+                        </h3>
+                        <ul className="space-y-2">
+                          {quickViewTour.exclusions.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-gray-600">
+                              <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-1" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Additional Info */}
                 {quickViewTour.additionalInfo && quickViewTour.additionalInfo.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Info className="w-5 h-5 text-gray-500" />
                       Additional information
                     </h3>
-                    <ul className="space-y-1">
-                      {quickViewTour.additionalInfo.slice(0, 5).map((info, idx) => (
-                        <li key={idx} className="text-gray-600 text-sm">• {info}</li>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {quickViewTour.additionalInfo.slice(0, 6).map((info, idx) => (
+                        <li key={idx} className="text-gray-600 text-sm flex items-start gap-2">
+                          <span className="text-gray-400">•</span>
+                          {info}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -1287,22 +1387,24 @@ export default function ResultsPage({
             </div>
 
             {/* Sticky Footer with Price & Actions */}
-            <div className="border-t border-gray-200 bg-white p-4 flex items-center justify-between">
-              <div>
-                {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && quickViewTour.originalPrice && (
-                  <span className="text-gray-400 line-through text-sm mr-2">
-                    {formatCurrency(quickViewTour.originalPrice)}
+            <div className="border-t border-gray-200 bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <div className="flex items-baseline gap-2 justify-center sm:justify-start">
+                  {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && quickViewTour.originalPrice && (
+                    <span className="text-gray-400 line-through text-lg">
+                      {formatCurrency(quickViewTour.originalPrice)}
+                    </span>
+                  )}
+                  <span className={`text-3xl font-bold ${
+                    (quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) ? 'text-orange-600' : 'text-green-600'
+                  }`}>
+                    {formatCurrency(quickViewTour.price)}
                   </span>
-                )}
-                <span className={`text-3xl font-bold ${
-                  (quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) ? 'text-orange-600' : 'text-green-600'
-                }`}>
-                  {formatCurrency(quickViewTour.price)}
-                </span>
-                <span className="text-gray-500 ml-2">
+                </div>
+                <span className="text-gray-500 text-sm">
                   {quickViewTour.pricingType === 'group' 
                     ? 'per group' 
-                    : travelers > 1 ? `× ${travelers} = ${formatCurrency(quickViewTour.price * travelers)}` : 'per person'
+                    : travelers > 1 ? `per person × ${travelers} = ${formatCurrency(quickViewTour.price * travelers)} total` : 'per person'
                   }
                 </span>
               </div>
@@ -1314,7 +1416,8 @@ export default function ResultsPage({
                   className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  View on Viator
+                  <span className="hidden sm:inline">View on Viator</span>
+                  <span className="sm:hidden">Details</span>
                 </button>
 
                 {/* Add to Trip */}
