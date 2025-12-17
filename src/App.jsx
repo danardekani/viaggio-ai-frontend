@@ -109,13 +109,14 @@ export default function App() {
   };
   */
 
-  const handleWhereIsThisTours = (destination) => {
-    const message = `What tours and activities are available in ${destination}?`;
-    setInput(message);
-    setTimeout(() => {
-      document.getElementById('chat-input')?.form?.requestSubmit();
-    }, 100);
-  };
+  const handleWhereIsThisTours = (destination, viatorDestinationId = null) => {
+  handlePanelSearch({
+    type: 'tours',
+    destination: destination,
+    destinationId: viatorDestinationId,  // NEW: Pass directly to API
+    travelers: conversationContext.travelers || 2
+  });
+};
 
   // ============================================================================
   // CART FUNCTIONS
