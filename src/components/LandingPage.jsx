@@ -511,7 +511,7 @@ export default function LandingPage({
         {/* Hero Content */}
         <div className="relative z-10 px-4 pt-10 md:pt-16 pb-40 md:pb-56 text-center">
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">
-            <span className="italic">Discover Your Next Adventure</span>
+            <span>Discover Your Next Adventure</span>
           </h1>
           <p className="text-lg text-white/90 drop-shadow">
             Find and book amazing tours & experiences worldwide
@@ -955,7 +955,7 @@ export default function LandingPage({
           {/* Intro Tooltip */}
           {showChatIntro && (
             <div className="absolute bottom-full right-0 mb-3 animate-fade-in">
-              <div className="bg-white rounded-xl shadow-lg p-4 max-w-[280px] relative">
+              <div className="bg-white rounded-xl shadow-lg p-4 w-[320px] relative">
                 <button 
                   onClick={() => setShowChatIntro(false)}
                   className="absolute -top-2 -right-2 w-5 h-5 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center"
