@@ -954,7 +954,7 @@ export default function LandingPage({
           {/* Intro Tooltip */}
           {showChatIntro && (
             <div className="absolute bottom-full right-0 mb-3 animate-fade-in">
-              <div className="bg-white rounded-2xl shadow-lg px-5 py-4 w-[340px] relative">
+              <div className="bg-white rounded-2xl shadow-lg px-5 py-4 w-[280px] relative">
                 <button 
                   onClick={() => setShowChatIntro(false)}
                   className="absolute -top-2 -right-2 w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center"
