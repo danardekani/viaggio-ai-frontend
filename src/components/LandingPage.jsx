@@ -479,7 +479,6 @@ export default function LandingPage({
           
           {/* Destination Name - Bottom Right */}
           <div className="absolute bottom-36 md:bottom-44 right-4 md:right-8 text-right">
-            <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Featured Destination</p>
             <p className="text-white text-xl md:text-2xl font-medium drop-shadow-lg flex items-center justify-end gap-2">
               <span className="text-lg">📍</span> 
               <span>{HERO_DESTINATION}</span>
