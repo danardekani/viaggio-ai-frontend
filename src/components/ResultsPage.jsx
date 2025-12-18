@@ -27,6 +27,25 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
+// ACTIVITY TYPES FOR FILTERING
+// ============================================================================
+
+const ACTIVITY_TYPES = [
+  { id: 'food', label: 'Food & Drink', icon: '🍽️' },
+  { id: 'walking', label: 'Walking Tours', icon: '🚶' },
+  { id: 'history', label: 'History & Culture', icon: '🏛️' },
+  { id: 'adventure', label: 'Adventure', icon: '🏔️' },
+  { id: 'nature', label: 'Nature & Wildlife', icon: '🌿' },
+  { id: 'water', label: 'Water Activities', icon: '🌊' },
+  { id: 'nightlife', label: 'Nightlife', icon: '🌙' },
+  { id: 'art', label: 'Art & Museums', icon: '🎨' },
+  { id: 'family', label: 'Family Friendly', icon: '👨‍👩‍👧' },
+  { id: 'romantic', label: 'Romantic', icon: '💕' },
+  { id: 'photography', label: 'Photography', icon: '📷' },
+  { id: 'shopping', label: 'Shopping', icon: '🛍️' },
+];
+
+// ============================================================================
 // RESULTS PAGE COMPONENT
 // ============================================================================
 
@@ -128,9 +147,21 @@ export default function ResultsPage({
   const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
   const [searchDate, setSearchDate] = useState(searchParams?.startDate || '');
   
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [selectedDestinationId, setSelectedDestinationId] = useState(searchParams?.destinationId || null);
+  
+  // Activity type filter state
+  const [selectedActivities, setSelectedActivities] = useState([]);
+  
   // Refs
   const chatMessagesRef = useRef(null);
   const textareaRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
   // ============================================================================
   // FILTERING & SORTING
@@ -157,7 +188,30 @@ export default function ResultsPage({
     if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
     if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
     
-    return true;
+    // Activity type filter
+    if (selectedActivities.length > 0) {
+      const tourText = `${tour.name} ${tour.description || ''} ${(tour.tags || []).join(' ')}`.toLowerCase();
+      const keywords = {
+        'food': ['food', 'culinary', 'dining', 'restaurant', 'tasting', 'cooking', 'wine', 'beer', 'cuisine', 'gastro'],
+        'walking': ['walking', 'walk', 'stroll', 'on foot', 'pedestrian', 'guided walk'],
+        'history': ['history', 'historical', 'heritage', 'ancient', 'museum', 'archaeology', 'medieval', 'ruins'],
+        'adventure': ['adventure', 'extreme', 'thrill', 'adrenaline', 'zip', 'climb', 'hike', 'hiking', 'trek'],
+        'nature': ['nature', 'wildlife', 'animal', 'safari', 'park', 'forest', 'garden', 'botanical', 'bird'],
+        'water': ['water', 'boat', 'cruise', 'sailing', 'kayak', 'snorkel', 'diving', 'beach', 'swim', 'river'],
+        'nightlife': ['night', 'evening', 'bar', 'club', 'pub', 'party', 'after dark'],
+        'art': ['art', 'museum', 'gallery', 'exhibition', 'artistic', 'painter', 'sculpture'],
+        'family': ['family', 'kid', 'child', 'children', 'all ages', 'family-friendly'],
+        'romantic': ['romantic', 'couple', 'honeymoon', 'sunset', 'candlelit', 'private dinner'],
+        'photography': ['photo', 'photography', 'instagram', 'scenic', 'viewpoint', 'picture'],
+        'shopping': ['shopping', 'market', 'bazaar', 'boutique', 'shop', 'souvenir']
+      };
+      const matchesActivity = selectedActivities.some(activity => 
+        (keywords[activity] || []).some(kw => tourText.includes(kw))
+      );
+      if (!matchesActivity) return false;
+    }
+    
+    return true;;
   });
 
   // Sort results
@@ -192,6 +246,55 @@ export default function ResultsPage({
     setCurrentPage(1);
   }, [filters, sortBy]);
 
+  // Debounced autocomplete fetch
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!searchDestination || searchDestination.length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      // Don't fetch if we just selected a suggestion
+      if (selectedDestinationId) return;
+
+      setLoadingSuggestions(true);
+      try {
+        const response = await fetch(
+          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(searchDestination)}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setSuggestions(data.suggestions || []);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timer);
+  }, [searchDestination, selectedDestinationId, backendUrl]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        searchInputRef.current && 
+        !searchInputRef.current.contains(e.target) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -224,9 +327,82 @@ export default function ResultsPage({
       likelyToSellOut: false,
       specialOffer: false
     });
+    setSelectedActivities([]);
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== false);
+  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== false) || selectedActivities.length > 0;
+
+  // ============================================================================
+  // AUTOCOMPLETE HANDLERS
+  // ============================================================================
+
+  const handleSelectSuggestion = (suggestion) => {
+    setSearchDestination(suggestion.displayName || suggestion.name);
+    setSelectedDestinationId(suggestion.destinationId);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSearch(e);
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0) {
+          handleSelectSuggestion(suggestions[selectedSuggestionIndex]);
+        } else {
+          setShowSuggestions(false);
+          handleSearch(e);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+    }
+  };
+
+  const handleDestinationChange = (e) => {
+    setSearchDestination(e.target.value);
+    setSelectedDestinationId(null);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  // ============================================================================
+  // ACTIVITY TYPE HANDLERS
+  // ============================================================================
+
+  const toggleActivityType = (activityId) => {
+    setSelectedActivities(prev => {
+      if (prev.includes(activityId)) {
+        return prev.filter(id => id !== activityId);
+      } else {
+        return [...prev, activityId];
+      }
+    });
+  };
+
+  const clearActivityFilters = () => {
+    setSelectedActivities([]);
+  };
 
   // ============================================================================
   // SEARCH HANDLER
@@ -236,9 +412,11 @@ export default function ResultsPage({
     e?.preventDefault();
     if (!searchDestination.trim()) return;
     
+    setShowSuggestions(false);
     onNewSearch({
       type: 'tours',
       destination: searchDestination.trim(),
+      destinationId: selectedDestinationId,
       travelers: travelers,
       startDate: searchDate || undefined,
       sortBy
@@ -362,13 +540,54 @@ export default function ResultsPage({
             {/* Desktop: Full Search Form */}
             <form onSubmit={handleSearch} className="hidden sm:flex flex-1 items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
               <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                value={searchDestination}
-                onChange={(e) => setSearchDestination(e.target.value)}
-                placeholder="Where to?"
-                className="flex-1 bg-transparent focus:outline-none text-sm min-w-0"
-              />
+              
+              {/* Destination with Autocomplete */}
+              <div className="relative flex-1" ref={searchInputRef}>
+                <input
+                  type="text"
+                  value={searchDestination}
+                  onChange={handleDestinationChange}
+                  onKeyDown={handleSearchKeyDown}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="Where to?"
+                  className="w-full bg-transparent focus:outline-none text-sm"
+                />
+                
+                {/* Loading indicator */}
+                {loadingSuggestions && (
+                  <Loader2 className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                )}
+                
+                {/* Autocomplete Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-3 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.destinationId || index}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors ${
+                          index === selectedSuggestionIndex ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {suggestion.displayName || suggestion.name}
+                          </p>
+                          {suggestion.type && (
+                            <p className="text-xs text-gray-500 capitalize">{suggestion.type.toLowerCase().replace('_', ' ')}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               <span className="text-gray-300 hidden md:block">|</span>
               <input
                 type="date"
@@ -530,6 +749,37 @@ export default function ResultsPage({
                       {feature.icon} {feature.label}
                     </span>
                   </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Activity Types */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-700">Activity Type</h3>
+                {selectedActivities.length > 0 && (
+                  <button
+                    onClick={clearActivityFilters}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ACTIVITY_TYPES.map(activity => (
+                  <button
+                    key={activity.id}
+                    onClick={() => toggleActivityType(activity.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition-colors ${
+                      selectedActivities.includes(activity.id)
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
+                        : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
+                    }`}
+                  >
+                    <span>{activity.icon}</span>
+                    <span>{activity.label}</span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1001,19 +1251,50 @@ export default function ResultsPage({
               </button>
             </div>
             <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }} className="space-y-3">
-              <div>
+              <div className="relative">
                 <label className="text-xs text-gray-500 font-medium">Destination</label>
                 <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1">
                   <MapPin className="w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={searchDestination}
-                    onChange={(e) => setSearchDestination(e.target.value)}
+                    onChange={handleDestinationChange}
+                    onKeyDown={handleSearchKeyDown}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                     placeholder="Where to?"
                     className="flex-1 bg-transparent focus:outline-none text-sm"
                     autoFocus
                   />
+                  {loadingSuggestions && (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  )}
                 </div>
+                
+                {/* Mobile Autocomplete Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.destinationId || index}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        className={`w-full px-3 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2 ${
+                          index === selectedSuggestionIndex ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-gray-900 truncate block">
+                            {suggestion.displayName || suggestion.name}
+                          </span>
+                          {suggestion.type && (
+                            <span className="text-xs text-gray-500 capitalize">{suggestion.type.toLowerCase().replace('_', ' ')}</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-medium">Date</label>
@@ -1130,21 +1411,41 @@ export default function ResultsPage({
                 </div>
               </div>
 
+              {/* Activity Types */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-700">Activity Type</h3>
+                  {selectedActivities.length > 0 && (
+                    <button
+                      onClick={clearActivityFilters}
+                      className="text-xs text-blue-600 hover:text-blue-700"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ACTIVITY_TYPES.map(activity => (
+                    <button
+                      key={activity.id}
+                      onClick={() => toggleActivityType(activity.id)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        selectedActivities.includes(activity.id)
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span>{activity.icon}</span>
+                      <span>{activity.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Clear Filters */}
               {hasActiveFilters && (
                 <button
-                  onClick={() => setFilters({
-                    minPrice: '',
-                    maxPrice: '',
-                    minRating: '',
-                    minDuration: '',
-                    maxDuration: '',
-                    freeCancel: false,
-                    skipLine: false,
-                    privateTour: false,
-                    likelyToSellOut: false,
-                    specialOffer: false
-                  })}
+                  onClick={clearFilters}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Clear all filters
