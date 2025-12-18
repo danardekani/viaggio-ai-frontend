@@ -955,17 +955,17 @@ export default function LandingPage({
           {/* Intro Tooltip */}
           {showChatIntro && (
             <div className="absolute bottom-full right-0 mb-3 animate-fade-in">
-              <div className="bg-white rounded-xl shadow-lg p-3 max-w-[200px] relative">
+              <div className="bg-white rounded-xl shadow-lg p-4 max-w-[280px] relative">
                 <button 
                   onClick={() => setShowChatIntro(false)}
                   className="absolute -top-2 -right-2 w-5 h-5 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center"
                 >
                   <X className="w-3 h-3 text-gray-600" />
                 </button>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 font-normal">
                   <span className="font-semibold">Need help planning?</span> Chat with Via, your AI travel assistant! ✨
                 </p>
-                <div className="absolute bottom-0 right-6 translate-y-full">
+                <div className="absolute bottom-0 right-8 translate-y-full">
                   <div className="w-3 h-3 bg-white transform rotate-45 -translate-y-1.5 shadow-lg" />
                 </div>
               </div>
