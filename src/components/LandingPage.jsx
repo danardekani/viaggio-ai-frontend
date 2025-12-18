@@ -474,15 +474,15 @@ export default function LandingPage({
             alt="Beautiful beach destination" 
             className="w-full h-full object-cover"
           />
-          {/* Gradient starts fading much later - shows more of the beautiful image */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent via-50% to-gray-50/95 to-90%" />
+          {/* Gradient starts fading very late - shows maximum image */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent via-70% to-gray-50" />
           
           {/* Destination Name - Bottom Right */}
           <div className="absolute bottom-36 md:bottom-44 right-4 md:right-8 text-right">
             <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Featured Destination</p>
-            <p className="text-white text-xl md:text-2xl font-light drop-shadow-lg flex items-center justify-end gap-2">
+            <p className="text-white text-xl md:text-2xl font-medium drop-shadow-lg flex items-center justify-end gap-2">
               <span className="text-lg">📍</span> 
-              <span className="italic">{HERO_DESTINATION}</span>
+              <span>{HERO_DESTINATION}</span>
             </p>
           </div>
         </div>
