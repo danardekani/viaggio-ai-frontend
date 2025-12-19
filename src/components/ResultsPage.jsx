@@ -611,12 +611,15 @@ export default function ResultsPage({
 
       const data = await response.json();
 
+      // Extract tours from various possible response formats
+      const tours = data.tours || data.results || data.data?.tours || [];
+
       // Store message along with any tours found
       setChatMessages(prev => [...prev, {
         role: 'assistant',
         content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
-        tours: data.tours || [],  // Store tours for display
-        searchDestination: data.searchDestination || null  // For "View more" navigation
+        tours: tours,  // Store tours for display
+        searchDestination: data.searchDestination || data.destination || null  // For "View more" navigation
       }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -1511,9 +1514,9 @@ export default function ResultsPage({
                               <div className="flex gap-2.5">
                                 {/* Tour image */}
                                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                                  {tour.images?.[0]?.url ? (
-                                    <img 
-                                      src={tour.images[0].url} 
+                                  {(tour.image || tour.images?.[0]?.url || tour.images?.[0]) ? (
+                                    <img
+                                      src={tour.image || tour.images?.[0]?.url || tour.images?.[0]}
                                       alt={tour.name}
                                       className="w-full h-full object-cover"
                                     />
