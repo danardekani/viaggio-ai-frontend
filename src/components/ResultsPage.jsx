@@ -25,25 +25,7 @@ import {
   Shield,
   Eye
 } from 'lucide-react';
-
-// ============================================================================
-// ACTIVITY TYPES FOR FILTERING
-// ============================================================================
-
-const ACTIVITY_TYPES = [
-  { id: 'food', label: 'Food & Drink', icon: '🍽️' },
-  { id: 'walking', label: 'Walking Tours', icon: '🚶' },
-  { id: 'history', label: 'History & Culture', icon: '🏛️' },
-  { id: 'adventure', label: 'Adventure', icon: '🏔️' },
-  { id: 'nature', label: 'Nature & Wildlife', icon: '🌿' },
-  { id: 'water', label: 'Water Activities', icon: '🌊' },
-  { id: 'nightlife', label: 'Nightlife', icon: '🌙' },
-  { id: 'art', label: 'Art & Museums', icon: '🎨' },
-  { id: 'family', label: 'Family Friendly', icon: '👨‍👩‍👧' },
-  { id: 'romantic', label: 'Romantic', icon: '💕' },
-  { id: 'photography', label: 'Photography', icon: '📷' },
-  { id: 'shopping', label: 'Shopping', icon: '🛍️' },
-];
+import QuickViewModal from './QuickViewModal';
 
 // ============================================================================
 // RESULTS PAGE COMPONENT
@@ -98,14 +80,12 @@ export default function ResultsPage({
   
   // QuickView Modal State
   const [quickViewTour, setQuickViewTour] = useState(null);
-  const [quickViewImageIndex, setQuickViewImageIndex] = useState(0);
   const [quickViewLoading, setQuickViewLoading] = useState(false);
   
   // Function to open QuickView with full details
   const openQuickView = async (tour) => {
     // Show modal immediately with basic info
     setQuickViewTour(tour);
-    setQuickViewImageIndex(0);
     setQuickViewLoading(true);
     
     try {
@@ -147,21 +127,9 @@ export default function ResultsPage({
   const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
   const [searchDate, setSearchDate] = useState(searchParams?.startDate || '');
   
-  // Autocomplete state
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const [selectedDestinationId, setSelectedDestinationId] = useState(searchParams?.destinationId || null);
-  
-  // Activity type filter state
-  const [selectedActivities, setSelectedActivities] = useState([]);
-  
   // Refs
   const chatMessagesRef = useRef(null);
   const textareaRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const suggestionsRef = useRef(null);
 
   // ============================================================================
   // FILTERING & SORTING
@@ -188,30 +156,7 @@ export default function ResultsPage({
     if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
     if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
     
-    // Activity type filter
-    if (selectedActivities.length > 0) {
-      const tourText = `${tour.name} ${tour.description || ''} ${(tour.tags || []).join(' ')}`.toLowerCase();
-      const keywords = {
-        'food': ['food', 'culinary', 'dining', 'restaurant', 'tasting', 'cooking', 'wine', 'beer', 'cuisine', 'gastro'],
-        'walking': ['walking', 'walk', 'stroll', 'on foot', 'pedestrian', 'guided walk'],
-        'history': ['history', 'historical', 'heritage', 'ancient', 'museum', 'archaeology', 'medieval', 'ruins'],
-        'adventure': ['adventure', 'extreme', 'thrill', 'adrenaline', 'zip', 'climb', 'hike', 'hiking', 'trek'],
-        'nature': ['nature', 'wildlife', 'animal', 'safari', 'park', 'forest', 'garden', 'botanical', 'bird'],
-        'water': ['water', 'boat', 'cruise', 'sailing', 'kayak', 'snorkel', 'diving', 'beach', 'swim', 'river'],
-        'nightlife': ['night', 'evening', 'bar', 'club', 'pub', 'party', 'after dark'],
-        'art': ['art', 'museum', 'gallery', 'exhibition', 'artistic', 'painter', 'sculpture'],
-        'family': ['family', 'kid', 'child', 'children', 'all ages', 'family-friendly'],
-        'romantic': ['romantic', 'couple', 'honeymoon', 'sunset', 'candlelit', 'private dinner'],
-        'photography': ['photo', 'photography', 'instagram', 'scenic', 'viewpoint', 'picture'],
-        'shopping': ['shopping', 'market', 'bazaar', 'boutique', 'shop', 'souvenir']
-      };
-      const matchesActivity = selectedActivities.some(activity => 
-        (keywords[activity] || []).some(kw => tourText.includes(kw))
-      );
-      if (!matchesActivity) return false;
-    }
-    
-    return true;;
+    return true;
   });
 
   // Sort results
@@ -246,55 +191,6 @@ export default function ResultsPage({
     setCurrentPage(1);
   }, [filters, sortBy]);
 
-  // Debounced autocomplete fetch
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!searchDestination || searchDestination.length < 2) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
-
-      // Don't fetch if we just selected a suggestion
-      if (selectedDestinationId) return;
-
-      setLoadingSuggestions(true);
-      try {
-        const response = await fetch(
-          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(searchDestination)}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setSuggestions(data.suggestions || []);
-          setShowSuggestions(true);
-        }
-      } catch (error) {
-        console.error('Autocomplete error:', error);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    };
-
-    const timer = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(timer);
-  }, [searchDestination, selectedDestinationId, backendUrl]);
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        searchInputRef.current && 
-        !searchInputRef.current.contains(e.target) &&
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -327,82 +223,9 @@ export default function ResultsPage({
       likelyToSellOut: false,
       specialOffer: false
     });
-    setSelectedActivities([]);
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== false) || selectedActivities.length > 0;
-
-  // ============================================================================
-  // AUTOCOMPLETE HANDLERS
-  // ============================================================================
-
-  const handleSelectSuggestion = (suggestion) => {
-    setSearchDestination(suggestion.displayName || suggestion.name);
-    setSelectedDestinationId(suggestion.destinationId);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setSelectedSuggestionIndex(-1);
-  };
-
-  const handleSearchKeyDown = (e) => {
-    if (!showSuggestions || suggestions.length === 0) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleSearch(e);
-      }
-      return;
-    }
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
-          prev < suggestions.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedSuggestionIndex >= 0) {
-          handleSelectSuggestion(suggestions[selectedSuggestionIndex]);
-        } else {
-          setShowSuggestions(false);
-          handleSearch(e);
-        }
-        break;
-      case 'Escape':
-        setShowSuggestions(false);
-        setSelectedSuggestionIndex(-1);
-        break;
-    }
-  };
-
-  const handleDestinationChange = (e) => {
-    setSearchDestination(e.target.value);
-    setSelectedDestinationId(null);
-    setSelectedSuggestionIndex(-1);
-  };
-
-  // ============================================================================
-  // ACTIVITY TYPE HANDLERS
-  // ============================================================================
-
-  const toggleActivityType = (activityId) => {
-    setSelectedActivities(prev => {
-      if (prev.includes(activityId)) {
-        return prev.filter(id => id !== activityId);
-      } else {
-        return [...prev, activityId];
-      }
-    });
-  };
-
-  const clearActivityFilters = () => {
-    setSelectedActivities([]);
-  };
+  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== false);
 
   // ============================================================================
   // SEARCH HANDLER
@@ -412,11 +235,9 @@ export default function ResultsPage({
     e?.preventDefault();
     if (!searchDestination.trim()) return;
     
-    setShowSuggestions(false);
     onNewSearch({
       type: 'tours',
       destination: searchDestination.trim(),
-      destinationId: selectedDestinationId,
       travelers: travelers,
       startDate: searchDate || undefined,
       sortBy
@@ -540,64 +361,13 @@ export default function ResultsPage({
             {/* Desktop: Full Search Form */}
             <form onSubmit={handleSearch} className="hidden sm:flex flex-1 items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
               <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              
-              {/* Destination with Autocomplete */}
-              <div className="relative flex-1" ref={searchInputRef}>
-                <input
-                  type="text"
-                  value={searchDestination}
-                  onChange={handleDestinationChange}
-                  onKeyDown={handleSearchKeyDown}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  placeholder="Where to?"
-                  className="w-full bg-transparent focus:outline-none text-sm"
-                />
-                
-                {/* Loading indicator */}
-                {loadingSuggestions && (
-                  <Loader2 className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-                )}
-                
-                {/* Autocomplete Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div 
-                    ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 mt-3 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
-                  >
-                    {suggestions.map((suggestion, index) => {
-                      // Safely extract display values (handle edge cases)
-                      const displayName = typeof suggestion?.displayName === 'string' 
-                        ? suggestion.displayName 
-                        : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
-                      const destType = typeof suggestion?.type === 'string' 
-                        ? suggestion.type.toLowerCase().replace('_', ' ') 
-                        : null;
-                      
-                      return (
-                        <button
-                          key={suggestion?.destinationId || index}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors ${
-                            index === selectedSuggestionIndex ? 'bg-blue-50' : ''
-                          }`}
-                        >
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">
-                              {displayName}
-                            </p>
-                            {destType && (
-                              <p className="text-xs text-gray-500 capitalize">{destType}</p>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              
+              <input
+                type="text"
+                value={searchDestination}
+                onChange={(e) => setSearchDestination(e.target.value)}
+                placeholder="Where to?"
+                className="flex-1 bg-transparent focus:outline-none text-sm min-w-0"
+              />
               <span className="text-gray-300 hidden md:block">|</span>
               <input
                 type="date"
@@ -762,37 +532,6 @@ export default function ResultsPage({
                 ))}
               </div>
             </div>
-
-            {/* Activity Types */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-700">Activity Type</h3>
-                {selectedActivities.length > 0 && (
-                  <button
-                    onClick={clearActivityFilters}
-                    className="text-xs text-blue-600 hover:text-blue-700"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {ACTIVITY_TYPES.map(activity => (
-                  <button
-                    key={activity.id}
-                    onClick={() => toggleActivityType(activity.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition-colors ${
-                      selectedActivities.includes(activity.id)
-                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                        : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
-                    }`}
-                  >
-                    <span>{activity.icon}</span>
-                    <span>{activity.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -884,7 +623,7 @@ export default function ResultsPage({
             {/* Results List */}
             {!isLoading && paginatedResults.length > 0 && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   {paginatedResults.map((tour) => {
                     const isSelected = isInCart('tour', tour.id);
                     const hasDiscount = tour.hasDiscount || tour.flags?.includes('SPECIAL_OFFER');
@@ -893,112 +632,134 @@ export default function ResultsPage({
                     return (
                       <div
                         key={tour.id || tour.productCode}
-                        className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md flex flex-col ${
+                        className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${
                           isSelected ? 'border-green-500 border-2 ring-2 ring-green-100' : 'border-gray-200'
                         }`}
                       >
-                        {/* Image */}
-                        <div 
-                          className="cursor-pointer"
-                          onClick={() => openQuickView(tour)}
-                        >
-                          <div className="relative h-48">
-                            {tour.image ? (
-                              <img
-                                src={tour.image}
-                                alt={tour.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                                <MapPin className="w-12 h-12 text-blue-300" />
-                              </div>
-                            )}
-                            {/* Badges on image */}
-                            <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-                              {hasDiscount && (
-                                <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
-                                  <Tag className="w-3 h-3" />
-                                  DEAL
-                                </span>
+                        <div className="flex flex-col md:flex-row">
+                          {/* Image */}
+                          <div 
+                            className="md:w-72 lg:w-80 flex-shrink-0 cursor-pointer"
+                            onClick={() => openQuickView(tour)}
+                          >
+                            <div className="relative h-48 md:h-full min-h-[200px]">
+                              {tour.image ? (
+                                <img
+                                  src={tour.image}
+                                  alt={tour.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                  <MapPin className="w-12 h-12 text-blue-300" />
+                                </div>
                               )}
-                              {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                                <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
-                                  🔥 Popular
-                                </span>
+                              {/* Badges on image */}
+                              <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                                {hasDiscount && (
+                                  <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                                    <Tag className="w-3 h-3" />
+                                    DEAL
+                                  </span>
+                                )}
+                                {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
+                                  <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+                                    🔥 Popular
+                                  </span>
+                                )}
+                              </div>
+                              {/* Image count badge */}
+                              {tour.images && tour.images.length > 1 && (
+                                <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
+                                  📷 {tour.images.length}
+                                </div>
                               )}
                             </div>
-                            {/* Image count badge */}
-                            {tour.images && tour.images.length > 1 && (
-                              <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
-                                📷 {tour.images.length}
-                              </div>
-                            )}
                           </div>
-                        </div>
 
-                        {/* Content */}
-                        <div className="flex-1 p-4 flex flex-col">
+                          {/* Content */}
+                          <div className="flex-1 p-3 sm:p-5 flex flex-col">
                             {/* Title & Rating Row */}
-                            <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-start justify-between gap-4 mb-2">
                               <h3 
-                                className="text-base font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
+                                className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
                                 onClick={() => openQuickView(tour)}
                               >
                                 {tour.name}
                               </h3>
                               {tour.rating && tour.rating !== 'New' && (
-                                <div className="flex items-center gap-0.5 flex-shrink-0 bg-green-50 px-1.5 py-0.5 rounded">
-                                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                                  <span className="font-semibold text-gray-900 text-sm">{tour.rating}</span>
+                                <div className="flex items-center gap-1 flex-shrink-0 bg-green-50 px-2 py-1 rounded-lg">
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                  <span className="font-semibold text-gray-900">{tour.rating}</span>
                                   {tour.reviewCount > 0 && (
-                                    <span className="text-gray-500 text-xs">({tour.reviewCount.toLocaleString()})</span>
+                                    <span className="text-gray-500 text-sm">({tour.reviewCount.toLocaleString()})</span>
                                   )}
                                 </div>
                               )}
                             </div>
 
-                            {/* Description - shorter for grid */}
+                            {/* Description */}
                             {tour.description && (
-                              <p className="text-gray-600 text-xs mb-2 line-clamp-2">
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                                 {tour.description}
                               </p>
                             )}
 
                             {/* Features/Flags Row 1 - Key Info */}
-                            <div className="flex flex-wrap gap-1.5 mb-2">
+                            <div className="flex flex-wrap gap-2 mb-2">
                               {tour.duration && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                                  <Clock className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                                  <Clock className="w-3.5 h-3.5" />
                                   {tour.duration}
+                                </span>
+                              )}
+                              {tour.languages && tour.languages.length > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                                  <Globe className="w-3.5 h-3.5" />
+                                  {tour.languages.slice(0, 2).join(', ')}{tour.languages.length > 2 ? ` +${tour.languages.length - 2}` : ''}
+                                </span>
+                              )}
+                              {tour.maxGroupSize && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                                  <Users className="w-3.5 h-3.5" />
+                                  Up to {tour.maxGroupSize}
                                 </span>
                               )}
                             </div>
                             
                             {/* Features/Flags Row 2 - Highlights */}
-                            <div className="flex flex-wrap gap-1.5 mb-2">
+                            <div className="flex flex-wrap gap-2 mb-3">
                               {tourFlags.includes('FREE_CANCELLATION') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                                  <Check className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                  <Check className="w-3.5 h-3.5" />
                                   Free cancellation
                                 </span>
                               )}
                               {tourFlags.includes('SKIP_THE_LINE') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
                                   ⚡ Skip the line
                                 </span>
                               )}
                               {tourFlags.includes('PRIVATE_TOUR') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-                                  👤 Private
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+                                  👤 Private tour
                                 </span>
                               )}
                               {tour.pricingType === 'group' && !tourFlags.includes('PRIVATE_TOUR') && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
                                   👥 Per group
                                 </span>
                               )}
                             </div>
+
+                            {/* Inclusions Preview */}
+                            {tour.inclusions && tour.inclusions.length > 0 && (
+                              <div className="text-xs text-gray-500 mb-3">
+                                <span className="font-medium text-gray-600">Includes:</span>{' '}
+                                {tour.inclusions.slice(0, 3).join(' • ')}
+                                {tour.inclusions.length > 3 && ` +${tour.inclusions.length - 3} more`}
+                              </div>
+                            )}
 
                             {/* Spacer */}
                             <div className="flex-1" />
@@ -1007,29 +768,30 @@ export default function ResultsPage({
                             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                               <div>
                                 {hasDiscount && tour.originalPrice && (
-                                  <span className="text-gray-400 line-through text-sm mr-1">
+                                  <span className="text-gray-400 line-through text-sm mr-2">
                                     {formatCurrency(tour.originalPrice)}
                                   </span>
                                 )}
-                                <span className={`text-lg font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
+                                <span className={`text-xl sm:text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
                                   {formatCurrency(tour.price)}
                                 </span>
-                                <span className="text-gray-500 text-xs ml-1">
+                                <span className="text-gray-500 text-xs sm:text-sm ml-1">
                                   {tour.pricingType === 'group' 
-                                    ? '/group' 
-                                    : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : '/person'
+                                    ? 'per group' 
+                                    : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : 'per person'
                                   }
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
                                 {/* Quick View Button */}
                                 <button
                                   onClick={() => openQuickView(tour)}
-                                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  className="p-2 sm:px-3 sm:py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
                                   title="Quick view"
                                 >
                                   <Eye className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Quick View</span>
                                 </button>
 
                                 {/* Add/Remove Button */}
@@ -1038,7 +800,7 @@ export default function ResultsPage({
                                     ? removeFromCart('tour', tour.id) 
                                     : addToCart('tour', tour)
                                   }
-                                  className={`px-3 py-2 rounded-lg font-semibold transition-colors text-sm ${
+                                  className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
                                     isSelected
                                       ? 'bg-red-500 hover:bg-red-600 text-white'
                                       : 'bg-green-500 hover:bg-green-600 text-white'
@@ -1050,9 +812,10 @@ export default function ResultsPage({
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
@@ -1237,60 +1000,19 @@ export default function ResultsPage({
               </button>
             </div>
             <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }} className="space-y-3">
-              <div className="relative">
+              <div>
                 <label className="text-xs text-gray-500 font-medium">Destination</label>
                 <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1">
                   <MapPin className="w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={searchDestination}
-                    onChange={handleDestinationChange}
-                    onKeyDown={handleSearchKeyDown}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    onChange={(e) => setSearchDestination(e.target.value)}
                     placeholder="Where to?"
                     className="flex-1 bg-transparent focus:outline-none text-sm"
                     autoFocus
                   />
-                  {loadingSuggestions && (
-                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                  )}
                 </div>
-                
-                {/* Mobile Autocomplete Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => {
-                      // Safely extract display values
-                      const displayName = typeof suggestion?.displayName === 'string' 
-                        ? suggestion.displayName 
-                        : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
-                      const destType = typeof suggestion?.type === 'string' 
-                        ? suggestion.type.toLowerCase().replace('_', ' ') 
-                        : null;
-                      
-                      return (
-                        <button
-                          key={suggestion?.destinationId || index}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className={`w-full px-3 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2 ${
-                            index === selectedSuggestionIndex ? 'bg-blue-50' : ''
-                          }`}
-                        >
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm text-gray-900 truncate block">
-                              {displayName}
-                            </span>
-                            {destType && (
-                              <span className="text-xs text-gray-500 capitalize">{destType}</span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-medium">Date</label>
@@ -1407,41 +1129,21 @@ export default function ResultsPage({
                 </div>
               </div>
 
-              {/* Activity Types */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-700">Activity Type</h3>
-                  {selectedActivities.length > 0 && (
-                    <button
-                      onClick={clearActivityFilters}
-                      className="text-xs text-blue-600 hover:text-blue-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {ACTIVITY_TYPES.map(activity => (
-                    <button
-                      key={activity.id}
-                      onClick={() => toggleActivityType(activity.id)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedActivities.includes(activity.id)
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      <span>{activity.icon}</span>
-                      <span>{activity.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Clear Filters */}
               {hasActiveFilters && (
                 <button
-                  onClick={clearFilters}
+                  onClick={() => setFilters({
+                    minPrice: '',
+                    maxPrice: '',
+                    minRating: '',
+                    minDuration: '',
+                    maxDuration: '',
+                    freeCancel: false,
+                    skipLine: false,
+                    privateTour: false,
+                    likelyToSellOut: false,
+                    specialOffer: false
+                  })}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Clear all filters
@@ -1659,386 +1361,21 @@ export default function ResultsPage({
       {/* QUICKVIEW MODAL */}
       {/* ================================================================== */}
       {quickViewTour && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setQuickViewTour(null)}
-          />
-          
-          {/* Modal Content */}
-          <div className="relative bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col rounded-t-2xl">
-            {/* Close Button */}
-            <button
-              onClick={() => setQuickViewTour(null)}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {/* Modal Body - Scrollable */}
-            <div className="overflow-y-auto flex-1">
-              {/* Image Gallery Section */}
-              <div className="bg-gray-900 relative">
-                {/* Loading indicator */}
-                {quickViewLoading && (
-                  <div className="absolute top-4 right-16 z-10 px-3 py-1.5 bg-white/90 rounded-full flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-gray-600">Loading details...</span>
-                  </div>
-                )}
-                
-                {/* Main Image + Thumbnails Grid */}
-                {quickViewTour.images && quickViewTour.images.length > 1 ? (
-                  <div className="flex flex-col md:flex-row h-auto md:h-96">
-                    {/* Main Large Image */}
-                    <div className="flex-1 relative bg-gray-900 flex items-center justify-center min-h-[280px] md:min-h-0">
-                      <img
-                        src={quickViewTour.images[quickViewImageIndex]}
-                        alt={quickViewTour.name}
-                        className="max-w-full max-h-[380px] md:max-h-full w-auto h-auto object-contain cursor-pointer"
-                        onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
-                      />
-                      {/* Badges on main image */}
-                      <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                        {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && (
-                          <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1">
-                            <Tag className="w-4 h-4" />
-                            DEAL
-                          </span>
-                        )}
-                        {quickViewTour.flags?.includes('LIKELY_TO_SELL_OUT') && (
-                          <span className="px-3 py-1.5 bg-red-500 text-white text-sm font-semibold rounded-full">
-                            🔥 Popular
-                          </span>
-                        )}
-                      </div>
-                      {/* Image counter */}
-                      <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full">
-                        {quickViewImageIndex + 1} / {quickViewTour.images.length}
-                      </div>
-                      {/* Navigation arrows */}
-                      <button
-                        onClick={() => setQuickViewImageIndex(i => i === 0 ? quickViewTour.images.length - 1 : i - 1)}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => setQuickViewImageIndex(i => i === quickViewTour.images.length - 1 ? 0 : i + 1)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                    </div>
-                    
-                    {/* Thumbnail Strip - Right side on desktop, bottom on mobile */}
-                    <div className="flex md:flex-col gap-1 p-2 md:p-1 md:w-24 overflow-x-auto md:overflow-y-auto bg-gray-800">
-                      {quickViewTour.images.map((img, idx) => (
-                        <button 
-                          key={idx}
-                          className={`flex-shrink-0 w-16 h-16 md:w-full md:h-20 rounded overflow-hidden ${
-                            idx === quickViewImageIndex ? 'ring-2 ring-blue-500' : 'opacity-70 hover:opacity-100'
-                          }`}
-                          onClick={() => setQuickViewImageIndex(idx)}
-                        >
-                          <img
-                            src={img}
-                            alt={`${quickViewTour.name} ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  /* Single Image Fallback */
-                  <div className="relative flex items-center justify-center bg-gray-900 min-h-[280px] md:min-h-[320px]">
-                    {quickViewTour.image ? (
-                      <img
-                        src={quickViewTour.image}
-                        alt={quickViewTour.name}
-                        className="max-w-full max-h-[320px] w-auto h-auto object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                        <MapPin className="w-16 h-16 text-blue-300" />
-                      </div>
-                    )}
-                    {/* Badges */}
-                    <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                      {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && (
-                        <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1">
-                          <Tag className="w-4 h-4" />
-                          DEAL
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                {/* Title & Rating */}
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    {quickViewTour.name}
-                  </h2>
-                  {quickViewTour.rating && quickViewTour.rating !== 'New' && (
-                    <div className="flex items-center gap-1.5 flex-shrink-0 bg-green-50 px-3 py-1.5 rounded-lg">
-                      <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                      <span className="font-bold text-gray-900 text-lg">{quickViewTour.rating}</span>
-                      {quickViewTour.reviewCount > 0 && (
-                        <span className="text-gray-500">({quickViewTour.reviewCount.toLocaleString()})</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Key Info Pills */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {quickViewTour.duration && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
-                      <Clock className="w-4 h-4" />
-                      {quickViewTour.duration}
-                    </span>
-                  )}
-                  {quickViewTour.languages && quickViewTour.languages.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
-                      <Globe className="w-4 h-4" />
-                      {quickViewTour.languages.join(', ')}
-                    </span>
-                  )}
-                  {quickViewTour.maxGroupSize && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium">
-                      <Users className="w-4 h-4" />
-                      Max {quickViewTour.maxGroupSize} people
-                    </span>
-                  )}
-                  {quickViewTour.flags?.includes('FREE_CANCELLATION') && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-full font-medium">
-                      <Shield className="w-4 h-4" />
-                      Free cancellation
-                    </span>
-                  )}
-                  {quickViewTour.flags?.includes('SKIP_THE_LINE') && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-full font-medium">
-                      ⚡ Skip the line
-                    </span>
-                  )}
-                  {quickViewTour.pricingType === 'group' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-sm rounded-full font-medium">
-                      👥 Per group pricing
-                    </span>
-                  )}
-                </div>
-
-                {/* Two Column Layout for Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column - About */}
-                  <div>
-                    {/* About This Tour */}
-                    {quickViewTour.description && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <Info className="w-5 h-5 text-blue-500" />
-                          About this tour
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed">
-                          {quickViewTour.description}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Itinerary / What You'll See */}
-                    {quickViewTour.itinerary && quickViewTour.itinerary.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-blue-500" />
-                          What you'll see
-                        </h3>
-                        <div className="space-y-3">
-                          {quickViewTour.itinerary.map((stop, idx) => (
-                            <div key={idx} className="flex gap-3">
-                              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold">
-                                {idx + 1}
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{stop.name || stop.description}</p>
-                                {stop.duration && (
-                                  <p className="text-sm text-gray-500">{Math.round(stop.duration / 60)} min</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column - Highlights */}
-                  <div>
-                    {/* Highlights Section */}
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Star className="w-5 h-5 text-yellow-500" />
-                        Highlights
-                      </h3>
-                      <ul className="space-y-2">
-                        {/* Generate highlights from flags and features */}
-                        {quickViewTour.flags?.includes('FREE_CANCELLATION') && (
-                          <li className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>Free cancellation up to 24 hours before</span>
-                          </li>
-                        )}
-                        {quickViewTour.flags?.includes('SKIP_THE_LINE') && (
-                          <li className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>Skip-the-line access included</span>
-                          </li>
-                        )}
-                        {quickViewTour.flags?.includes('LIKELY_TO_SELL_OUT') && (
-                          <li className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>Highly rated and popular experience</span>
-                          </li>
-                        )}
-                        {quickViewTour.isPrivateTour && (
-                          <li className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>Private tour - just you and your group</span>
-                          </li>
-                        )}
-                        {quickViewTour.languages && quickViewTour.languages.length > 0 && (
-                          <li className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>Available in {quickViewTour.languages.length} language{quickViewTour.languages.length > 1 ? 's' : ''}</span>
-                          </li>
-                        )}
-                        {quickViewTour.duration && (
-                          <li className="flex items-start gap-2 text-gray-700">
-                            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>{quickViewTour.duration} experience</span>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-
-                    {/* What's Included */}
-                    {quickViewTour.inclusions && quickViewTour.inclusions.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <Check className="w-5 h-5 text-green-500" />
-                          What's included
-                        </h3>
-                        <ul className="space-y-2">
-                          {quickViewTour.inclusions.map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-gray-700">
-                              <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-1" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* What's Not Included */}
-                    {quickViewTour.exclusions && quickViewTour.exclusions.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <X className="w-5 h-5 text-red-500" />
-                          Not included
-                        </h3>
-                        <ul className="space-y-2">
-                          {quickViewTour.exclusions.map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-gray-600">
-                              <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-1" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Additional Info */}
-                {quickViewTour.additionalInfo && quickViewTour.additionalInfo.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <Info className="w-5 h-5 text-gray-500" />
-                      Additional information
-                    </h3>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {quickViewTour.additionalInfo.slice(0, 6).map((info, idx) => (
-                        <li key={idx} className="text-gray-600 text-sm flex items-start gap-2">
-                          <span className="text-gray-400">•</span>
-                          {info}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Sticky Footer with Price & Actions */}
-            <div className="border-t border-gray-200 bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-center sm:text-left">
-                <div className="flex items-baseline gap-2 justify-center sm:justify-start">
-                  {(quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) && quickViewTour.originalPrice && (
-                    <span className="text-gray-400 line-through text-lg">
-                      {formatCurrency(quickViewTour.originalPrice)}
-                    </span>
-                  )}
-                  <span className={`text-3xl font-bold ${
-                    (quickViewTour.hasDiscount || quickViewTour.flags?.includes('SPECIAL_OFFER')) ? 'text-orange-600' : 'text-green-600'
-                  }`}>
-                    {formatCurrency(quickViewTour.price)}
-                  </span>
-                </div>
-                <span className="text-gray-500 text-sm">
-                  {quickViewTour.pricingType === 'group' 
-                    ? 'per group' 
-                    : travelers > 1 ? `per person × ${travelers} = ${formatCurrency(quickViewTour.price * travelers)} total` : 'per person'
-                  }
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {/* View on Viator */}
-                <button
-                  onClick={() => window.open(quickViewTour.bookingLink || quickViewTour.link, '_blank')}
-                  className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span className="hidden sm:inline">View on Viator</span>
-                  <span className="sm:hidden">Details</span>
-                </button>
-
-                {/* Add to Trip */}
-                <button
-                  onClick={() => {
-                    if (isInCart('tour', quickViewTour.id)) {
-                      removeFromCart('tour', quickViewTour.id);
-                    } else {
-                      addToCart('tour', quickViewTour);
-                    }
-                  }}
-                  className={`px-6 py-2.5 rounded-lg font-semibold transition-colors ${
-                    isInCart('tour', quickViewTour.id)
-                      ? 'bg-red-500 hover:bg-red-600 text-white'
-                      : 'bg-green-500 hover:bg-green-600 text-white'
-                  }`}
-                >
-                  {isInCart('tour', quickViewTour.id) ? 'Remove from Trip' : 'Add to Trip'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <QuickViewModal
+          tour={quickViewTour}
+          onClose={() => setQuickViewTour(null)}
+          formatCurrency={formatCurrency}
+          travelers={travelers}
+          onAddToTrip={() => {
+            if (isInCart('tour', quickViewTour.id)) {
+              removeFromCart('tour', quickViewTour.id);
+            } else {
+              addToCart('tour', quickViewTour);
+            }
+          }}
+          isInCart={isInCart('tour', quickViewTour?.id)}
+          isLoading={quickViewLoading}
+        />
       )}
     </div>
   );
