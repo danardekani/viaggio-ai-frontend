@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { 
-  X, 
-  Star, 
-  Clock, 
-  MapPin, 
+import React, { useState, useMemo, useCallback, memo } from 'react';
+import {
+  X,
+  Star,
+  Clock,
+  MapPin,
   ChevronLeft,
   ChevronRight,
-  ExternalLink, 
+  ExternalLink,
   Tag,
   Globe,
   Check,
@@ -16,21 +16,20 @@ import {
   Info
 } from 'lucide-react';
 
-export default function QuickViewModal({ 
-  tour, 
-  onClose, 
-  formatCurrency, 
-  travelers = 2, 
-  onAddToTrip, 
+const QuickViewModal = memo(function QuickViewModal({
+  tour,
+  onClose,
+  formatCurrency,
+  travelers = 2,
+  onAddToTrip,
   isInCart,
   isLoading = false
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  if (!tour) return null;
 
-  // Handle images - could be array of strings or array of objects with url property
-  const getImages = () => {
+  // Memoize images array
+  const images = useMemo(() => {
+    if (!tour) return [];
     if (tour.images && tour.images.length > 0) {
       return tour.images.map(img => typeof img === 'string' ? img : img.url || img);
     }
@@ -38,23 +37,40 @@ export default function QuickViewModal({
       return [tour.image];
     }
     return [];
-  };
+  }, [tour]);
 
-  const images = getImages();
+  // Memoize derived values
   const hasMultipleImages = images.length > 1;
-  const tourFlags = tour.flags || [];
+  const tourFlags = useMemo(() => tour?.flags || [], [tour?.flags]);
 
-  // Calculate the display price based on pricing type
-  const isPerGroup = tour.pricingType === 'group';
-  const displayPrice = tour.price;
-  const hasDiscount = tour.hasDiscount || tourFlags.includes('SPECIAL_OFFER');
-  
-  // Navigation handlers
-  const prevImage = () => setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1);
-  const nextImage = () => setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1);
+  // Memoize pricing calculations
+  const { isPerGroup, displayPrice, hasDiscount } = useMemo(() => ({
+    isPerGroup: tour?.pricingType === 'group',
+    displayPrice: tour?.price,
+    hasDiscount: tour?.hasDiscount || tourFlags.includes('SPECIAL_OFFER')
+  }), [tour?.pricingType, tour?.price, tour?.hasDiscount, tourFlags]);
 
-  // Calculate recommendation percentage (mock based on rating)
-  const recommendationPercent = tour.rating ? Math.min(99, Math.round(tour.rating * 20)) : null;
+  // Memoize navigation handlers
+  const prevImage = useCallback(() =>
+    setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1),
+    [images.length]
+  );
+
+  const nextImage = useCallback(() =>
+    setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1),
+    [images.length]
+  );
+
+  // Memoize recommendation percentage
+  const recommendationPercent = useMemo(() =>
+    tour?.rating ? Math.min(99, Math.round(tour.rating * 20)) : null,
+    [tour?.rating]
+  );
+
+  // Memoize star rating array
+  const starRatings = useMemo(() => [1, 2, 3, 4, 5], []);
+
+  if (!tour) return null;
 
   return (
     <div 
@@ -87,10 +103,10 @@ export default function QuickViewModal({
               {tour.rating && tour.rating !== 'New' && (
                 <div className="flex items-center gap-1">
                   <div className="flex">
-                    {[1,2,3,4,5].map(star => (
-                      <Star 
-                        key={star} 
-                        className={`w-4 h-4 ${star <= Math.floor(tour.rating) ? 'text-emerald-500 fill-emerald-500' : 'text-gray-300'}`} 
+                    {starRatings.map(star => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${star <= Math.floor(tour.rating) ? 'text-emerald-500 fill-emerald-500' : 'text-gray-300'}`}
                       />
                     ))}
                   </div>
@@ -137,6 +153,7 @@ export default function QuickViewModal({
                     <img
                       src={img}
                       alt={`${tour.name} ${idx + 1}`}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -147,7 +164,7 @@ export default function QuickViewModal({
                     className="w-full aspect-[4/3] rounded overflow-hidden relative"
                     onClick={() => setCurrentImageIndex(5)}
                   >
-                    <img src={images[5]} alt="More" className="w-full h-full object-cover" />
+                    <img src={images[5]} alt="More" loading="lazy" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-white text-xs font-medium">See More</span>
                     </div>
@@ -215,7 +232,7 @@ export default function QuickViewModal({
                   }`}
                   onClick={() => setCurrentImageIndex(idx)}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -404,4 +421,6 @@ export default function QuickViewModal({
       </div>
     </div>
   );
-}
+});
+
+export default QuickViewModal;
