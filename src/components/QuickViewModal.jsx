@@ -4,17 +4,14 @@ import {
   Star, 
   Clock, 
   MapPin, 
-  Users, 
-  CheckCircle, 
   ChevronLeft,
   ChevronRight,
   ExternalLink, 
   Tag,
   Globe,
-  Info,
   Check,
-  Shield,
-  Loader2
+  Loader2,
+  Smartphone
 } from 'lucide-react';
 
 export default function QuickViewModal({ 
@@ -30,7 +27,18 @@ export default function QuickViewModal({
   
   if (!tour) return null;
 
-  const images = tour.images && tour.images.length > 0 ? tour.images : (tour.image ? [tour.image] : []);
+  // Handle images - could be array of strings or array of objects with url property
+  const getImages = () => {
+    if (tour.images && tour.images.length > 0) {
+      return tour.images.map(img => typeof img === 'string' ? img : img.url || img);
+    }
+    if (tour.image) {
+      return [tour.image];
+    }
+    return [];
+  };
+
+  const images = getImages();
   const hasMultipleImages = images.length > 1;
   const tourFlags = tour.flags || [];
 
@@ -45,31 +53,49 @@ export default function QuickViewModal({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4" 
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header - Title & Rating */}
-        <div className="p-5 pb-4 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-start justify-between gap-4 pr-8">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2 leading-tight">
-              {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
-              )}
-              {tour.name}
-            </h2>
-            {tour.rating && tour.rating !== 'New' && (
-              <div className="flex items-center gap-1.5 flex-shrink-0 bg-green-50 px-3 py-1.5 rounded-lg">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <span className="font-bold text-gray-900 text-lg">{tour.rating}</span>
-                {tour.reviewCount > 0 && (
-                  <span className="text-gray-500">({tour.reviewCount.toLocaleString()})</span>
+        {/* Header - Title & Rating (like Viator) */}
+        <div className="p-4 sm:p-5 pb-3 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-start justify-between gap-3 pr-8">
+            <div>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight mb-2">
+                {tour.name}
+              </h2>
+              {/* Rating row like Viator */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm">
+                {tour.rating && tour.rating !== 'New' && (
+                  <div className="flex items-center gap-1">
+                    <div className="flex">
+                      {[1,2,3,4,5].map(star => (
+                        <Star 
+                          key={star} 
+                          className={`w-4 h-4 ${star <= Math.floor(tour.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                        />
+                      ))}
+                    </div>
+                    <span className="font-medium text-gray-700">{tour.reviewCount?.toLocaleString() || 0} Reviews</span>
+                  </div>
+                )}
+                {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-green-600 font-medium">🏆 Badge of Excellence</span>
+                  </>
+                )}
+                {tour.destination && (
+                  <>
+                    <span className="text-gray-300 hidden sm:inline">|</span>
+                    <span className="text-gray-600 hidden sm:inline">{tour.destination}</span>
+                  </>
                 )}
               </div>
-            )}
+            </div>
           </div>
           
           {/* Loading indicator */}
@@ -84,25 +110,25 @@ export default function QuickViewModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 bg-white hover:bg-gray-100 rounded-full shadow-lg transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 p-2 bg-white hover:bg-gray-100 rounded-full shadow-lg transition-colors"
         >
           <X className="w-5 h-5 text-gray-600" />
         </button>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
-          {/* Image Gallery - Viator Style */}
-          <div className="flex flex-col md:flex-row bg-gray-50">
-            {/* Thumbnail Strip - LEFT side (desktop only) */}
-            {hasMultipleImages && (
-              <div className="hidden md:flex flex-col gap-2 p-3 w-28 bg-white border-r border-gray-100 max-h-[400px] overflow-y-auto">
+          {/* Image Gallery - Viator Style with thumbnails on LEFT */}
+          <div className="flex flex-col md:flex-row bg-gray-50 border-b border-gray-100">
+            {/* Thumbnail Strip - LEFT side (desktop only) - always show if we have images */}
+            {images.length > 0 && (
+              <div className="hidden md:flex flex-col gap-2 p-2 w-36 bg-white border-r border-gray-100 max-h-[450px] overflow-y-auto">
                 {images.slice(0, 5).map((img, idx) => (
                   <button 
                     key={idx}
                     className={`flex-shrink-0 w-full aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all ${
                       idx === currentImageIndex 
                         ? 'border-blue-500 ring-2 ring-blue-200' 
-                        : 'border-transparent hover:border-gray-300'
+                        : 'border-gray-200 hover:border-gray-400'
                     }`}
                     onClick={() => setCurrentImageIndex(idx)}
                   >
@@ -114,20 +140,31 @@ export default function QuickViewModal({
                   </button>
                 ))}
                 {images.length > 5 && (
-                  <div className="w-full aspect-[4/3] rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-600 font-medium cursor-pointer hover:bg-gray-300 transition-colors">
-                    +{images.length - 5} more
-                  </div>
+                  <button 
+                    className="w-full aspect-[4/3] rounded-lg bg-gray-900/60 flex items-center justify-center text-sm text-white font-medium hover:bg-gray-900/70 transition-colors relative overflow-hidden"
+                    onClick={() => setCurrentImageIndex(5)}
+                  >
+                    {images[5] && (
+                      <img
+                        src={images[5]}
+                        alt="More"
+                        className="absolute inset-0 w-full h-full object-cover opacity-50"
+                      />
+                    )}
+                    <span className="relative z-10">See More</span>
+                  </button>
                 )}
               </div>
             )}
 
             {/* Main Image */}
-            <div className="flex-1 relative bg-gray-100 min-h-[280px] md:min-h-[400px] flex items-center justify-center">
+            <div className="flex-1 relative bg-gray-100 min-h-[250px] sm:min-h-[300px] md:min-h-[400px] flex items-center justify-center">
               {images.length > 0 ? (
                 <img
                   src={images[currentImageIndex]}
                   alt={tour.name}
-                  className="w-full h-full object-cover max-h-[400px]"
+                  className="w-full h-full object-cover"
+                  style={{ maxHeight: '450px' }}
                 />
               ) : (
                 <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
@@ -136,15 +173,15 @@ export default function QuickViewModal({
               )}
               
               {/* Badges on image */}
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              <div className="absolute top-3 left-3 flex flex-wrap gap-2">
                 {hasDiscount && (
-                  <span className="px-3 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full flex items-center gap-1 shadow-lg">
-                    <Tag className="w-4 h-4" />
+                  <span className="px-2.5 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1 shadow-lg">
+                    <Tag className="w-3 h-3" />
                     DEAL
                   </span>
                 )}
                 {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                  <span className="px-3 py-1.5 bg-red-500 text-white text-sm font-semibold rounded-full shadow-lg">
+                  <span className="px-2.5 py-1 bg-red-500 text-white text-xs font-semibold rounded-full shadow-lg">
                     🔥 Popular
                   </span>
                 )}
@@ -155,34 +192,30 @@ export default function QuickViewModal({
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
-                  {/* Image counter */}
-                  <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full">
-                    {currentImageIndex + 1} / {images.length}
-                  </div>
                 </>
               )}
             </div>
 
             {/* Mobile Thumbnail Strip - below image */}
-            {hasMultipleImages && (
-              <div className="md:hidden flex gap-2 p-3 overflow-x-auto bg-white border-t border-gray-100">
+            {images.length > 1 && (
+              <div className="md:hidden flex gap-2 p-2 overflow-x-auto bg-white border-t border-gray-100">
                 {images.slice(0, 6).map((img, idx) => (
                   <button 
                     key={idx}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
                       idx === currentImageIndex 
                         ? 'border-blue-500' 
-                        : 'border-transparent'
+                        : 'border-gray-200'
                     }`}
                     onClick={() => setCurrentImageIndex(idx)}
                   >
@@ -198,173 +231,117 @@ export default function QuickViewModal({
           </div>
 
           {/* Key Info Row - like Viator */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 border-b border-gray-100 bg-white">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 sm:px-5 py-3 border-b border-gray-100 bg-white text-sm">
             {tour.duration && (
-              <div className="flex items-center gap-2 text-gray-700">
-                <Clock className="w-5 h-5 text-gray-400" />
-                <span className="font-medium">{tour.duration}</span>
+              <div className="flex items-center gap-1.5 text-gray-700">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span>{tour.duration}</span>
               </div>
             )}
             {tourFlags.includes('FREE_CANCELLATION') && (
-              <div className="flex items-center gap-2 text-green-700">
-                <Check className="w-5 h-5" />
-                <span className="font-medium">Free cancellation</span>
+              <div className="flex items-center gap-1.5 text-gray-700">
+                <Check className="w-4 h-4 text-green-500" />
+                <span>Free cancellation</span>
               </div>
             )}
             {tourFlags.includes('SKIP_THE_LINE') && (
-              <div className="flex items-center gap-2 text-blue-700">
+              <div className="flex items-center gap-1.5 text-gray-700">
                 <span>⚡</span>
-                <span className="font-medium">Skip the line</span>
+                <span>Skip the line</span>
               </div>
             )}
+            <div className="flex items-center gap-1.5 text-gray-700">
+              <Smartphone className="w-4 h-4 text-gray-400" />
+              <span>Mobile ticket</span>
+            </div>
             {tour.languages && tour.languages.length > 0 && (
-              <div className="flex items-center gap-2 text-gray-700">
-                <Globe className="w-5 h-5 text-gray-400" />
-                <span>Offered in: <span className="font-medium">{tour.languages.slice(0, 2).join(', ')}</span>
-                {tour.languages.length > 2 && <span className="text-blue-600"> +{tour.languages.length - 2} more</span>}
-                </span>
+              <div className="flex items-center gap-1.5 text-gray-700">
+                <Globe className="w-4 h-4 text-gray-400" />
+                <span>Offered in: {tour.languages.slice(0, 2).join(', ')}{tour.languages.length > 2 ? ` +${tour.languages.length - 2}` : ''}</span>
               </div>
             )}
           </div>
 
-          {/* Content - Two Columns */}
-          <div className="p-5">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - About */}
-              <div>
-                {tour.description && (
-                  <div className="mb-5">
-                    <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Info className="w-5 h-5 text-blue-500" />
-                      About this tour
-                    </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
-                      {tour.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Itinerary / What You'll See */}
-                {tour.itinerary && tour.itinerary.length > 0 && (
-                  <div className="mb-5">
-                    <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-blue-500" />
-                      What you'll see
-                    </h3>
-                    <div className="space-y-2">
-                      {tour.itinerary.map((stop, idx) => (
-                        <div key={idx} className="flex gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold">
-                            {idx + 1}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900 text-sm">{stop.name || stop.description}</p>
-                            {stop.duration && (
-                              <p className="text-xs text-gray-500">{Math.round(stop.duration / 60)} min</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column - Highlights & Inclusions */}
-              <div>
-                {/* Highlights */}
-                <div className="mb-5">
-                  <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-500" />
-                    Highlights
-                  </h3>
-                  <ul className="space-y-2">
-                    {tourFlags.includes('FREE_CANCELLATION') && (
-                      <li className="flex items-start gap-2 text-gray-700 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>Free cancellation up to 24 hours before</span>
+          {/* Content */}
+          <div className="p-4 sm:p-5">
+            {/* Overview Section - like Viator */}
+            {tour.description && (
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Overview</h3>
+                <p className="text-gray-600 leading-relaxed whitespace-pre-line mb-4">
+                  {tour.description}
+                </p>
+                
+                {/* Bullet points from highlights */}
+                {tour.highlights && tour.highlights.length > 0 && (
+                  <ul className="space-y-2 mt-4">
+                    {tour.highlights.map((highlight, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-gray-700">
+                        <span className="text-gray-400 mt-1">•</span>
+                        <span>{highlight}</span>
                       </li>
-                    )}
-                    {tourFlags.includes('SKIP_THE_LINE') && (
-                      <li className="flex items-start gap-2 text-gray-700 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>Skip-the-line access included</span>
-                      </li>
-                    )}
-                    {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                      <li className="flex items-start gap-2 text-gray-700 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>Highly rated and popular experience</span>
-                      </li>
-                    )}
-                    {tour.isPrivateTour && (
-                      <li className="flex items-start gap-2 text-gray-700 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>Private tour - just you and your group</span>
-                      </li>
-                    )}
-                    {tour.duration && (
-                      <li className="flex items-start gap-2 text-gray-700 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>{tour.duration} experience</span>
-                      </li>
-                    )}
-                    {tour.languages && tour.languages.length > 0 && (
-                      <li className="flex items-start gap-2 text-gray-700 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>Available in {tour.languages.length} language{tour.languages.length > 1 ? 's' : ''}</span>
-                      </li>
-                    )}
+                    ))}
                   </ul>
-                </div>
-
-                {/* What's Included */}
-                {tour.inclusions && tour.inclusions.length > 0 && (
-                  <div className="mb-5">
-                    <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Check className="w-5 h-5 text-green-500" />
-                      What's included
-                    </h3>
-                    <ul className="space-y-1.5">
-                      {tour.inclusions.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-gray-700 text-sm">
-                          <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* What's Not Included */}
-                {tour.exclusions && tour.exclusions.length > 0 && (
-                  <div className="mb-5">
-                    <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <X className="w-5 h-5 text-red-500" />
-                      Not included
-                    </h3>
-                    <ul className="space-y-1.5">
-                      {tour.exclusions.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-gray-500 text-sm">
-                          <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
                 )}
               </div>
-            </div>
+            )}
+
+            {/* What You'll See / Itinerary */}
+            {tour.itinerary && tour.itinerary.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">What You'll See</h3>
+                <div className="space-y-3">
+                  {tour.itinerary.map((stop, idx) => (
+                    <div key={idx} className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{stop.name || stop.description}</p>
+                        {stop.duration && (
+                          <p className="text-sm text-gray-500">{Math.round(stop.duration / 60)} min</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* What's Included - Two Column Layout like Viator */}
+            {((tour.inclusions && tour.inclusions.length > 0) || (tour.exclusions && tour.exclusions.length > 0)) && (
+              <div className="mb-6 pt-5 border-t border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">What's Included</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                  {/* Inclusions - Left */}
+                  <div className="space-y-2">
+                    {tour.inclusions && tour.inclusions.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-gray-700">
+                        <Check className="w-4 h-4 text-gray-700 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Exclusions - Right */}
+                  <div className="space-y-2">
+                    {tour.exclusions && tour.exclusions.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-gray-500">
+                        <X className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Additional Info */}
             {tour.additionalInfo && tour.additionalInfo.length > 0 && (
-              <div className="mt-5 pt-5 border-t border-gray-200">
-                <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-gray-500" />
-                  Additional information
-                </h3>
+              <div className="pt-5 border-t border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Additional Information</h3>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {tour.additionalInfo.slice(0, 6).map((info, idx) => (
+                  {tour.additionalInfo.slice(0, 8).map((info, idx) => (
                     <li key={idx} className="text-gray-600 text-sm flex items-start gap-2">
                       <span className="text-gray-400">•</span>
                       {info}
@@ -376,9 +353,9 @@ export default function QuickViewModal({
 
             {/* Cancellation Policy */}
             {tour.cancellationPolicy && (
-              <div className="mt-5 bg-blue-50 border border-blue-100 rounded-lg p-3">
-                <p className="text-sm text-blue-700">
-                  <span className="font-medium">Cancellation:</span> {tour.cancellationPolicy}
+              <div className="mt-5 bg-green-50 border border-green-100 rounded-lg p-3">
+                <p className="text-sm text-green-700">
+                  <span className="font-medium">✓ Free cancellation:</span> {tour.cancellationPolicy}
                 </p>
               </div>
             )}
@@ -386,7 +363,7 @@ export default function QuickViewModal({
         </div>
 
         {/* Footer with Price and Actions - Fixed */}
-        <div className="border-t border-gray-200 bg-white px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 flex-shrink-0">
+        <div className="border-t border-gray-200 bg-white px-4 sm:px-5 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
           <div className="text-center sm:text-left">
             {/* Deal Badge */}
             {hasDiscount && (
@@ -399,7 +376,7 @@ export default function QuickViewModal({
             {/* Prices */}
             <div className="flex items-baseline gap-2 justify-center sm:justify-start">
               {hasDiscount && tour.originalPrice && (
-                <span className="text-gray-400 line-through text-lg">
+                <span className="text-gray-400 line-through text-base">
                   {formatCurrency(tour.originalPrice)}
                 </span>
               )}
@@ -417,12 +394,12 @@ export default function QuickViewModal({
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <a
               href={tour.bookingLink || tour.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2 text-sm"
             >
               <ExternalLink className="w-4 h-4" />
               View on Viator
@@ -433,7 +410,7 @@ export default function QuickViewModal({
                 e.stopPropagation();
                 onAddToTrip();
               }}
-              className={`px-5 py-2.5 rounded-lg font-semibold transition-colors ${
+              className={`flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm ${
                 isInCart
                   ? 'bg-red-500 hover:bg-red-600 text-white'
                   : 'bg-green-500 hover:bg-green-600 text-white'
