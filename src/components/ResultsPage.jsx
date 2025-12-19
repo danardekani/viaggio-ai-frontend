@@ -219,8 +219,24 @@ export default function ResultsPage({
     skipLine: false,
     privateTour: false,
     likelyToSellOut: false,
-    specialOffer: searchParams?.prefilter === 'SPECIAL_OFFER' || searchParams?.flags?.includes('SPECIAL_OFFER') || false
+    specialOffer: searchParams?.prefilter === 'SPECIAL_OFFER' || searchParams?.flags?.includes('SPECIAL_OFFER') || false,
+    // Activity type filters
+    activities: []
   });
+
+  // Activity types with emojis
+  const activityTypes = [
+    { key: 'food', label: 'Food & Drink', emoji: '🍴', keywords: ['food', 'drink', 'culinary', 'wine', 'beer', 'cuisine', 'tasting', 'cooking', 'restaurant', 'dining'] },
+    { key: 'history', label: 'History & Culture', emoji: '🏛️', keywords: ['history', 'culture', 'heritage', 'historical', 'ancient', 'museum', 'monument'] },
+    { key: 'walking', label: 'Walking Tours', emoji: '🚶', keywords: ['walking', 'walk', 'stroll', 'on foot', 'pedestrian'] },
+    { key: 'adventure', label: 'Adventure', emoji: '🎢', keywords: ['adventure', 'thrill', 'extreme', 'adrenaline', 'zip', 'climb', 'bungee'] },
+    { key: 'nature', label: 'Nature & Wildlife', emoji: '🌿', keywords: ['nature', 'wildlife', 'animal', 'safari', 'park', 'garden', 'botanical', 'eco'] },
+    { key: 'art', label: 'Art & Museums', emoji: '🎨', keywords: ['art', 'museum', 'gallery', 'exhibition', 'painting', 'sculpture'] },
+    { key: 'nightlife', label: 'Nightlife', emoji: '🌙', keywords: ['night', 'evening', 'bar', 'club', 'pub', 'nightlife', 'after dark'] },
+    { key: 'water', label: 'Water Activities', emoji: '🌊', keywords: ['water', 'boat', 'cruise', 'sailing', 'kayak', 'snorkel', 'dive', 'beach', 'swim'] },
+    { key: 'daytrip', label: 'Day Trips', emoji: '🚌', keywords: ['day trip', 'excursion', 'full day', 'day tour', 'outside'] },
+    { key: 'photo', label: 'Photography', emoji: '📸', keywords: ['photo', 'photography', 'instagram', 'picture', 'scenic'] }
+  ];
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -319,6 +335,22 @@ export default function ResultsPage({
   // FILTERING & SORTING - Memoized for performance
   // ============================================================================
 
+  // Helper to check if tour matches an activity type
+  const tourMatchesActivity = useCallback((tour, activityKey) => {
+    const activity = activityTypes.find(a => a.key === activityKey);
+    if (!activity) return false;
+
+    // Check tour name, description, and categories for keywords
+    const searchText = [
+      tour.name || '',
+      tour.description || '',
+      ...(tour.categories || []),
+      ...(tour.tags || [])
+    ].join(' ').toLowerCase();
+
+    return activity.keywords.some(keyword => searchText.includes(keyword.toLowerCase()));
+  }, [activityTypes]);
+
   // Memoize filtered results to avoid recalculating on every render
   const filteredResults = useMemo(() => {
     return results.filter(tour => {
@@ -342,9 +374,17 @@ export default function ResultsPage({
       if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
       if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
 
+      // Activity type filters - tour must match at least one selected activity
+      if (filters.activities.length > 0) {
+        const matchesAnyActivity = filters.activities.some(activityKey =>
+          tourMatchesActivity(tour, activityKey)
+        );
+        if (!matchesAnyActivity) return false;
+      }
+
       return true;
     });
-  }, [results, filters]);
+  }, [results, filters, tourMatchesActivity]);
 
   // Memoize sorted results to avoid re-sorting on every render
   const sortedResults = useMemo(() => {
@@ -417,11 +457,25 @@ export default function ResultsPage({
       skipLine: false,
       privateTour: false,
       likelyToSellOut: false,
-      specialOffer: false
+      specialOffer: false,
+      activities: []
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== false);
+  // Toggle activity filter
+  const toggleActivity = (activityKey) => {
+    setFilters(f => ({
+      ...f,
+      activities: f.activities.includes(activityKey)
+        ? f.activities.filter(a => a !== activityKey)
+        : [...f.activities, activityKey]
+    }));
+  };
+
+  const hasActiveFilters = Object.entries(filters).some(([key, v]) => {
+    if (key === 'activities') return v.length > 0;
+    return v !== '' && v !== false;
+  });
 
   // ============================================================================
   // SEARCH HANDLER - Memoized with useCallback
@@ -863,6 +917,27 @@ export default function ResultsPage({
                       {feature.icon} {feature.label}
                     </span>
                   </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Activity Types */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Activity type</h3>
+              <div className="flex flex-wrap gap-2">
+                {activityTypes.map(activity => (
+                  <button
+                    key={activity.key}
+                    onClick={() => toggleActivity(activity.key)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
+                      filters.activities.includes(activity.key)
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+                    }`}
+                  >
+                    <span>{activity.emoji}</span>
+                    <span>{activity.label}</span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1321,21 +1396,31 @@ export default function ResultsPage({
                 </div>
               </div>
 
+              {/* Activity Types */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Activity type</h3>
+                <div className="flex flex-wrap gap-2">
+                  {activityTypes.map(activity => (
+                    <button
+                      key={activity.key}
+                      onClick={() => toggleActivity(activity.key)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
+                        filters.activities.includes(activity.key)
+                          ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                    >
+                      <span>{activity.emoji}</span>
+                      <span>{activity.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Clear Filters */}
               {hasActiveFilters && (
                 <button
-                  onClick={() => setFilters({
-                    minPrice: '',
-                    maxPrice: '',
-                    minRating: '',
-                    minDuration: '',
-                    maxDuration: '',
-                    freeCancel: false,
-                    skipLine: false,
-                    privateTour: false,
-                    likelyToSellOut: false,
-                    specialOffer: false
-                  })}
+                  onClick={clearFilters}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Clear all filters
