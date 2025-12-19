@@ -174,13 +174,12 @@ const QuickViewModal = memo(function QuickViewModal({
             )}
 
             {/* Main Image */}
-            <div className="flex-1 relative bg-gray-100" style={{ minHeight: '280px', maxHeight: '350px' }}>
+            <div className="flex-1 relative bg-gray-900 flex items-center justify-center" style={{ minHeight: '280px', maxHeight: '350px' }}>
               {images.length > 0 ? (
                 <img
                   src={images[currentImageIndex]}
                   alt={tour.name}
-                  className="w-full h-full object-cover"
-                  style={{ height: '350px', objectFit: 'cover' }}
+                  className="max-w-full max-h-[350px] w-auto h-auto object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50" style={{ height: '280px' }}>
