@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
 
-// Memoized TourCard component for better list performance
+// Memoized TourCard component - Vertical card layout for grid display
 const TourCard = memo(function TourCard({
   tour,
   isSelected,
@@ -39,7 +39,8 @@ const TourCard = memo(function TourCard({
   addToCart,
   removeFromCart
 }) {
-  const handleToggleCart = useCallback(() => {
+  const handleToggleCart = useCallback((e) => {
+    e.stopPropagation();
     if (isSelected) {
       removeFromCart('tour', tour.id);
     } else {
@@ -53,182 +54,128 @@ const TourCard = memo(function TourCard({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${
+      className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-lg cursor-pointer flex flex-col h-full ${
         isSelected ? 'border-green-500 border-2 ring-2 ring-green-100' : 'border-gray-200'
       }`}
+      onClick={handleQuickView}
     >
-      <div className="flex flex-col md:flex-row">
-        {/* Image */}
-        <div
-          className="md:w-72 lg:w-80 flex-shrink-0 cursor-pointer"
-          onClick={handleQuickView}
-        >
-          <div className="relative h-48 md:h-full min-h-[200px]">
-            {tour.image ? (
-              <img
-                src={tour.image}
-                alt={tour.name}
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                <MapPin className="w-12 h-12 text-blue-300" />
-              </div>
-            )}
-            {/* Badges on image */}
-            <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-              {hasDiscount && (
-                <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
-                  <Tag className="w-3 h-3" />
-                  DEAL
-                </span>
-              )}
-              {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
-                  🔥 Popular
-                </span>
-              )}
-            </div>
-            {/* Image count badge */}
-            {tour.images && tour.images.length > 1 && (
-              <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
-                📷 {tour.images.length}
-              </div>
-            )}
+      {/* Image */}
+      <div className="relative h-48 flex-shrink-0">
+        {tour.image ? (
+          <img
+            src={tour.image}
+            alt={tour.name}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+            <MapPin className="w-12 h-12 text-blue-300" />
           </div>
+        )}
+        {/* Badges on image */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+          {hasDiscount && (
+            <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+              <Tag className="w-3 h-3" />
+              DEAL
+            </span>
+          )}
+          {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
+            <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+              🔥 Popular
+            </span>
+          )}
+        </div>
+        {/* Image count badge */}
+        {tour.images && tour.images.length > 1 && (
+          <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
+            📷 {tour.images.length}
+          </div>
+        )}
+        {/* Rating badge on image */}
+        {tour.rating && tour.rating !== 'New' && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm">
+            <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+            <span className="font-semibold text-gray-900 text-sm">{tour.rating}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 p-4 flex flex-col">
+        {/* Title */}
+        <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-2 hover:text-blue-600 transition-colors">
+          {tour.name}
+        </h3>
+
+        {/* Key Info Row */}
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tour.duration && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+              <Clock className="w-3 h-3" />
+              {tour.duration}
+            </span>
+          )}
+          {tour.reviewCount > 0 && (
+            <span className="text-xs text-gray-500">
+              ({tour.reviewCount.toLocaleString()} reviews)
+            </span>
+          )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 p-3 sm:p-5 flex flex-col">
-          {/* Title & Rating Row */}
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <h3
-              className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
-              onClick={handleQuickView}
-            >
-              {tour.name}
-            </h3>
-            {tour.rating && tour.rating !== 'New' && (
-              <div className="flex items-center gap-1 flex-shrink-0 bg-green-50 px-2 py-1 rounded-lg">
-                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span className="font-semibold text-gray-900">{tour.rating}</span>
-                {tour.reviewCount > 0 && (
-                  <span className="text-gray-500 text-sm">({tour.reviewCount.toLocaleString()})</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Description */}
-          {tour.description && (
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-              {tour.description}
-            </p>
+        {/* Feature badges */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {tourFlags.includes('FREE_CANCELLATION') && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+              <Check className="w-3 h-3" />
+              Free cancel
+            </span>
           )}
-
-          {/* Features/Flags Row 1 - Key Info */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {tour.duration && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                <Clock className="w-3.5 h-3.5" />
-                {tour.duration}
-              </span>
-            )}
-            {tour.languages && tour.languages.length > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                <Globe className="w-3.5 h-3.5" />
-                {tour.languages.slice(0, 2).join(', ')}{tour.languages.length > 2 ? ` +${tour.languages.length - 2}` : ''}
-              </span>
-            )}
-            {tour.maxGroupSize && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                <Users className="w-3.5 h-3.5" />
-                Up to {tour.maxGroupSize}
-              </span>
-            )}
-          </div>
-
-          {/* Features/Flags Row 2 - Highlights */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            {tourFlags.includes('FREE_CANCELLATION') && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                <Check className="w-3.5 h-3.5" />
-                Free cancellation
-              </span>
-            )}
-            {tourFlags.includes('SKIP_THE_LINE') && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                ⚡ Skip the line
-              </span>
-            )}
-            {tourFlags.includes('PRIVATE_TOUR') && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-                👤 Private tour
-              </span>
-            )}
-            {tour.pricingType === 'group' && !tourFlags.includes('PRIVATE_TOUR') && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
-                👥 Per group
-              </span>
-            )}
-          </div>
-
-          {/* Inclusions Preview */}
-          {tour.inclusions && tour.inclusions.length > 0 && (
-            <div className="text-xs text-gray-500 mb-3">
-              <span className="font-medium text-gray-600">Includes:</span>{' '}
-              {tour.inclusions.slice(0, 3).join(' • ')}
-              {tour.inclusions.length > 3 && ` +${tour.inclusions.length - 3} more`}
-            </div>
+          {tourFlags.includes('SKIP_THE_LINE') && (
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+              ⚡ Skip line
+            </span>
           )}
+        </div>
 
-          {/* Spacer */}
-          <div className="flex-1" />
+        {/* Spacer */}
+        <div className="flex-1" />
 
-          {/* Price & Actions Row */}
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        {/* Price & Actions Row */}
+        <div className="pt-3 border-t border-gray-100">
+          <div className="flex items-end justify-between mb-3">
             <div>
               {hasDiscount && tour.originalPrice && (
-                <span className="text-gray-400 line-through text-sm mr-2">
+                <span className="text-gray-400 line-through text-sm block">
                   {formatCurrency(tour.originalPrice)}
                 </span>
               )}
-              <span className={`text-xl sm:text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
+              <span className={`text-xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
                 {formatCurrency(tour.price)}
               </span>
-              <span className="text-gray-500 text-xs sm:text-sm ml-1">
-                {tour.pricingType === 'group'
-                  ? 'per group'
-                  : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : 'per person'
-                }
+              <span className="text-gray-500 text-xs ml-1">
+                {tour.pricingType === 'group' ? '/group' : '/person'}
               </span>
             </div>
-
-            <div className="flex items-center gap-2">
-              {/* Quick View Button */}
-              <button
-                onClick={handleQuickView}
-                className="p-2 sm:px-3 sm:py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
-                title="Quick view"
-              >
-                <Eye className="w-4 h-4" />
-                <span className="hidden sm:inline">Quick View</span>
-              </button>
-
-              {/* Add/Remove Button */}
-              <button
-                onClick={handleToggleCart}
-                className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
-                  isSelected
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
-              >
-                {isSelected ? 'Remove' : 'Add'}
-              </button>
-            </div>
+            {travelers > 1 && tour.pricingType !== 'group' && (
+              <span className="text-sm text-gray-500">
+                Total: {formatCurrency(tour.price * travelers)}
+              </span>
+            )}
           </div>
+
+          {/* Add/Remove Button */}
+          <button
+            onClick={handleToggleCart}
+            className={`w-full py-2.5 rounded-lg font-semibold transition-colors text-sm ${
+              isSelected
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-green-500 hover:bg-green-600 text-white'
+            }`}
+          >
+            {isSelected ? 'Remove from Trip' : 'Add to Trip'}
+          </button>
         </div>
       </div>
     </div>
@@ -354,10 +301,19 @@ export default function ResultsPage({
   // Search bar state
   const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
   const [searchDate, setSearchDate] = useState(searchParams?.startDate || '');
-  
+
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [selectedDestinationId, setSelectedDestinationId] = useState(null);
+
   // Refs
   const chatMessagesRef = useRef(null);
   const textareaRef = useRef(null);
+  const suggestionsRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // ============================================================================
   // FILTERING & SORTING - Memoized for performance
@@ -475,14 +431,99 @@ export default function ResultsPage({
     e?.preventDefault();
     if (!searchDestination.trim()) return;
 
+    setShowSuggestions(false);
     onNewSearch({
       type: 'tours',
       destination: searchDestination.trim(),
+      destinationId: selectedDestinationId,
       travelers: travelers,
       startDate: searchDate || undefined,
       sortBy
     });
-  }, [searchDestination, travelers, searchDate, sortBy, onNewSearch]);
+  }, [searchDestination, selectedDestinationId, travelers, searchDate, sortBy, onNewSearch]);
+
+  // ============================================================================
+  // AUTOCOMPLETE - Debounced with AbortController
+  // ============================================================================
+
+  // Click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(e.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced autocomplete with AbortController
+  useEffect(() => {
+    if (!searchDestination || searchDestination.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const response = await fetch(
+          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(searchDestination)}`,
+          { signal: controller.signal }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setSuggestions(data.suggestions || []);
+          setShowSuggestions(true);
+          setSelectedSuggestionIndex(-1);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Autocomplete error:', error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingSuggestions(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchDestination, backendUrl]);
+
+  const handleSelectSuggestion = useCallback((suggestion) => {
+    setSearchDestination(suggestion.displayName || suggestion.name);
+    setSelectedDestinationId(suggestion.destinationId);
+    setShowSuggestions(false);
+    setSuggestions([]);
+  }, []);
+
+  const handleSearchKeyDown = useCallback((e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => Math.max(prev - 1, -1));
+    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+      e.preventDefault();
+      handleSelectSuggestion(suggestions[selectedSuggestionIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  }, [showSuggestions, suggestions, selectedSuggestionIndex, handleSelectSuggestion]);
 
   // ============================================================================
   // CHAT HANDLERS - Memoized with useCallback
@@ -604,16 +645,63 @@ export default function ResultsPage({
               <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{travelers} guest{travelers > 1 ? 's' : ''}</span>
             </button>
 
-            {/* Desktop: Full Search Form */}
-            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+            {/* Desktop: Full Search Form with Autocomplete */}
+            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 items-center gap-2 bg-gray-100 rounded-full px-4 py-2 relative">
               <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                value={searchDestination}
-                onChange={(e) => setSearchDestination(e.target.value)}
-                placeholder="Where to?"
-                className="flex-1 bg-transparent focus:outline-none text-sm min-w-0"
-              />
+              <div className="flex-1 relative min-w-0">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchDestination}
+                  onChange={(e) => {
+                    setSearchDestination(e.target.value);
+                    setSelectedDestinationId(null);
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="Where to?"
+                  className="w-full bg-transparent focus:outline-none text-sm"
+                  autoComplete="off"
+                />
+                {/* Autocomplete Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 max-h-64 overflow-y-auto"
+                    style={{ minWidth: '280px' }}
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.destinationId || index}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                          index === selectedSuggestionIndex
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'hover:bg-gray-50'
+                        } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                          index === suggestions.length - 1 ? 'rounded-b-xl' : ''
+                        }`}
+                      >
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {suggestion.displayName || suggestion.name}
+                          </p>
+                          {suggestion.parentName && (
+                            <p className="text-xs text-gray-500">{suggestion.parentName}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {loadingSuggestions && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  </div>
+                )}
+              </div>
               <span className="text-gray-300 hidden md:block">|</span>
               <input
                 type="date"
@@ -866,10 +954,10 @@ export default function ResultsPage({
               </div>
             )}
 
-            {/* Results List - Using memoized TourCard for performance */}
+            {/* Results Grid - 3 columns on desktop, 2 on tablet, 1 on mobile */}
             {!isLoading && paginatedResults.length > 0 && (
               <>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                   {paginatedResults.map((tour) => (
                     <TourCard
                       key={tour.id || tour.productCode}
@@ -1069,19 +1157,54 @@ export default function ResultsPage({
               </button>
             </div>
             <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }} className="space-y-3">
-              <div>
+              <div className="relative">
                 <label className="text-xs text-gray-500 font-medium">Destination</label>
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1">
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1 relative">
                   <MapPin className="w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={searchDestination}
-                    onChange={(e) => setSearchDestination(e.target.value)}
+                    onChange={(e) => {
+                      setSearchDestination(e.target.value);
+                      setSelectedDestinationId(null);
+                    }}
+                    onKeyDown={handleSearchKeyDown}
                     placeholder="Where to?"
                     className="flex-1 bg-transparent focus:outline-none text-sm"
                     autoFocus
+                    autoComplete="off"
                   />
+                  {loadingSuggestions && (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  )}
                 </div>
+                {/* Mobile Autocomplete Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 max-h-48 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.destinationId || index}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                          index === selectedSuggestionIndex
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {suggestion.displayName || suggestion.name}
+                          </p>
+                          {suggestion.parentName && (
+                            <p className="text-xs text-gray-500">{suggestion.parentName}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-medium">Date</label>
