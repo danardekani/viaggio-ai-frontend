@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import {
   Search,
   MapPin,
@@ -26,6 +26,214 @@ import {
   Eye
 } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
+
+// Memoized TourCard component for better list performance
+const TourCard = memo(function TourCard({
+  tour,
+  isSelected,
+  hasDiscount,
+  tourFlags,
+  formatCurrency,
+  travelers,
+  openQuickView,
+  addToCart,
+  removeFromCart
+}) {
+  const handleToggleCart = useCallback(() => {
+    if (isSelected) {
+      removeFromCart('tour', tour.id);
+    } else {
+      addToCart('tour', tour);
+    }
+  }, [isSelected, tour, addToCart, removeFromCart]);
+
+  const handleQuickView = useCallback(() => {
+    openQuickView(tour);
+  }, [tour, openQuickView]);
+
+  return (
+    <div
+      className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${
+        isSelected ? 'border-green-500 border-2 ring-2 ring-green-100' : 'border-gray-200'
+      }`}
+    >
+      <div className="flex flex-col md:flex-row">
+        {/* Image */}
+        <div
+          className="md:w-72 lg:w-80 flex-shrink-0 cursor-pointer"
+          onClick={handleQuickView}
+        >
+          <div className="relative h-48 md:h-full min-h-[200px]">
+            {tour.image ? (
+              <img
+                src={tour.image}
+                alt={tour.name}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                <MapPin className="w-12 h-12 text-blue-300" />
+              </div>
+            )}
+            {/* Badges on image */}
+            <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+              {hasDiscount && (
+                <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+                  <Tag className="w-3 h-3" />
+                  DEAL
+                </span>
+              )}
+              {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
+                <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+                  🔥 Popular
+                </span>
+              )}
+            </div>
+            {/* Image count badge */}
+            {tour.images && tour.images.length > 1 && (
+              <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
+                📷 {tour.images.length}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-3 sm:p-5 flex flex-col">
+          {/* Title & Rating Row */}
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <h3
+              className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
+              onClick={handleQuickView}
+            >
+              {tour.name}
+            </h3>
+            {tour.rating && tour.rating !== 'New' && (
+              <div className="flex items-center gap-1 flex-shrink-0 bg-green-50 px-2 py-1 rounded-lg">
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span className="font-semibold text-gray-900">{tour.rating}</span>
+                {tour.reviewCount > 0 && (
+                  <span className="text-gray-500 text-sm">({tour.reviewCount.toLocaleString()})</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          {tour.description && (
+            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+              {tour.description}
+            </p>
+          )}
+
+          {/* Features/Flags Row 1 - Key Info */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {tour.duration && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                <Clock className="w-3.5 h-3.5" />
+                {tour.duration}
+              </span>
+            )}
+            {tour.languages && tour.languages.length > 0 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                <Globe className="w-3.5 h-3.5" />
+                {tour.languages.slice(0, 2).join(', ')}{tour.languages.length > 2 ? ` +${tour.languages.length - 2}` : ''}
+              </span>
+            )}
+            {tour.maxGroupSize && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
+                <Users className="w-3.5 h-3.5" />
+                Up to {tour.maxGroupSize}
+              </span>
+            )}
+          </div>
+
+          {/* Features/Flags Row 2 - Highlights */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {tourFlags.includes('FREE_CANCELLATION') && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                <Check className="w-3.5 h-3.5" />
+                Free cancellation
+              </span>
+            )}
+            {tourFlags.includes('SKIP_THE_LINE') && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                ⚡ Skip the line
+              </span>
+            )}
+            {tourFlags.includes('PRIVATE_TOUR') && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+                👤 Private tour
+              </span>
+            )}
+            {tour.pricingType === 'group' && !tourFlags.includes('PRIVATE_TOUR') && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
+                👥 Per group
+              </span>
+            )}
+          </div>
+
+          {/* Inclusions Preview */}
+          {tour.inclusions && tour.inclusions.length > 0 && (
+            <div className="text-xs text-gray-500 mb-3">
+              <span className="font-medium text-gray-600">Includes:</span>{' '}
+              {tour.inclusions.slice(0, 3).join(' • ')}
+              {tour.inclusions.length > 3 && ` +${tour.inclusions.length - 3} more`}
+            </div>
+          )}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Price & Actions Row */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div>
+              {hasDiscount && tour.originalPrice && (
+                <span className="text-gray-400 line-through text-sm mr-2">
+                  {formatCurrency(tour.originalPrice)}
+                </span>
+              )}
+              <span className={`text-xl sm:text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
+                {formatCurrency(tour.price)}
+              </span>
+              <span className="text-gray-500 text-xs sm:text-sm ml-1">
+                {tour.pricingType === 'group'
+                  ? 'per group'
+                  : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : 'per person'
+                }
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Quick View Button */}
+              <button
+                onClick={handleQuickView}
+                className="p-2 sm:px-3 sm:py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
+                title="Quick view"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="hidden sm:inline">Quick View</span>
+              </button>
+
+              {/* Add/Remove Button */}
+              <button
+                onClick={handleToggleCart}
+                className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
+                  isSelected
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {isSelected ? 'Remove' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 // ============================================================================
 // RESULTS PAGE COMPONENT
@@ -81,16 +289,25 @@ export default function ResultsPage({
   // QuickView Modal State
   const [quickViewTour, setQuickViewTour] = useState(null);
   const [quickViewLoading, setQuickViewLoading] = useState(false);
-  
-  // Function to open QuickView with full details
-  const openQuickView = async (tour) => {
+  const quickViewAbortController = useRef(null);
+
+  // Function to open QuickView with full details - memoized with useCallback
+  const openQuickView = useCallback(async (tour) => {
+    // Cancel any pending request
+    if (quickViewAbortController.current) {
+      quickViewAbortController.current.abort();
+    }
+    quickViewAbortController.current = new AbortController();
+
     // Show modal immediately with basic info
     setQuickViewTour(tour);
     setQuickViewLoading(true);
-    
+
     try {
       // Fetch full tour details for more images and info
-      const response = await fetch(`${backendUrl}/api/tours/${tour.productCode || tour.id}`);
+      const response = await fetch(`${backendUrl}/api/tours/${tour.productCode || tour.id}`, {
+        signal: quickViewAbortController.current.signal
+      });
       if (response.ok) {
         const data = await response.json();
         const fullDetails = data.tour || data; // Handle both { tour: {...} } and direct response
@@ -105,12 +322,23 @@ export default function ResultsPage({
         }));
       }
     } catch (error) {
-      console.error('Failed to fetch tour details:', error);
+      if (error.name !== 'AbortError') {
+        console.error('Failed to fetch tour details:', error);
+      }
       // Keep showing the basic tour info
     } finally {
       setQuickViewLoading(false);
     }
-  };
+  }, [backendUrl]);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (quickViewAbortController.current) {
+        quickViewAbortController.current.abort();
+      }
+    };
+  }, []);
   
   // Chat State
   const [chatOpen, setChatOpen] = useState(false);
@@ -132,58 +360,70 @@ export default function ResultsPage({
   const textareaRef = useRef(null);
 
   // ============================================================================
-  // FILTERING & SORTING
+  // FILTERING & SORTING - Memoized for performance
   // ============================================================================
 
-  const filteredResults = results.filter(tour => {
-    // Price filter
-    if (filters.minPrice && tour.price < parseFloat(filters.minPrice)) return false;
-    if (filters.maxPrice && tour.price > parseFloat(filters.maxPrice)) return false;
-    
-    // Rating filter
-    if (filters.minRating && tour.rating < parseFloat(filters.minRating)) return false;
-    
-    // Duration filter (assuming duration is in hours or "X hours" format)
-    const durationHours = parseDuration(tour.duration);
-    if (filters.minDuration && durationHours < parseFloat(filters.minDuration)) return false;
-    if (filters.maxDuration && durationHours > parseFloat(filters.maxDuration)) return false;
-    
-    // Flag filters
-    const tourFlags = tour.flags || [];
-    if (filters.freeCancel && !tourFlags.includes('FREE_CANCELLATION')) return false;
-    if (filters.skipLine && !tourFlags.includes('SKIP_THE_LINE')) return false;
-    if (filters.privateTour && !tourFlags.includes('PRIVATE_TOUR')) return false;
-    if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
-    if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
-    
-    return true;
-  });
+  // Memoize filtered results to avoid recalculating on every render
+  const filteredResults = useMemo(() => {
+    return results.filter(tour => {
+      // Price filter
+      if (filters.minPrice && tour.price < parseFloat(filters.minPrice)) return false;
+      if (filters.maxPrice && tour.price > parseFloat(filters.maxPrice)) return false;
 
-  // Sort results
-  const sortedResults = [...filteredResults].sort((a, b) => {
-    switch (sortBy) {
-      case 'price_low':
-        return (a.price || 0) - (b.price || 0);
-      case 'price_high':
-        return (b.price || 0) - (a.price || 0);
-      case 'rating':
-        return (b.rating || 0) - (a.rating || 0);
-      case 'reviews':
-        return (b.reviewCount || 0) - (a.reviewCount || 0);
-      case 'duration_short':
-        return parseDuration(a.duration) - parseDuration(b.duration);
-      case 'duration_long':
-        return parseDuration(b.duration) - parseDuration(a.duration);
-      default: // 'popular'
-        return (b.reviewCount || 0) - (a.reviewCount || 0);
-    }
-  });
+      // Rating filter
+      if (filters.minRating && tour.rating < parseFloat(filters.minRating)) return false;
 
-  // Pagination
-  const totalPages = Math.ceil(sortedResults.length / resultsPerPage);
-  const paginatedResults = sortedResults.slice(
-    (currentPage - 1) * resultsPerPage,
-    currentPage * resultsPerPage
+      // Duration filter (assuming duration is in hours or "X hours" format)
+      const durationHours = parseDuration(tour.duration);
+      if (filters.minDuration && durationHours < parseFloat(filters.minDuration)) return false;
+      if (filters.maxDuration && durationHours > parseFloat(filters.maxDuration)) return false;
+
+      // Flag filters
+      const tourFlags = tour.flags || [];
+      if (filters.freeCancel && !tourFlags.includes('FREE_CANCELLATION')) return false;
+      if (filters.skipLine && !tourFlags.includes('SKIP_THE_LINE')) return false;
+      if (filters.privateTour && !tourFlags.includes('PRIVATE_TOUR')) return false;
+      if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
+      if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
+
+      return true;
+    });
+  }, [results, filters]);
+
+  // Memoize sorted results to avoid re-sorting on every render
+  const sortedResults = useMemo(() => {
+    return [...filteredResults].sort((a, b) => {
+      switch (sortBy) {
+        case 'price_low':
+          return (a.price || 0) - (b.price || 0);
+        case 'price_high':
+          return (b.price || 0) - (a.price || 0);
+        case 'rating':
+          return (b.rating || 0) - (a.rating || 0);
+        case 'reviews':
+          return (b.reviewCount || 0) - (a.reviewCount || 0);
+        case 'duration_short':
+          return parseDuration(a.duration) - parseDuration(b.duration);
+        case 'duration_long':
+          return parseDuration(b.duration) - parseDuration(a.duration);
+        default: // 'popular'
+          return (b.reviewCount || 0) - (a.reviewCount || 0);
+      }
+    });
+  }, [filteredResults, sortBy]);
+
+  // Memoize pagination
+  const totalPages = useMemo(() =>
+    Math.ceil(sortedResults.length / resultsPerPage),
+    [sortedResults.length, resultsPerPage]
+  );
+
+  const paginatedResults = useMemo(() =>
+    sortedResults.slice(
+      (currentPage - 1) * resultsPerPage,
+      currentPage * resultsPerPage
+    ),
+    [sortedResults, currentPage, resultsPerPage]
   );
 
   // Reset page when filters change
@@ -228,13 +468,13 @@ export default function ResultsPage({
   const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== false);
 
   // ============================================================================
-  // SEARCH HANDLER
+  // SEARCH HANDLER - Memoized with useCallback
   // ============================================================================
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     e?.preventDefault();
     if (!searchDestination.trim()) return;
-    
+
     onNewSearch({
       type: 'tours',
       destination: searchDestination.trim(),
@@ -242,13 +482,13 @@ export default function ResultsPage({
       startDate: searchDate || undefined,
       sortBy
     });
-  };
+  }, [searchDestination, travelers, searchDate, sortBy, onNewSearch]);
 
   // ============================================================================
-  // CHAT HANDLERS
+  // CHAT HANDLERS - Memoized with useCallback
   // ============================================================================
 
-  const handleChatSend = async () => {
+  const handleChatSend = useCallback(async () => {
     if (!chatInput.trim() || chatLoading) return;
 
     const userMessage = { role: 'user', content: chatInput };
@@ -275,7 +515,7 @@ export default function ResultsPage({
       if (!response.ok) throw new Error('Chat failed');
 
       const data = await response.json();
-      
+
       // Store message along with any tours found
       setChatMessages(prev => [...prev, {
         role: 'assistant',
@@ -292,7 +532,7 @@ export default function ResultsPage({
     } finally {
       setChatLoading(false);
     }
-  };
+  }, [chatInput, chatLoading, chatMessages, backendUrl, searchParams?.destination, results.length]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -311,21 +551,27 @@ export default function ResultsPage({
   }, [chatMessages]);
 
   // ============================================================================
-  // CART HELPERS
+  // CART HELPERS - Memoized calculations
   // ============================================================================
 
-  const cartItemCount = cart.tours.length + cart.hotels.length + cart.flights.length;
-  
+  const cartItemCount = useMemo(() =>
+    cart.tours.length + cart.hotels.length + cart.flights.length,
+    [cart.tours.length, cart.hotels.length, cart.flights.length]
+  );
+
   // Calculate cart total with proper pricing (per-person × travelers, or per-group as-is)
-  const cartTotal = cart.tours.reduce((sum, t) => {
-    const price = t.price || 0;
-    // Per-group pricing doesn't multiply by travelers
-    if (t.pricingType === 'group') {
-      return sum + price;
-    }
-    // Per-person pricing multiplies by travelers
-    return sum + (price * travelers);
-  }, 0);
+  const cartTotal = useMemo(() =>
+    cart.tours.reduce((sum, t) => {
+      const price = t.price || 0;
+      // Per-group pricing doesn't multiply by travelers
+      if (t.pricingType === 'group') {
+        return sum + price;
+      }
+      // Per-person pricing multiplies by travelers
+      return sum + (price * travelers);
+    }, 0),
+    [cart.tours, travelers]
+  );
 
   // ============================================================================
   // RENDER
@@ -620,201 +866,24 @@ export default function ResultsPage({
               </div>
             )}
 
-            {/* Results List */}
+            {/* Results List - Using memoized TourCard for performance */}
             {!isLoading && paginatedResults.length > 0 && (
               <>
                 <div className="space-y-4">
-                  {paginatedResults.map((tour) => {
-                    const isSelected = isInCart('tour', tour.id);
-                    const hasDiscount = tour.hasDiscount || tour.flags?.includes('SPECIAL_OFFER');
-                    const tourFlags = tour.flags || [];
-                    
-                    return (
-                      <div
-                        key={tour.id || tour.productCode}
-                        className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${
-                          isSelected ? 'border-green-500 border-2 ring-2 ring-green-100' : 'border-gray-200'
-                        }`}
-                      >
-                        <div className="flex flex-col md:flex-row">
-                          {/* Image */}
-                          <div 
-                            className="md:w-72 lg:w-80 flex-shrink-0 cursor-pointer"
-                            onClick={() => openQuickView(tour)}
-                          >
-                            <div className="relative h-48 md:h-full min-h-[200px]">
-                              {tour.image ? (
-                                <img
-                                  src={tour.image}
-                                  alt={tour.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                                  <MapPin className="w-12 h-12 text-blue-300" />
-                                </div>
-                              )}
-                              {/* Badges on image */}
-                              <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-                                {hasDiscount && (
-                                  <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
-                                    <Tag className="w-3 h-3" />
-                                    DEAL
-                                  </span>
-                                )}
-                                {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                                  <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
-                                    🔥 Popular
-                                  </span>
-                                )}
-                              </div>
-                              {/* Image count badge */}
-                              {tour.images && tour.images.length > 1 && (
-                                <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
-                                  📷 {tour.images.length}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 p-3 sm:p-5 flex flex-col">
-                            {/* Title & Rating Row */}
-                            <div className="flex items-start justify-between gap-4 mb-2">
-                              <h3 
-                                className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 cursor-pointer hover:text-blue-600"
-                                onClick={() => openQuickView(tour)}
-                              >
-                                {tour.name}
-                              </h3>
-                              {tour.rating && tour.rating !== 'New' && (
-                                <div className="flex items-center gap-1 flex-shrink-0 bg-green-50 px-2 py-1 rounded-lg">
-                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                  <span className="font-semibold text-gray-900">{tour.rating}</span>
-                                  {tour.reviewCount > 0 && (
-                                    <span className="text-gray-500 text-sm">({tour.reviewCount.toLocaleString()})</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Description */}
-                            {tour.description && (
-                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                                {tour.description}
-                              </p>
-                            )}
-
-                            {/* Features/Flags Row 1 - Key Info */}
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {tour.duration && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  {tour.duration}
-                                </span>
-                              )}
-                              {tour.languages && tour.languages.length > 0 && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                                  <Globe className="w-3.5 h-3.5" />
-                                  {tour.languages.slice(0, 2).join(', ')}{tour.languages.length > 2 ? ` +${tour.languages.length - 2}` : ''}
-                                </span>
-                              )}
-                              {tour.maxGroupSize && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">
-                                  <Users className="w-3.5 h-3.5" />
-                                  Up to {tour.maxGroupSize}
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Features/Flags Row 2 - Highlights */}
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {tourFlags.includes('FREE_CANCELLATION') && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                                  <Check className="w-3.5 h-3.5" />
-                                  Free cancellation
-                                </span>
-                              )}
-                              {tourFlags.includes('SKIP_THE_LINE') && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                                  ⚡ Skip the line
-                                </span>
-                              )}
-                              {tourFlags.includes('PRIVATE_TOUR') && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-                                  👤 Private tour
-                                </span>
-                              )}
-                              {tour.pricingType === 'group' && !tourFlags.includes('PRIVATE_TOUR') && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
-                                  👥 Per group
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Inclusions Preview */}
-                            {tour.inclusions && tour.inclusions.length > 0 && (
-                              <div className="text-xs text-gray-500 mb-3">
-                                <span className="font-medium text-gray-600">Includes:</span>{' '}
-                                {tour.inclusions.slice(0, 3).join(' • ')}
-                                {tour.inclusions.length > 3 && ` +${tour.inclusions.length - 3} more`}
-                              </div>
-                            )}
-
-                            {/* Spacer */}
-                            <div className="flex-1" />
-
-                            {/* Price & Actions Row */}
-                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                              <div>
-                                {hasDiscount && tour.originalPrice && (
-                                  <span className="text-gray-400 line-through text-sm mr-2">
-                                    {formatCurrency(tour.originalPrice)}
-                                  </span>
-                                )}
-                                <span className={`text-xl sm:text-2xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-green-600'}`}>
-                                  {formatCurrency(tour.price)}
-                                </span>
-                                <span className="text-gray-500 text-xs sm:text-sm ml-1">
-                                  {tour.pricingType === 'group' 
-                                    ? 'per group' 
-                                    : travelers > 1 ? `× ${travelers} = ${formatCurrency(tour.price * travelers)}` : 'per person'
-                                  }
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                {/* Quick View Button */}
-                                <button
-                                  onClick={() => openQuickView(tour)}
-                                  className="p-2 sm:px-3 sm:py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
-                                  title="Quick view"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span className="hidden sm:inline">Quick View</span>
-                                </button>
-
-                                {/* Add/Remove Button */}
-                                <button
-                                  onClick={() => isSelected 
-                                    ? removeFromCart('tour', tour.id) 
-                                    : addToCart('tour', tour)
-                                  }
-                                  className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
-                                    isSelected
-                                      ? 'bg-red-500 hover:bg-red-600 text-white'
-                                      : 'bg-green-500 hover:bg-green-600 text-white'
-                                  }`}
-                                >
-                                  {isSelected ? 'Remove' : 'Add'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {paginatedResults.map((tour) => (
+                    <TourCard
+                      key={tour.id || tour.productCode}
+                      tour={tour}
+                      isSelected={isInCart('tour', tour.id)}
+                      hasDiscount={tour.hasDiscount || tour.flags?.includes('SPECIAL_OFFER')}
+                      tourFlags={tour.flags || []}
+                      formatCurrency={formatCurrency}
+                      travelers={travelers}
+                      openQuickView={openQuickView}
+                      addToCart={addToCart}
+                      removeFromCart={removeFromCart}
+                    />
+                  ))}
                 </div>
 
                 {/* Pagination */}

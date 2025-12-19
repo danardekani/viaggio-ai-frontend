@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  MapPin, 
-  Camera, 
-  Tag, 
-  MessageCircle, 
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import {
+  Search,
+  MapPin,
+  Camera,
+  Tag,
+  MessageCircle,
   Calendar,
   Users,
   ChevronRight,
@@ -147,53 +147,55 @@ export default function LandingPage({
   }, [chatInput]);
 
   // ============================================================================
-  // DESTINATION AUTOCOMPLETE
+  // DESTINATION AUTOCOMPLETE - With AbortController for cleanup
   // ============================================================================
 
-  const fetchSuggestions = async (query) => {
-    if (!query || query.length < 2) {
+  // Debounced autocomplete with AbortController
+  useEffect(() => {
+    if (!destination || destination.length < 2) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
-    setLoadingSuggestions(true);
-    try {
-      const response = await fetch(
-        `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(query)}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data.suggestions || []);
-        setShowSuggestions(true);
-      }
-    } catch (error) {
-      console.error('Autocomplete error:', error);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
-  // Debounced autocomplete
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (destination.length >= 2) {
-        fetchSuggestions(destination);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const response = await fetch(
+          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(destination)}`,
+          { signal: controller.signal }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setSuggestions(data.suggestions || []);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Autocomplete error:', error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingSuggestions(false);
+        }
       }
     }, 300);
-    return () => clearTimeout(timer);
-  }, [destination]);
 
-  const handleSelectSuggestion = (suggestion) => {
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [destination, backendUrl]);
+
+  const handleSelectSuggestion = useCallback((suggestion) => {
     setDestination(suggestion.displayName || suggestion.name);
     setSelectedDestinationId(suggestion.destinationId);
     setShowSuggestions(false);
     setSuggestions([]);
-  };
+  }, []);
 
-  const handleDestinationKeyDown = (e) => {
+  const handleDestinationKeyDown = useCallback((e) => {
     if (!showSuggestions || suggestions.length === 0) return;
 
     if (e.key === 'ArrowDown') {
@@ -208,13 +210,13 @@ export default function LandingPage({
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
     }
-  };
+  }, [showSuggestions, suggestions, selectedIndex, handleSelectSuggestion]);
 
   // ============================================================================
-  // SEARCH HANDLERS
+  // SEARCH HANDLERS - Memoized with useCallback
   // ============================================================================
 
-  const handleToursSearch = (e) => {
+  const handleToursSearch = useCallback((e) => {
     e?.preventDefault();
     if (!destination.trim()) return;
 
@@ -225,15 +227,15 @@ export default function LandingPage({
       travelers,
       startDate: travelDates || undefined
     });
-  };
+  }, [destination, selectedDestinationId, travelers, travelDates, onSearch]);
 
-  const handleDealsSearch = (cityName) => {
+  const handleDealsSearch = useCallback((cityName) => {
     onSearchDeals?.(cityName);
-  };
+  }, [onSearchDeals]);
 
-  const handleFeaturedDealClick = (dest) => {
-    handleDealsSearch(dest.name);
-  };
+  const handleFeaturedDealClick = useCallback((dest) => {
+    onSearchDeals?.(dest.name);
+  }, [onSearchDeals]);
 
   // ============================================================================
   // WHERE IS THIS - IMAGE UPLOAD HANDLERS
@@ -336,10 +338,10 @@ export default function LandingPage({
   };
 
   // ============================================================================
-  // CHAT HANDLERS
+  // CHAT HANDLERS - Memoized with useCallback
   // ============================================================================
 
-  const handleChatSend = async () => {
+  const handleChatSend = useCallback(async () => {
     if (!chatInput.trim() || chatLoading) return;
 
     const userMessage = { role: 'user', content: chatInput };
@@ -375,20 +377,23 @@ export default function LandingPage({
     } finally {
       setChatLoading(false);
     }
-  };
+  }, [chatInput, chatLoading, chatMessages, backendUrl]);
 
-  const handleChatKeyDown = (e) => {
+  const handleChatKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleChatSend();
     }
-  };
+  }, [handleChatSend]);
 
   // ============================================================================
-  // COMPUTED VALUES
+  // COMPUTED VALUES - Memoized
   // ============================================================================
 
-  const tripItemCount = cart.tours.length + cart.hotels.length + cart.flights.length;
+  const tripItemCount = useMemo(() =>
+    cart.tours.length + cart.hotels.length + cart.flights.length,
+    [cart.tours.length, cart.hotels.length, cart.flights.length]
+  );
 
   // ============================================================================
   // RENDER
@@ -877,9 +882,12 @@ export default function LandingPage({
               className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer"
             >
               <div className="aspect-[4/3] overflow-hidden">
-                <img 
-                  src={dest.image} 
+                <img
+                  src={dest.image}
                   alt={dest.name}
+                  loading="lazy"
+                  width={400}
+                  height={300}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
               </div>
@@ -1060,7 +1068,7 @@ export default function LandingPage({
                     return (
                       <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl">
                         {tour.image && (
-                          <img src={tour.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                          <img src={tour.image} alt="" loading="lazy" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{tour.name}</p>

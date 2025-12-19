@@ -1,55 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Plane, Hotel, MapPin, ExternalLink, Star, Clock, Eye, Bed, Coffee, Tag } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
 import HotelQuickViewModal from './HotelQuickViewModal';
 
-export default function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency, travelers = 2 }) {
+const OptionCard = memo(function OptionCard({ option, isSelected, onAdd, onRemove, formatCurrency, travelers = 2 }) {
   const [showQuickView, setShowQuickView] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  
-  const colors = {
-    flight: {
-      border: 'border-blue-600',
-      bg: 'bg-blue-50',
-      icon: 'text-blue-600',
-      button: 'bg-blue-600 hover:bg-blue-700',
-    },
-    hotel: {
-      border: 'border-purple-600',
-      bg: 'bg-purple-50',
-      icon: 'text-purple-600',
-      button: 'bg-purple-600 hover:bg-purple-700',
-    },
-    tour: {
-      border: 'border-green-600',
-      bg: 'bg-green-50',
-      icon: 'text-green-600',
-      button: 'bg-green-600 hover:bg-green-700',
-    },
-  }[option.type];
+
+  // Memoize colors based on option type
+  const colors = useMemo(() => {
+    const colorMap = {
+      flight: {
+        border: 'border-blue-600',
+        bg: 'bg-blue-50',
+        icon: 'text-blue-600',
+        button: 'bg-blue-600 hover:bg-blue-700',
+      },
+      hotel: {
+        border: 'border-purple-600',
+        bg: 'bg-purple-50',
+        icon: 'text-purple-600',
+        button: 'bg-purple-600 hover:bg-purple-700',
+      },
+      tour: {
+        border: 'border-green-600',
+        bg: 'bg-green-50',
+        icon: 'text-green-600',
+        button: 'bg-green-600 hover:bg-green-700',
+      },
+    };
+    return colorMap[option.type];
+  }, [option.type]);
 
   const bookingUrl = option.data.bookingLink || option.data.link;
 
-  const handleAddRemove = () => {
+  // Memoize handlers with useCallback
+  const handleAddRemove = useCallback(() => {
     isSelected ? onRemove(option.type, option.data.id) : onAdd(option.type, option.data);
-  };
+  }, [isSelected, onRemove, onAdd, option.type, option.data]);
 
-  const handleOpenQuickView = () => {
-    setDescriptionExpanded(false); // Reset when opening
+  const handleOpenQuickView = useCallback(() => {
+    setDescriptionExpanded(false);
     setShowQuickView(true);
-  };
+  }, []);
 
-  const handleCloseQuickView = () => {
+  const handleCloseQuickView = useCallback(() => {
     setShowQuickView(false);
-    setDescriptionExpanded(false); // Reset when closing
-  };
+    setDescriptionExpanded(false);
+  }, []);
 
-  const handleToggleDescription = () => {
+  const handleToggleDescription = useCallback(() => {
     setDescriptionExpanded(prev => !prev);
-  };
+  }, []);
 
-  // Check if option has an image (for tours and hotels)
-  const hasImage = (option.type === 'tour' || option.type === 'hotel') && option.data.image;
+  // Memoize derived values
+  const hasImage = useMemo(() =>
+    (option.type === 'tour' || option.type === 'hotel') && option.data.image,
+    [option.type, option.data.image]
+  );
+
+  // Memoize star array for hotel ratings
+  const starArray = useMemo(() =>
+    option.data.rating ? [...Array(Math.min(option.data.rating, 5))] : [],
+    [option.data.rating]
+  );
 
   return (
     <>
@@ -61,9 +75,10 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
         <div className="flex items-center gap-3 p-3">
           {/* Image - Show for tours AND hotels if available */}
           {hasImage ? (
-            <img 
-              src={option.data.image} 
+            <img
+              src={option.data.image}
               alt={option.data.name}
+              loading="lazy"
               className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
             />
           ) : (
@@ -93,7 +108,7 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
                   {option.data.rating && (
                     <>
                       <span className="flex items-center">
-                        {[...Array(Math.min(option.data.rating, 5))].map((_, i) => (
+                        {starArray.map((_, i) => (
                           <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                         ))}
                       </span>
@@ -256,4 +271,6 @@ export default function OptionCard({ option, isSelected, onAdd, onRemove, format
       )}
     </>
   );
-}
+});
+
+export default OptionCard;

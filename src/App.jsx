@@ -1,21 +1,34 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import {
   Send,
   Plane,
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 
 import ChatMessage from './components/ChatMessage';
 import Sidebar from './components/Sidebar';
-import BookingPage from './components/BookingPage';
-import ItineraryModal from './components/ItineraryModal';
 import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
 import WhereIsThis from './components/WhereIsThis';
-import LandingPage from './components/LandingPage';
-import ResultsPage from './components/ResultsPage';
+
+// Lazy load larger components for code splitting
+const BookingPage = lazy(() => import('./components/BookingPage'));
+const ItineraryModal = lazy(() => import('./components/ItineraryModal'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const ResultsPage = lazy(() => import('./components/ResultsPage'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex flex-col items-center gap-4">
+      <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+      <p className="text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -155,32 +168,33 @@ export default function App() {
   // CART FUNCTIONS
   // ============================================================================
 
-  const addToCart = (type, item) => {
+  // Memoize cart functions with useCallback
+  const addToCart = useCallback((type, item) => {
     setCart((prev) => {
       const key = type === 'flight' ? 'flights' : type === 'hotel' ? 'hotels' : 'tours';
       if (prev[key].find((i) => i.id === item.id)) return prev;
       return { ...prev, [key]: [...prev[key], item] };
     });
-  };
+  }, []);
 
-  const removeFromCart = (type, itemId) => {
+  const removeFromCart = useCallback((type, itemId) => {
     setCart((prev) => {
       const key = type === 'flight' ? 'flights' : type === 'hotel' ? 'hotels' : 'tours';
       return { ...prev, [key]: prev[key].filter((i) => i.id !== itemId) };
     });
-  };
+  }, []);
 
-  const isInCart = (type, itemId) => {
+  const isInCart = useCallback((type, itemId) => {
     const key = type === 'flight' ? 'flights' : type === 'hotel' ? 'hotels' : 'tours';
     return cart[key].some((i) => i.id === itemId);
-  };
+  }, [cart]);
 
-  const toggleSection = (section) => {
+  const toggleSection = useCallback((section) => {
     setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
-  };
+  }, []);
 
   // Helper to calculate tour price based on pricing type
   const getTourPrice = (tour) => {
@@ -190,18 +204,19 @@ export default function App() {
     return (tour.price || 0) * (conversationContext.travelers || 2); // Per person - multiply
   };
 
-  const totalCost =
-    // MVP: Only tours for initial launch
-    // cart.flights.reduce((sum, f) => sum + (f.price || 0), 0) +
-    // cart.hotels.reduce((sum, h) => sum + (h.price || 0), 0) +
-    cart.tours.reduce((sum, t) => sum + getTourPrice(t), 0);
+  // Memoize total cost calculation
+  const totalCost = useMemo(() =>
+    cart.tours.reduce((sum, t) => sum + getTourPrice(t), 0),
+    [cart.tours, conversationContext.travelers]
+  );
 
-  const formatCurrency = (amount) => {
+  // Memoize formatCurrency function
+  const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
-  };
+  }, []);
 
   // ============================================================================
   // SEARCH PANEL HANDLER
@@ -582,7 +597,7 @@ export default function App() {
           destination: searchParams.destination,
           destinationId: searchParams.destinationId,
           searchTerms: searchParams.searchTerms,
-          resultCount: 10000, // Request all available results
+          resultCount: 100, // Reasonable limit for client-side pagination
           sortBy: searchParams.sortBy || 'popular',
           startDate: searchParams.startDate,
           endDate: searchParams.endDate,
@@ -658,55 +673,62 @@ export default function App() {
   // RENDER
   // ============================================================================
 
-  // Show Landing Page
+  // Show Landing Page - wrapped in Suspense for code splitting
   if (showLandingPage) {
     return (
-      <LandingPage
-        onSearch={handleLandingPageSearch}
-        onSearchDeals={handleLandingPageDeals}
-        onOpenWhereIsThis={handleOpenWhereIsThis}
-        onOpenTripBuilder={handleOpenTripBuilder}
-        cart={cart}
-        removeFromCart={removeFromCart}
-        formatCurrency={formatCurrency}
-        onCheckout={() => {
-          setShowLandingPage(false);
-          setShowBookingPage(true);
-        }}
-        isLoading={loading}
-        backendUrl={BACKEND_URL}
-      />
+      <Suspense fallback={<PageLoader />}>
+        <LandingPage
+          onSearch={handleLandingPageSearch}
+          onSearchDeals={handleLandingPageDeals}
+          onOpenWhereIsThis={handleOpenWhereIsThis}
+          onOpenTripBuilder={handleOpenTripBuilder}
+          cart={cart}
+          removeFromCart={removeFromCart}
+          formatCurrency={formatCurrency}
+          onCheckout={() => {
+            setShowLandingPage(false);
+            setShowBookingPage(true);
+          }}
+          isLoading={loading}
+          backendUrl={BACKEND_URL}
+        />
+      </Suspense>
     );
   }
 
-  // Show Results Page (new Hopper-like layout)
+  // Show Results Page - wrapped in Suspense for code splitting
   if (showResultsPage) {
     return (
-      <ResultsPage
-        searchParams={currentSearchParams}
-        results={searchResults}
-        isLoading={loading}
-        onNewSearch={handleResultsPageSearch}
-        onBackToHome={handleBackToHome}
-        cart={cart}
-        addToCart={addToCart}
-        removeFromCart={removeFromCart}
-        isInCart={isInCart}
-        formatCurrency={formatCurrency}
-        travelers={conversationContext.travelers || 2}
-        backendUrl={BACKEND_URL}
-        onCheckout={() => setShowBookingPage(true)}
-      />
+      <Suspense fallback={<PageLoader />}>
+        <ResultsPage
+          searchParams={currentSearchParams}
+          results={searchResults}
+          isLoading={loading}
+          onNewSearch={handleResultsPageSearch}
+          onBackToHome={handleBackToHome}
+          cart={cart}
+          addToCart={addToCart}
+          removeFromCart={removeFromCart}
+          isInCart={isInCart}
+          formatCurrency={formatCurrency}
+          travelers={conversationContext.travelers || 2}
+          backendUrl={BACKEND_URL}
+          onCheckout={() => setShowBookingPage(true)}
+        />
+      </Suspense>
     );
   }
 
+  // Show Booking Page - wrapped in Suspense for code splitting
   if (showBookingPage) {
     return (
-      <BookingPage
-        cart={cart}
-        formatCurrency={formatCurrency}
-        onBack={() => setShowBookingPage(false)}
-      />
+      <Suspense fallback={<PageLoader />}>
+        <BookingPage
+          cart={cart}
+          formatCurrency={formatCurrency}
+          onBack={() => setShowBookingPage(false)}
+        />
+      </Suspense>
     );
   }
 
@@ -915,15 +937,17 @@ export default function App() {
       )}
 
       {showItinerary && (
-        <ItineraryModal
-          cart={cart}
-          formatCurrency={formatCurrency}
-          totalCost={totalCost}
-          onClose={() => setShowItinerary(false)}
-          onBookTrip={handleBookTrip}
-          onShare={shareItinerary}
-          travelers={conversationContext.travelers || 2}
-        />
+        <Suspense fallback={null}>
+          <ItineraryModal
+            cart={cart}
+            formatCurrency={formatCurrency}
+            totalCost={totalCost}
+            onClose={() => setShowItinerary(false)}
+            onBookTrip={handleBookTrip}
+            onShare={shareItinerary}
+            travelers={conversationContext.travelers || 2}
+          />
+        </Suspense>
       )}
     </div>
   );

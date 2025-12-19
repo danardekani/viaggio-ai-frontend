@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Plane, 
-  Hotel, 
-  MapPin, 
-  ChevronDown, 
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import {
+  Plane,
+  Hotel,
+  MapPin,
+  ChevronDown,
   ChevronUp,
   Search,
   Calendar,
@@ -30,7 +30,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
+const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl }) {
   const [activeTab, setActiveTab] = useState('tours');
   const [isExpanded, setIsExpanded] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -99,30 +99,41 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
   // ==================== TOURS AUTOCOMPLETE ====================
   const debouncedDestination = useDebounce(toursFilters.destination, 300);
 
-  // Fetch tours autocomplete suggestions
+  // Fetch tours autocomplete suggestions with AbortController
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!debouncedDestination || debouncedDestination.length < 2 || selectedDestinationId) {
-        setSuggestions([]);
-        return;
-      }
+    if (!debouncedDestination || debouncedDestination.length < 2 || selectedDestinationId) {
+      setSuggestions([]);
+      return;
+    }
 
+    const controller = new AbortController();
+
+    const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
-        const response = await fetch(`${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(debouncedDestination)}&limit=8`);
+        const response = await fetch(
+          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(debouncedDestination)}&limit=8`,
+          { signal: controller.signal }
+        );
         const data = await response.json();
         setSuggestions(data.suggestions || []);
         setShowSuggestions(true);
         setSelectedIndex(-1);
       } catch (error) {
-        console.error('Autocomplete error:', error);
-        setSuggestions([]);
+        if (error.name !== 'AbortError') {
+          console.error('Autocomplete error:', error);
+          setSuggestions([]);
+        }
       } finally {
-        setLoadingSuggestions(false);
+        if (!controller.signal.aborted) {
+          setLoadingSuggestions(false);
+        }
       }
     };
 
     fetchSuggestions();
+
+    return () => controller.abort();
   }, [debouncedDestination, selectedDestinationId, backendUrl]);
 
   // Close tours suggestions when clicking outside
@@ -145,30 +156,41 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
   // ==================== HOTELS AUTOCOMPLETE ====================
   const debouncedHotelDestination = useDebounce(hotelsFilters.destination, 300);
 
-  // Fetch hotels autocomplete suggestions
+  // Fetch hotels autocomplete suggestions with AbortController
   useEffect(() => {
-    const fetchHotelSuggestions = async () => {
-      if (!debouncedHotelDestination || debouncedHotelDestination.length < 2 || selectedHotelDestination) {
-        setHotelSuggestions([]);
-        return;
-      }
+    if (!debouncedHotelDestination || debouncedHotelDestination.length < 2 || selectedHotelDestination) {
+      setHotelSuggestions([]);
+      return;
+    }
 
+    const controller = new AbortController();
+
+    const fetchHotelSuggestions = async () => {
       setLoadingHotelSuggestions(true);
       try {
-        const response = await fetch(`${backendUrl}/api/hotels/destinations/autocomplete?q=${encodeURIComponent(debouncedHotelDestination)}&limit=8`);
+        const response = await fetch(
+          `${backendUrl}/api/hotels/destinations/autocomplete?q=${encodeURIComponent(debouncedHotelDestination)}&limit=8`,
+          { signal: controller.signal }
+        );
         const data = await response.json();
         setHotelSuggestions(data.suggestions || []);
         setShowHotelSuggestions(true);
         setHotelSelectedIndex(-1);
       } catch (error) {
-        console.error('Hotel autocomplete error:', error);
-        setHotelSuggestions([]);
+        if (error.name !== 'AbortError') {
+          console.error('Hotel autocomplete error:', error);
+          setHotelSuggestions([]);
+        }
       } finally {
-        setLoadingHotelSuggestions(false);
+        if (!controller.signal.aborted) {
+          setLoadingHotelSuggestions(false);
+        }
       }
     };
 
     fetchHotelSuggestions();
+
+    return () => controller.abort();
   }, [debouncedHotelDestination, selectedHotelDestination, backendUrl]);
 
   // Close hotels suggestions when clicking outside
@@ -407,8 +429,8 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     }));
   };
 
-  // Count active filters
-  const getFilterCount = () => {
+  // Memoize filter count calculation
+  const filterCount = useMemo(() => {
     let count = 0;
     if (toursFilters.searchTerms) count++;
     if (toursFilters.minPrice) count++;
@@ -418,53 +440,40 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     if (toursFilters.minRating) count++;
     Object.values(toursFilters.flags).forEach(v => { if (v) count++; });
     return count;
-  };
+  }, [toursFilters]);
 
-  const filterCount = getFilterCount();
+  // Memoize destination type map for performance
+  const destinationTypeMap = useMemo(() => ({
+    'CITY': { label: 'City', color: 'bg-blue-100 text-blue-700' },
+    'REGION': { label: 'Region', color: 'bg-green-100 text-green-700' },
+    'COUNTRY': { label: 'Country', color: 'bg-purple-100 text-purple-700' },
+    'DISTRICT': { label: 'District', color: 'bg-orange-100 text-orange-700' },
+    'NATIONAL_PARK': { label: 'National Park', color: 'bg-emerald-100 text-emerald-700' },
+    'STATE': { label: 'State', color: 'bg-indigo-100 text-indigo-700' },
+    'PROVINCE': { label: 'Province', color: 'bg-indigo-100 text-indigo-700' },
+    'ISLAND': { label: 'Island', color: 'bg-cyan-100 text-cyan-700' },
+    'TOWN': { label: 'Town', color: 'bg-sky-100 text-sky-700' },
+    'VILLAGE': { label: 'Village', color: 'bg-sky-100 text-sky-700' },
+    'NEIGHBORHOOD': { label: 'Neighborhood', color: 'bg-amber-100 text-amber-700' },
+    'AIRPORT': { label: 'Airport', color: 'bg-slate-100 text-slate-700' },
+    'ATTRACTION': { label: 'Attraction', color: 'bg-pink-100 text-pink-700' },
+    'LANDMARK': { label: 'Landmark', color: 'bg-rose-100 text-rose-700' },
+    'DESTINATION': { label: 'Destination', color: 'bg-teal-100 text-teal-700' },
+  }), []);
 
-  // Get destination type info for display
-  const getDestinationType = (type) => {
-    switch(type) {
-      case 'CITY': 
-        return { label: 'City', color: 'bg-blue-100 text-blue-700' };
-      case 'REGION': 
-        return { label: 'Region', color: 'bg-green-100 text-green-700' };
-      case 'COUNTRY': 
-        return { label: 'Country', color: 'bg-purple-100 text-purple-700' };
-      case 'DISTRICT': 
-        return { label: 'District', color: 'bg-orange-100 text-orange-700' };
-      case 'NATIONAL_PARK': 
-        return { label: 'National Park', color: 'bg-emerald-100 text-emerald-700' };
-      case 'STATE': 
-        return { label: 'State', color: 'bg-indigo-100 text-indigo-700' };
-      case 'PROVINCE': 
-        return { label: 'Province', color: 'bg-indigo-100 text-indigo-700' };
-      case 'ISLAND': 
-        return { label: 'Island', color: 'bg-cyan-100 text-cyan-700' };
-      case 'TOWN': 
-        return { label: 'Town', color: 'bg-sky-100 text-sky-700' };
-      case 'VILLAGE': 
-        return { label: 'Village', color: 'bg-sky-100 text-sky-700' };
-      case 'NEIGHBORHOOD': 
-        return { label: 'Neighborhood', color: 'bg-amber-100 text-amber-700' };
-      case 'AIRPORT': 
-        return { label: 'Airport', color: 'bg-slate-100 text-slate-700' };
-      case 'ATTRACTION': 
-        return { label: 'Attraction', color: 'bg-pink-100 text-pink-700' };
-      case 'LANDMARK': 
-        return { label: 'Landmark', color: 'bg-rose-100 text-rose-700' };
-      case 'DESTINATION': 
-        return { label: 'Destination', color: 'bg-teal-100 text-teal-700' };
-      default: 
-        // Format unknown types: SOME_TYPE -> Some Type
-        const formatted = type 
-          ? type.split('_').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-            ).join(' ')
-          : 'Place';
-        return { label: formatted, color: 'bg-gray-100 text-gray-700' };
+  // Get destination type info for display - use memoized map
+  const getDestinationType = useCallback((type) => {
+    if (destinationTypeMap[type]) {
+      return destinationTypeMap[type];
     }
-  };
+    // Format unknown types: SOME_TYPE -> Some Type
+    const formatted = type
+      ? type.split('_').map(word =>
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ')
+      : 'Place';
+    return { label: formatted, color: 'bg-gray-100 text-gray-700' };
+  }, [destinationTypeMap]);
 
   return (
     <>
@@ -957,4 +966,6 @@ export default function SearchPanel({ onSearch, isLoading, backendUrl }) {
     </div>
     </>
   );
-}
+});
+
+export default SearchPanel;
