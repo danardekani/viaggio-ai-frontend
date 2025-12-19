@@ -614,13 +614,22 @@ export default function ResultsPage({
       // Extract tours from various possible response formats
       const tours = data.tours || data.results || data.data?.tours || [];
 
+      // Debug logging
+      console.log('Chat API Response:', data);
+      console.log('Extracted tours:', tours);
+      console.log('Tours count:', tours.length);
+
       // Store message along with any tours found
-      setChatMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
-        tours: tours,  // Store tours for display
-        searchDestination: data.searchDestination || data.destination || null  // For "View more" navigation
-      }]);
+      setChatMessages(prev => {
+        const newMessages = [...prev, {
+          role: 'assistant',
+          content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
+          tours: tours,  // Store tours for display
+          searchDestination: data.searchDestination || data.destination || null  // For "View more" navigation
+        }];
+        console.log('Updated chat messages:', newMessages);
+        return newMessages;
+      });
     } catch (error) {
       console.error('Chat error:', error);
       setChatMessages(prev => [...prev, {
@@ -1483,7 +1492,12 @@ export default function ResultsPage({
 
           {/* Chat Messages */}
           <div ref={chatMessagesRef} className="flex-1 p-4 overflow-y-auto space-y-3">
-            {chatMessages.map((msg, index) => (
+            {chatMessages.map((msg, index) => {
+              // Debug: log each message being rendered
+              if (msg.role === 'assistant') {
+                console.log(`Rendering message ${index}:`, { content: msg.content?.substring(0, 50), tours: msg.tours, toursLength: msg.tours?.length });
+              }
+              return (
               <div
                 key={index}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -1501,7 +1515,7 @@ export default function ResultsPage({
                       <div className="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-none p-3">
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
-                      
+
                       {/* Tour cards if available */}
                       {msg.tours && msg.tours.length > 0 && (
                         <div className="space-y-2 mt-2">
@@ -1597,7 +1611,8 @@ export default function ResultsPage({
                   )}
                 </div>
               </div>
-            ))}
+            );
+            })}
             {chatLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-2xl rounded-tl-none p-3">
