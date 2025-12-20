@@ -4,7 +4,8 @@ import {
   X,
   Send,
   Loader2,
-  MapPin
+  MapPin,
+  ChevronRight
 } from 'lucide-react';
 
 // ============================================================================
@@ -86,12 +87,17 @@ export default function ViaChat({
       const tours = data.tours || data.results || data.data?.tours || [];
       console.log('ViaChat API Response:', data);
       console.log('ViaChat Extracted tours:', tours);
+      console.log('ViaChat hasMore:', data.hasMore, 'searchDestinationId:', data.searchDestinationId);
 
       setChatMessages(prev => [...prev, {
         role: 'assistant',
         content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
         tours: tours,
-        searchDestination: data.searchDestination || data.destination || null
+        searchDestination: data.searchDestination || data.destination || null,
+        // Store search metadata for "See more" functionality
+        hasMore: data.hasMore || false,
+        searchDestinationId: data.searchDestinationId || null,
+        searchTerms: data.searchTerms || null
       }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -122,11 +128,14 @@ export default function ViaChat({
     }
   }, [onSearch, travelers]);
 
-  const handleViewAllTours = useCallback((searchDestination) => {
-    if (searchDestination) {
+  const handleSeeMore = useCallback((msg) => {
+    // Use searchDestinationId and searchTerms for more accurate results
+    if (msg.searchDestination || msg.searchDestinationId) {
       onSearch?.({
         type: 'tours',
-        destination: searchDestination,
+        destination: msg.searchDestination,
+        destinationId: msg.searchDestinationId,
+        searchTerms: msg.searchTerms,
         travelers
       });
     }
@@ -270,12 +279,14 @@ export default function ViaChat({
                           </div>
                         ))}
                       </div>
-                      {msg.tours.length > 5 && (
+                      {/* See more button - show if hasMore or more than 5 tours */}
+                      {(msg.hasMore || msg.tours.length > 5) && (
                         <button
-                          onClick={() => handleViewAllTours(msg.searchDestination)}
-                          className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
+                          onClick={() => handleSeeMore(msg)}
+                          className="w-full flex items-center justify-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                         >
-                          View all {msg.tours.length} tours →
+                          See more tours
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       )}
                     </div>
