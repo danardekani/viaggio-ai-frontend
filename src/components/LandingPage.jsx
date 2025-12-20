@@ -461,19 +461,17 @@ export default function LandingPage({
 
                     {/* Autocomplete Dropdown */}
                     {showSuggestions && suggestions.length > 0 && (
-                      <div 
+                      <div
                         ref={suggestionsRef}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
                       >
                         {suggestions.map((suggestion, index) => {
                           // Safely extract display values (handle edge cases)
-                          const displayName = typeof suggestion?.displayName === 'string' 
-                            ? suggestion.displayName 
+                          const displayName = typeof suggestion?.displayName === 'string'
+                            ? suggestion.displayName
                             : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
-                          const destType = typeof suggestion?.type === 'string' 
-                            ? suggestion.type.toLowerCase().replace('_', ' ') 
-                            : null;
-                          
+                          const parentName = suggestion?.parentName || null;
+
                           return (
                             <button
                               key={suggestion?.destinationId || index}
@@ -490,8 +488,8 @@ export default function LandingPage({
                                 <p className="text-sm font-medium text-gray-900">
                                   {displayName}
                                 </p>
-                                {destType && (
-                                  <p className="text-xs text-gray-500 capitalize">{destType}</p>
+                                {parentName && (
+                                  <p className="text-xs text-gray-500">{parentName}</p>
                                 )}
                               </div>
                             </button>
@@ -735,19 +733,17 @@ export default function LandingPage({
 
                     {/* Autocomplete Dropdown */}
                     {showSuggestions && suggestions.length > 0 && (
-                      <div 
+                      <div
                         ref={suggestionsRef}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
                       >
                         {suggestions.map((suggestion, index) => {
                           // Safely extract display values (handle edge cases)
-                          const displayName = typeof suggestion?.displayName === 'string' 
-                            ? suggestion.displayName 
+                          const displayName = typeof suggestion?.displayName === 'string'
+                            ? suggestion.displayName
                             : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
-                          const destType = typeof suggestion?.type === 'string' 
-                            ? suggestion.type.toLowerCase().replace('_', ' ') 
-                            : null;
-                          
+                          const parentName = suggestion?.parentName || null;
+
                           return (
                             <button
                               key={suggestion?.destinationId || index}
@@ -764,8 +760,8 @@ export default function LandingPage({
                                 <p className="text-sm font-medium text-gray-900">
                                   {displayName}
                                 </p>
-                                {destType && (
-                                  <p className="text-xs text-gray-500 capitalize">{destType}</p>
+                                {parentName && (
+                                  <p className="text-xs text-gray-500">{parentName}</p>
                                 )}
                               </div>
                             </button>
@@ -774,7 +770,7 @@ export default function LandingPage({
                       </div>
                     )}
                   </div>
-                  <button 
+                  <button
                     onClick={() => destination.trim() && handleDealsSearch(destination.trim())}
                     disabled={!destination.trim() || isLoading}
                     className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-300 text-white px-6 py-4 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 m-1"
