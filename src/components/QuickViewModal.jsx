@@ -6,8 +6,9 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
-  Tag,
   Globe,
   Check,
   Loader2,
@@ -26,6 +27,7 @@ const QuickViewModal = memo(function QuickViewModal({
   isLoading = false
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   // Memoize images array
   const images = useMemo(() => {
@@ -268,10 +270,28 @@ const QuickViewModal = memo(function QuickViewModal({
                   About this tour
                 </h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  {tour.description.length > 400 
-                    ? tour.description.substring(0, 400) + '...' 
-                    : tour.description}
+                  {descriptionExpanded || tour.description.length <= 300
+                    ? tour.description
+                    : tour.description.substring(0, 300) + '...'}
                 </p>
+                {tour.description.length > 300 && (
+                  <button
+                    onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    {descriptionExpanded ? (
+                      <>
+                        View less
+                        <ChevronUp className="w-4 h-4" />
+                      </>
+                    ) : (
+                      <>
+                        View more
+                        <ChevronDown className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             )}
 
@@ -326,49 +346,6 @@ const QuickViewModal = memo(function QuickViewModal({
               </ul>
             </div>
 
-            {/* What's Included */}
-            {((tour.inclusions && tour.inclusions.length > 0) || (tour.exclusions && tour.exclusions.length > 0)) && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500" />
-                  What's included
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-                  {tour.inclusions?.slice(0, 4).map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                  {tour.exclusions?.slice(0, 4).map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm text-gray-400">
-                      <X className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Itinerary */}
-            {tour.itinerary && tour.itinerary.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-blue-500" />
-                  What you'll see
-                </h3>
-                <div className="space-y-2">
-                  {tour.itinerary.slice(0, 5).map((stop, idx) => (
-                    <div key={idx} className="flex gap-2 text-sm">
-                      <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs flex-shrink-0">
-                        {idx + 1}
-                      </span>
-                      <span className="text-gray-600">{stop.name || stop.description}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
