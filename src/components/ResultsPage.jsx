@@ -330,7 +330,9 @@ export default function ResultsPage({
   const textareaRef = useRef(null);
   const suggestionsRef = useRef(null);
   const searchInputRef = useRef(null);
-  const justSelectedRef = useRef(false);
+  // If we have a pre-filled destination from searchParams, treat it as "just selected"
+  // to prevent autocomplete from opening on initial load
+  const justSelectedRef = useRef(!!searchParams?.destination);
 
   // ============================================================================
   // FILTERING & SORTING - Memoized for performance
