@@ -1516,6 +1516,13 @@ export default function ResultsPage({
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
 
+                      {/* DEBUG: Show tour count - remove after debugging */}
+                      {msg.tours !== undefined && (
+                        <div className="text-xs text-red-500 bg-red-50 p-1 rounded">
+                          DEBUG: tours={msg.tours?.length || 0}
+                        </div>
+                      )}
+
                       {/* Tour cards if available */}
                       {msg.tours && msg.tours.length > 0 && (
                         <div className="space-y-2 mt-2">
