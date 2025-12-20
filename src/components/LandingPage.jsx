@@ -364,9 +364,17 @@ export default function LandingPage({
       if (!response.ok) throw new Error('Chat failed');
 
       const data = await response.json();
+
+      // Extract tours from various possible response formats
+      const tours = data.tours || data.results || data.data?.tours || [];
+      console.log('LandingPage Chat API Response:', data);
+      console.log('LandingPage Extracted tours:', tours);
+
       setChatMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.message || "I'm not sure how to help with that. Could you try rephrasing?"
+        content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
+        tours: tours,
+        searchDestination: data.searchDestination || data.destination || null
       }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -978,16 +986,97 @@ export default function LandingPage({
           {/* Chat Messages */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3">
             {chatMessages.map((msg, index) => (
-              <div 
+              <div
                 key={index}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[85%] rounded-2xl p-3 ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-br-none' 
-                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                }`}>
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div className={`max-w-[85%] ${msg.role === 'user' ? '' : 'w-full'}`}>
+                  <div className={`rounded-2xl p-3 ${
+                    msg.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-none'
+                      : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                  }`}>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+
+                  {/* Tour cards if available */}
+                  {msg.tours && msg.tours.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-gray-500 px-1">Found {msg.tours.length} tour{msg.tours.length > 1 ? 's' : ''}:</p>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {msg.tours.slice(0, 5).map((tour, tourIndex) => (
+                          <div
+                            key={tour.id || tour.productCode || tourIndex}
+                            className="bg-white border border-gray-200 rounded-xl p-2 hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => {
+                              // Navigate to results page with this destination
+                              if (msg.searchDestination || tour.destination) {
+                                onSearch?.({
+                                  type: 'tours',
+                                  destination: msg.searchDestination || tour.destination,
+                                  travelers
+                                });
+                              }
+                            }}
+                          >
+                            <div className="flex gap-2">
+                              {(tour.image || tour.images?.[0]?.url || tour.images?.[0]) ? (
+                                <img
+                                  src={tour.image || tour.images?.[0]?.url || tour.images?.[0]}
+                                  alt={tour.name || tour.title}
+                                  className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                  <MapPin className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">
+                                  {tour.name || tour.title}
+                                </p>
+                                {(tour.rating || tour.averageRating) && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <span className="text-yellow-500 text-xs">★</span>
+                                    <span className="text-xs text-gray-600">
+                                      {tour.rating || tour.averageRating}
+                                    </span>
+                                    {(tour.reviewCount || tour.totalReviews) && (
+                                      <span className="text-xs text-gray-400">
+                                        ({tour.reviewCount || tour.totalReviews})
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {(tour.price || tour.retailPrice) && (
+                                  <p className="text-sm font-semibold text-green-600 mt-1">
+                                    ${(tour.price || tour.retailPrice).toFixed(2)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {msg.tours.length > 5 && (
+                        <button
+                          onClick={() => {
+                            if (msg.searchDestination) {
+                              onSearch?.({
+                                type: 'tours',
+                                destination: msg.searchDestination,
+                                travelers
+                              });
+                            }
+                          }}
+                          className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
+                        >
+                          View all {msg.tours.length} tours →
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
