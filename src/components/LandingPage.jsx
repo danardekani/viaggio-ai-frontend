@@ -100,6 +100,7 @@ export default function LandingPage({
   const suggestionsRef = useRef(null);
   const fileInputRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
+  const justSelectedRef = useRef(false);
 
   // Prefetch on hover - start loading after 200ms hover
   const handleDestinationHover = useCallback((destName) => {
@@ -143,6 +144,12 @@ export default function LandingPage({
 
   // Debounced autocomplete with AbortController
   useEffect(() => {
+    // Skip if a suggestion was just selected
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
     if (!destination || destination.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -180,6 +187,7 @@ export default function LandingPage({
   }, [destination, backendUrl]);
 
   const handleSelectSuggestion = useCallback((suggestion) => {
+    justSelectedRef.current = true;
     setDestination(suggestion.displayName || suggestion.name);
     setSelectedDestinationId(suggestion.destinationId);
     setShowSuggestions(false);
