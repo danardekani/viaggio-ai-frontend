@@ -330,6 +330,7 @@ export default function ResultsPage({
   const textareaRef = useRef(null);
   const suggestionsRef = useRef(null);
   const searchInputRef = useRef(null);
+  const justSelectedRef = useRef(false);
 
   // ============================================================================
   // FILTERING & SORTING - Memoized for performance
@@ -518,6 +519,12 @@ export default function ResultsPage({
 
   // Debounced autocomplete with AbortController
   useEffect(() => {
+    // Skip if a suggestion was just selected
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
     if (!searchDestination || searchDestination.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -556,6 +563,7 @@ export default function ResultsPage({
   }, [searchDestination, backendUrl]);
 
   const handleSelectSuggestion = useCallback((suggestion) => {
+    justSelectedRef.current = true;
     setSearchDestination(suggestion.displayName || suggestion.name);
     setSelectedDestinationId(suggestion.destinationId);
     setShowSuggestions(false);
