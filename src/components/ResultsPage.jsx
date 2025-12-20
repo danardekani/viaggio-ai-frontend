@@ -1008,13 +1008,33 @@ export default function ResultsPage({
               </div>
             </div>
 
-            {/* Loading State */}
+            {/* Loading State - Skeleton Cards */}
             {isLoading && (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-600">Searching for tours...</p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {[...Array(9)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm animate-pulse">
+                    {/* Image skeleton */}
+                    <div className="aspect-[4/3] bg-gray-200" />
+                    {/* Content skeleton */}
+                    <div className="p-4 space-y-3">
+                      {/* Title */}
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      {/* Rating */}
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-16 bg-gray-200 rounded" />
+                        <div className="h-4 w-20 bg-gray-200 rounded" />
+                      </div>
+                      {/* Duration */}
+                      <div className="h-4 w-24 bg-gray-200 rounded" />
+                      {/* Price */}
+                      <div className="flex justify-between items-center pt-2">
+                        <div className="h-6 w-20 bg-gray-200 rounded" />
+                        <div className="h-8 w-24 bg-gray-200 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 

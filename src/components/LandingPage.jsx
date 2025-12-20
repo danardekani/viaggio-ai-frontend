@@ -16,6 +16,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import ViaChat from './ViaChat';
+import { prewarmDestination } from '../utils/searchCache';
 
 // ============================================================================
 // CONSTANTS
@@ -98,6 +99,27 @@ export default function LandingPage({
   const destinationInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const fileInputRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
+
+  // Prefetch on hover - start loading after 200ms hover
+  const handleDestinationHover = useCallback((destName) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    // Start prefetch after 200ms hover
+    hoverTimeoutRef.current = setTimeout(() => {
+      console.log(`🎯 Hover prefetch triggered for "${destName}"`);
+      prewarmDestination(backendUrl, destName);
+    }, 200);
+  }, [backendUrl]);
+
+  const handleDestinationHoverEnd = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  }, []);
 
   // Click outside to close suggestions
   useEffect(() => {
@@ -796,9 +818,11 @@ export default function LandingPage({
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {FEATURED_DESTINATIONS.map((dest) => (
-            <div 
+            <div
               key={dest.name}
               onClick={() => handleFeaturedDealClick(dest)}
+              onMouseEnter={() => handleDestinationHover(dest.name)}
+              onMouseLeave={handleDestinationHoverEnd}
               className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer"
             >
               <div className="aspect-[4/3] overflow-hidden">
