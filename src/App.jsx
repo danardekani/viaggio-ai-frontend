@@ -113,12 +113,20 @@ export default function App() {
       { name: 'New York', destinationId: null }
     ];
 
-    // Delay pre-warm slightly to not compete with initial page render
-    const timer = setTimeout(() => {
-      prewarmDestinations(BACKEND_URL, featuredDestinations);
-    }, 2000);
-
-    return () => clearTimeout(timer);
+    // Start pre-warm after a brief delay to let critical resources load first
+    // Using requestIdleCallback for better performance, with setTimeout fallback
+    if ('requestIdleCallback' in window) {
+      const idleId = requestIdleCallback(() => {
+        prewarmDestinations(BACKEND_URL, featuredDestinations);
+      }, { timeout: 1000 });
+      return () => cancelIdleCallback(idleId);
+    } else {
+      // Fallback: start after 500ms (faster than before)
+      const timer = setTimeout(() => {
+        prewarmDestinations(BACKEND_URL, featuredDestinations);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
   }, []); // Run once on mount
 
   // ============================================================================
