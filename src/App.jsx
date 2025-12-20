@@ -13,6 +13,7 @@ import Sidebar from './components/Sidebar';
 import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
 import WhereIsThis from './components/WhereIsThis';
+import { getCachedSearch, setCachedSearch, prewarmDestinations } from './utils/searchCache';
 
 // Lazy load larger components for code splitting
 const BookingPage = lazy(() => import('./components/BookingPage'));
@@ -96,6 +97,29 @@ export default function App() {
       textarea.style.height = `${newHeight}px`;
     }
   }, [input]);
+
+  // ============================================================================
+  // PRE-WARM CACHE FOR FEATURED DESTINATIONS
+  // ============================================================================
+
+  useEffect(() => {
+    // Pre-warm cache for featured destinations on app load
+    // This runs once and fetches popular destinations in the background
+    const featuredDestinations = [
+      { name: 'Paris', destinationId: null },
+      { name: 'Rome', destinationId: null },
+      { name: 'Tokyo', destinationId: null },
+      { name: 'Barcelona', destinationId: null },
+      { name: 'New York', destinationId: null }
+    ];
+
+    // Delay pre-warm slightly to not compete with initial page render
+    const timer = setTimeout(() => {
+      prewarmDestinations(BACKEND_URL, featuredDestinations);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []); // Run once on mount
 
   // ============================================================================
   // "WHERE IS THIS?" HANDLERS
@@ -586,9 +610,46 @@ export default function App() {
   // ============================================================================
 
   const handleResultsPageSearch = async (searchParams) => {
-    setLoading(true);
     setCurrentSearchParams(searchParams);
-    
+
+    // Check cache first (stale-while-revalidate pattern)
+    const cacheOptions = {
+      destinationId: searchParams.destinationId,
+      sortBy: searchParams.sortBy,
+      searchTerms: searchParams.searchTerms
+    };
+    const cached = getCachedSearch(searchParams.destination, cacheOptions);
+
+    if (cached) {
+      // Show cached results immediately
+      console.log(`⚡ Using cached results for "${searchParams.destination}" (${cached.isFresh ? 'fresh' : 'stale'})`);
+      setSearchResults(cached.data.tours || []);
+      setConversationContext(prev => ({
+        ...prev,
+        destination: searchParams.destination,
+        travelers: searchParams.travelers || prev.travelers,
+        searchTerms: searchParams.searchTerms || null,
+        sortBy: searchParams.sortBy || 'popular'
+      }));
+      setShowLandingPage(false);
+      setShowResultsPage(true);
+
+      // If cache is fresh, we're done
+      if (cached.isFresh) {
+        setLoading(false);
+        return;
+      }
+
+      // If stale, continue to fetch fresh data in background (don't show loading)
+      console.log(`🔄 Refreshing stale cache for "${searchParams.destination}"...`);
+    } else {
+      // No cache - show loading state
+      setLoading(true);
+      setShowLandingPage(false);
+      setShowResultsPage(true);
+    }
+
+    // Fetch fresh data
     try {
       const response = await fetch(`${BACKEND_URL}/api/tours/search`, {
         method: 'POST',
@@ -597,7 +658,7 @@ export default function App() {
           destination: searchParams.destination,
           destinationId: searchParams.destinationId,
           searchTerms: searchParams.searchTerms,
-          resultCount: 100, // Reasonable limit for client-side pagination
+          resultCount: 100,
           sortBy: searchParams.sortBy || 'popular',
           startDate: searchParams.startDate,
           endDate: searchParams.endDate,
@@ -615,6 +676,10 @@ export default function App() {
       const data = await response.json();
       const tours = data.tours || [];
 
+      // Update cache
+      setCachedSearch(searchParams.destination, cacheOptions, data);
+
+      // Update results (this will refresh if we showed stale data)
       setSearchResults(tours);
       setConversationContext(prev => ({
         ...prev,
@@ -623,14 +688,13 @@ export default function App() {
         searchTerms: searchParams.searchTerms || null,
         sortBy: searchParams.sortBy || 'popular'
       }));
-      
-      // Show results page
-      setShowLandingPage(false);
-      setShowResultsPage(true);
-      
+
     } catch (error) {
       console.error('Search error:', error);
-      setSearchResults([]);
+      // Only clear results if we didn't have cached data
+      if (!cached) {
+        setSearchResults([]);
+      }
     } finally {
       setLoading(false);
     }
