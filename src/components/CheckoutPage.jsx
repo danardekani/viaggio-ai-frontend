@@ -14,6 +14,7 @@ import {
   Calendar,
   Bed
 } from 'lucide-react';
+import { getHotelThumbnailUrl } from '../utils/hotelbedsImages';
 
 export default function CheckoutPage({
   cart,
@@ -132,6 +133,9 @@ export default function CheckoutPage({
                       ? parseFloat(hotel.pricePerNight)
                       : (hotelTotal / nights);
 
+                    const rawImage = hotel.images?.[0]?.path || hotel.images?.[0]?.url || hotel.images?.[0] || hotel.image;
+                    const hotelImage = getHotelThumbnailUrl(rawImage);
+
                     return (
                       <div
                         key={hotel.id}
@@ -140,9 +144,9 @@ export default function CheckoutPage({
                         <div className="flex flex-col sm:flex-row">
                           {/* Hotel Image */}
                           <div className="sm:w-40 h-32 sm:h-auto flex-shrink-0">
-                            {hotel.images?.[0]?.url || hotel.image ? (
+                            {hotelImage ? (
                               <img
-                                src={hotel.images?.[0]?.url || hotel.image}
+                                src={hotelImage}
                                 alt={hotel.name}
                                 className="w-full h-full object-cover"
                               />

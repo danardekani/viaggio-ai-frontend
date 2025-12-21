@@ -10,6 +10,7 @@ import {
   Check,
   Building
 } from 'lucide-react';
+import { getHotelThumbnailUrl } from '../utils/hotelbedsImages';
 
 // Map amenity keywords to icons
 const getAmenityIcon = (amenity) => {
@@ -42,8 +43,9 @@ const HotelCard = memo(function HotelCard({
     openQuickView(hotel);
   }, [hotel, openQuickView]);
 
-  // Get primary image
-  const primaryImage = hotel.images?.[0]?.url || hotel.images?.[0] || hotel.image;
+  // Get primary image with proper Hotelbeds URL construction
+  const rawImage = hotel.images?.[0]?.path || hotel.images?.[0]?.url || hotel.images?.[0] || hotel.image;
+  const primaryImage = getHotelThumbnailUrl(rawImage);
 
   // Get star rating
   const stars = hotel.stars || hotel.rating || 0;

@@ -24,6 +24,7 @@ import {
   Heart,
   Info
 } from 'lucide-react';
+import { getHotelMainImageUrl, getHotelThumbnailUrl } from '../utils/hotelbedsImages';
 
 // Map common facility keywords to icons
 const getFacilityIcon = (facility) => {
@@ -53,14 +54,37 @@ const HotelQuickViewModal = memo(function HotelQuickViewModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [localDescExpanded, setLocalDescExpanded] = useState(descriptionExpanded || false);
 
-  // Memoize images array
+  // Memoize images array with proper Hotelbeds URL construction
+  // Main images use 'xl' size (1024px) for high quality display
   const images = useMemo(() => {
     if (!hotel) return [];
     if (hotel.images && hotel.images.length > 0) {
-      return hotel.images.map(img => typeof img === 'string' ? img : img.url || img);
+      return hotel.images
+        .map(img => {
+          const path = typeof img === 'string' ? img : (img.path || img.url || img);
+          return getHotelMainImageUrl(path);
+        })
+        .filter(Boolean);
     }
     if (hotel.image) {
-      return [hotel.image];
+      return [getHotelMainImageUrl(hotel.image)].filter(Boolean);
+    }
+    return [];
+  }, [hotel]);
+
+  // Thumbnail images use 'bigger' size (800px) for quick loading
+  const thumbnailImages = useMemo(() => {
+    if (!hotel) return [];
+    if (hotel.images && hotel.images.length > 0) {
+      return hotel.images
+        .map(img => {
+          const path = typeof img === 'string' ? img : (img.path || img.url || img);
+          return getHotelThumbnailUrl(path);
+        })
+        .filter(Boolean);
+    }
+    if (hotel.image) {
+      return [getHotelThumbnailUrl(hotel.image)].filter(Boolean);
     }
     return [];
   }, [hotel]);
@@ -186,10 +210,10 @@ const HotelQuickViewModal = memo(function HotelQuickViewModal({
           {/* IMAGE GALLERY - Matching Tours style */}
           <div className="flex border-t border-b border-gray-100">
 
-            {/* Thumbnails - LEFT side */}
-            {images.length > 0 && (
+            {/* Thumbnails - LEFT side (use smaller size for thumbnails) */}
+            {thumbnailImages.length > 0 && (
               <div className="hidden sm:flex flex-col gap-1.5 p-2 w-28 flex-shrink-0 bg-gray-50">
-                {images.slice(0, 5).map((img, idx) => (
+                {thumbnailImages.slice(0, 5).map((img, idx) => (
                   <button
                     key={idx}
                     className={`w-full aspect-[4/3] rounded overflow-hidden transition-all ${
@@ -208,12 +232,12 @@ const HotelQuickViewModal = memo(function HotelQuickViewModal({
                   </button>
                 ))}
 
-                {images.length > 5 && (
+                {thumbnailImages.length > 5 && (
                   <button
                     className="w-full aspect-[4/3] rounded overflow-hidden relative"
                     onClick={() => setCurrentImageIndex(5)}
                   >
-                    <img src={images[5]} alt="More" loading="lazy" className="w-full h-full object-cover" />
+                    <img src={thumbnailImages[5]} alt="More" loading="lazy" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-white text-xs font-medium">See More</span>
                     </div>
@@ -269,10 +293,10 @@ const HotelQuickViewModal = memo(function HotelQuickViewModal({
             </div>
           </div>
 
-          {/* Mobile thumbnails */}
-          {images.length > 1 && (
+          {/* Mobile thumbnails (use smaller size for thumbnails) */}
+          {thumbnailImages.length > 1 && (
             <div className="sm:hidden flex gap-1.5 p-2 overflow-x-auto bg-gray-50">
-              {images.slice(0, 6).map((img, idx) => (
+              {thumbnailImages.slice(0, 6).map((img, idx) => (
                 <button
                   key={idx}
                   className={`flex-shrink-0 w-14 h-14 rounded overflow-hidden ${
