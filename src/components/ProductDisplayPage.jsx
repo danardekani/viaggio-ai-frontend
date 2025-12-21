@@ -25,7 +25,8 @@ import {
   ExternalLink,
   Loader2,
   Home,
-  Building
+  Building,
+  Plane
 } from 'lucide-react';
 
 // ============================================================================
@@ -798,44 +799,219 @@ export default function ProductDisplayPage({
 
                 {expandedSections.itinerary && (
                   <div className="p-6">
-                    {fullTourData.itinerary?.map((stop, idx) => (
-                      <div key={idx} className="flex gap-4 pb-6 last:pb-0">
-                        <div className="flex flex-col items-center">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
-                            {idx + 1}
+                    {fullTourData.itinerary?.map((stop, idx) => {
+                      // Extract location name from various possible Viator API structures
+                      const locationName = stop.pointOfInterestLocation?.location?.name
+                        || stop.pointOfInterestLocation?.name
+                        || stop.location?.name
+                        || stop.location
+                        || stop.pointOfInterest
+                        || stop.poi?.name
+                        || stop.poi
+                        || stop.attractionName
+                        || stop.name
+                        || stop.title
+                        || 'Stop';
+
+                      // Check if this is a pass-by or actual stop
+                      const isPassBy = stop.passByWithoutStopping
+                        || stop.passBy
+                        || stop.type === 'PASS_BY'
+                        || (stop.name && stop.name.toLowerCase() === 'pass by');
+
+                      // Get description
+                      const description = stop.description
+                        || stop.pointOfInterestLocation?.description
+                        || stop.details
+                        || '';
+
+                      // Get duration
+                      const duration = stop.duration
+                        || stop.durationMinutes
+                        || stop.stopDuration
+                        || '';
+
+                      return (
+                        <div key={idx} className="flex gap-4 pb-6 last:pb-0">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                              isPassBy ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-600'
+                            }`}>
+                              {idx + 1}
+                            </div>
+                            {idx < (fullTourData.itinerary?.length || 0) - 1 && (
+                              <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
+                            )}
                           </div>
-                          {idx < (fullTourData.itinerary?.length || 0) - 1 && (
-                            <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
-                          )}
+                          <div className="flex-1 pb-4">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-gray-900">{locationName}</h4>
+                              {isPassBy && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                  Pass by
+                                </span>
+                              )}
+                            </div>
+                            {description && (
+                              <p className="text-gray-600 text-sm mt-1">{description}</p>
+                            )}
+                            {duration && (
+                              <p className="text-gray-500 text-xs mt-2">
+                                <Clock className="w-3 h-3 inline mr-1" />
+                                {typeof duration === 'number' ? `${duration} min` : duration}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 pb-4">
-                          <h4 className="font-medium text-gray-900">{stop.name || stop.title}</h4>
-                          {stop.description && (
-                            <p className="text-gray-600 text-sm mt-1">{stop.description}</p>
-                          )}
-                          {stop.duration && (
-                            <p className="text-gray-500 text-xs mt-2">
-                              <Clock className="w-3 h-3 inline mr-1" />
-                              {stop.duration}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Points of Interest */}
                     {fullTourData.pointsOfInterest?.length > 0 && !fullTourData.itinerary?.length && (
                       <div className="space-y-3">
-                        {fullTourData.pointsOfInterest.map((poi, idx) => (
-                          <div key={idx} className="flex items-start gap-3">
-                            <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-gray-700">{poi}</span>
-                          </div>
-                        ))}
+                        {fullTourData.pointsOfInterest.map((poi, idx) => {
+                          const poiName = typeof poi === 'string' ? poi : (poi.name || poi.location || poi);
+                          return (
+                            <div key={idx} className="flex items-start gap-3">
+                              <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                              <span className="text-gray-700">{poiName}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* MEETING AND PICKUP SECTION */}
+            {(fullTourData.meetingPoint || fullTourData.logistics?.start || fullTourData.logistics?.travelerPickup ||
+              fullTourData.departurePoint || fullTourData.pickupDetails || fullTourData.startingLocations?.length > 0) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  Meeting and Pickup
+                </h2>
+
+                <div className="space-y-4">
+                  {/* Meeting Point */}
+                  {(fullTourData.meetingPoint || fullTourData.logistics?.start) && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Meeting Point</h3>
+                        <p className="text-gray-600 text-sm mt-1">
+                          {(() => {
+                            const meeting = fullTourData.meetingPoint || fullTourData.logistics?.start;
+                            if (typeof meeting === 'string') return meeting;
+                            return meeting?.description || meeting?.name || meeting?.address ||
+                                   meeting?.location?.name || meeting?.location?.address ||
+                                   JSON.stringify(meeting);
+                          })()}
+                        </p>
+                        {(fullTourData.meetingPointInstructions || fullTourData.logistics?.start?.additionalInfo) && (
+                          <p className="text-gray-500 text-xs mt-2 italic">
+                            {fullTourData.meetingPointInstructions || fullTourData.logistics?.start?.additionalInfo}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pickup Information */}
+                  {(fullTourData.logistics?.travelerPickup || fullTourData.pickupDetails) && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Pickup</h3>
+                        {(() => {
+                          const pickup = fullTourData.logistics?.travelerPickup || fullTourData.pickupDetails;
+                          if (typeof pickup === 'string') {
+                            return <p className="text-gray-600 text-sm mt-1">{pickup}</p>;
+                          }
+                          return (
+                            <>
+                              {pickup?.pickupOptionType && (
+                                <p className="text-gray-600 text-sm mt-1">
+                                  {pickup.pickupOptionType === 'PICKUP_EVERYONE' && 'Pickup included for all travelers'}
+                                  {pickup.pickupOptionType === 'PICKUP_AND_MEET_AT_START_POINT' && 'Pickup available or meet at start point'}
+                                  {pickup.pickupOptionType === 'MEET_AT_START_POINT' && 'Meet at the start point (no pickup)'}
+                                  {!['PICKUP_EVERYONE', 'PICKUP_AND_MEET_AT_START_POINT', 'MEET_AT_START_POINT'].includes(pickup.pickupOptionType) && pickup.pickupOptionType}
+                                </p>
+                              )}
+                              {pickup?.description && (
+                                <p className="text-gray-600 text-sm mt-1">{pickup.description}</p>
+                              )}
+                              {pickup?.additionalInfo && (
+                                <p className="text-gray-500 text-xs mt-2 italic">{pickup.additionalInfo}</p>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Departure Point */}
+                  {fullTourData.departurePoint && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <Plane className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Departure Point</h3>
+                        <p className="text-gray-600 text-sm mt-1">
+                          {typeof fullTourData.departurePoint === 'string'
+                            ? fullTourData.departurePoint
+                            : fullTourData.departurePoint?.name || fullTourData.departurePoint?.address || ''}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Starting Locations */}
+                  {fullTourData.startingLocations?.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-4 h-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Starting Locations</h3>
+                        <ul className="mt-1 space-y-1">
+                          {fullTourData.startingLocations.map((loc, idx) => (
+                            <li key={idx} className="text-gray-600 text-sm">
+                              {typeof loc === 'string' ? loc : loc.name || loc.address || ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* End Point / Return Details */}
+                  {(fullTourData.endPoint || fullTourData.logistics?.end || fullTourData.returnDetails) && (
+                    <div className="flex items-start gap-3 pt-3 border-t border-gray-100">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">End Point</h3>
+                        <p className="text-gray-600 text-sm mt-1">
+                          {(() => {
+                            const end = fullTourData.endPoint || fullTourData.logistics?.end || fullTourData.returnDetails;
+                            if (typeof end === 'string') return end;
+                            return end?.description || end?.name || end?.address || 'Returns to original departure point';
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
