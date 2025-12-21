@@ -178,7 +178,8 @@ export default function ProductDisplayPage({
   searchParams
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedStartDate, setSelectedStartDate] = useState('');
+  const [selectedEndDate, setSelectedEndDate] = useState('');
   const [selectedTravelers, setSelectedTravelers] = useState(travelers);
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
@@ -190,6 +191,9 @@ export default function ProductDisplayPage({
   const [isLoading, setIsLoading] = useState(false);
   const [fullTourData, setFullTourData] = useState(tour);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showPayLaterInfo, setShowPayLaterInfo] = useState(false);
+  const [showCancellationDetails, setShowCancellationDetails] = useState(false);
 
   // Fetch full tour details on mount
   useEffect(() => {
@@ -218,29 +222,119 @@ export default function ProductDisplayPage({
     fetchFullDetails();
   }, [tour?.productCode, tour?.id, backendUrl]);
 
-  // Memoize images
+  // Helper to get optimized image URL (Viator images support different sizes)
+  const getOptimizedImageUrl = useCallback((imageUrl, size = 'large') => {
+    if (!imageUrl || typeof imageUrl !== 'string') return imageUrl;
+
+    // Viator images often have size parameters in URL
+    // Common patterns: /photos/, /thumbnail/, etc.
+    // Replace with appropriate size
+    const sizeMap = {
+      thumb: { width: 200, height: 150 },
+      small: { width: 400, height: 300 },
+      medium: { width: 800, height: 600 },
+      large: { width: 1200, height: 900 }
+    };
+
+    // If URL already has width/height params, try to update them
+    if (imageUrl.includes('width=') || imageUrl.includes('w=')) {
+      return imageUrl
+        .replace(/width=\d+/g, `width=${sizeMap[size].width}`)
+        .replace(/height=\d+/g, `height=${sizeMap[size].height}`)
+        .replace(/w=\d+/g, `w=${sizeMap[size].width}`)
+        .replace(/h=\d+/g, `h=${sizeMap[size].height}`);
+    }
+
+    // Viator CDN pattern - append size if not present
+    if (imageUrl.includes('media.viator.com') && !imageUrl.includes('?')) {
+      return `${imageUrl}?w=${sizeMap[size].width}&h=${sizeMap[size].height}&fit=crop`;
+    }
+
+    return imageUrl;
+  }, []);
+
+  // Memoize images with optimized URLs
   const images = useMemo(() => {
     if (!fullTourData) return [];
     if (fullTourData.images?.length > 0) {
-      return fullTourData.images.map(img =>
-        typeof img === 'string' ? img : img.url || img
-      );
+      return fullTourData.images.map(img => {
+        const url = typeof img === 'string' ? img : img.url || img;
+        return getOptimizedImageUrl(url, 'large');
+      });
     }
-    if (fullTourData.image) return [fullTourData.image];
+    if (fullTourData.image) return [getOptimizedImageUrl(fullTourData.image, 'large')];
     return [];
-  }, [fullTourData]);
+  }, [fullTourData, getOptimizedImageUrl]);
+
+  // Thumbnail images (smaller size for strip)
+  const thumbnailImages = useMemo(() => {
+    if (!fullTourData) return [];
+    if (fullTourData.images?.length > 0) {
+      return fullTourData.images.map(img => {
+        const url = typeof img === 'string' ? img : img.url || img;
+        return getOptimizedImageUrl(url, 'thumb');
+      });
+    }
+    if (fullTourData.image) return [getOptimizedImageUrl(fullTourData.image, 'thumb')];
+    return [];
+  }, [fullTourData, getOptimizedImageUrl]);
 
   // Memoize tour flags
   const tourFlags = useMemo(() => fullTourData?.flags || [], [fullTourData?.flags]);
 
-  // Pricing calculations
-  const { isPerGroup, displayPrice, hasDiscount, totalPrice } = useMemo(() => {
+  // Detect if tour is multi-day
+  const isMultiDay = useMemo(() => {
+    // Check duration string for multi-day indicators
+    const duration = fullTourData?.duration?.toLowerCase() || '';
+    if (duration.includes('day') && !duration.includes('1 day') && !duration.includes('full day') && !duration.includes('half day')) {
+      const dayMatch = duration.match(/(\d+)\s*day/);
+      if (dayMatch && parseInt(dayMatch[1]) > 1) return true;
+    }
+    // Check tags for multi-day tag (11922)
+    const tourTagIds = fullTourData?.tags || [];
+    if (tourTagIds.includes(11922) || tourTagIds.includes('11922')) return true;
+    // Check name/title
+    const name = fullTourData?.name?.toLowerCase() || '';
+    if (name.includes('multi-day') || name.includes('multiday') || name.match(/\d+\s*day/)) return true;
+    return false;
+  }, [fullTourData]);
+
+  // Get number of days for multi-day tours
+  const tourDays = useMemo(() => {
+    if (!isMultiDay) return 1;
+    const duration = fullTourData?.duration?.toLowerCase() || '';
+    const dayMatch = duration.match(/(\d+)\s*day/);
+    if (dayMatch) return parseInt(dayMatch[1]);
+    // Check name
+    const name = fullTourData?.name?.toLowerCase() || '';
+    const nameMatch = name.match(/(\d+)\s*day/);
+    if (nameMatch) return parseInt(nameMatch[1]);
+    return 2; // Default to 2 days for multi-day
+  }, [fullTourData, isMultiDay]);
+
+  // Pricing calculations - check multiple possible price fields
+  const { isPerGroup, displayPrice, hasDiscount, totalPrice, originalPrice } = useMemo(() => {
     const perGroup = fullTourData?.pricingType === 'group';
-    const price = fullTourData?.price || 0;
+    // Check multiple possible price field names from Viator API
+    const price = fullTourData?.price
+      || fullTourData?.fromPrice
+      || fullTourData?.retailPrice
+      || fullTourData?.pricing?.amount
+      || fullTourData?.pricing?.retail
+      || fullTourData?.pricing?.fromPrice
+      || fullTourData?.priceFrom
+      || 0;
+
+    const origPrice = fullTourData?.originalPrice
+      || fullTourData?.pricing?.original
+      || fullTourData?.strikethrough
+      || null;
+
     return {
       isPerGroup: perGroup,
       displayPrice: price,
-      hasDiscount: fullTourData?.hasDiscount || tourFlags.includes('SPECIAL_OFFER'),
+      originalPrice: origPrice,
+      hasDiscount: fullTourData?.hasDiscount || tourFlags.includes('SPECIAL_OFFER') || origPrice > price,
       totalPrice: perGroup ? price : price * selectedTravelers
     };
   }, [fullTourData, tourFlags, selectedTravelers]);
@@ -266,14 +360,98 @@ export default function ProductDisplayPage({
     }
   }, [onBack]);
 
-  // Generate cancellation policy text
-  const cancellationPolicy = useMemo(() => {
-    if (fullTourData?.cancellationPolicy) return fullTourData.cancellationPolicy;
+  // Generate cancellation policy details
+  const cancellationPolicyDetails = useMemo(() => {
+    const policyCode = fullTourData?.cancellationPolicy
+      || fullTourData?.cancellation?.type
+      || fullTourData?.cancellationType
+      || '';
+
+    // Map policy codes to detailed descriptions
+    const policyMap = {
+      'STANDARD': {
+        title: 'Standard Cancellation Policy',
+        description: 'For a full refund, cancel at least 24 hours before the scheduled departure time.',
+        details: [
+          'Full refund if canceled 24+ hours in advance',
+          'No refund if canceled within 24 hours of the experience',
+          'Changes are not accepted less than 24 hours before the experience'
+        ],
+        isFree: true
+      },
+      'MODERATE': {
+        title: 'Moderate Cancellation Policy',
+        description: 'For a full refund, cancel at least 4 days before the scheduled departure time.',
+        details: [
+          'Full refund if canceled 4+ days in advance',
+          '50% refund if canceled 2-4 days in advance',
+          'No refund if canceled within 48 hours of the experience'
+        ],
+        isFree: false
+      },
+      'STRICT': {
+        title: 'Strict Cancellation Policy',
+        description: 'For a full refund, cancel at least 7 days before the scheduled departure time.',
+        details: [
+          'Full refund if canceled 7+ days in advance',
+          '50% refund if canceled 3-7 days in advance',
+          'No refund if canceled within 72 hours of the experience'
+        ],
+        isFree: false
+      },
+      'CUSTOM': {
+        title: 'Custom Cancellation Policy',
+        description: fullTourData?.cancellationDetails || 'This experience has specific cancellation terms. Please review before booking.',
+        details: fullTourData?.cancellationTerms || [
+          'Cancellation terms vary for this experience',
+          'Please check the booking confirmation for specific details',
+          'Contact support if you have questions about cancellation'
+        ],
+        isFree: false
+      }
+    };
+
+    // Determine which policy to use
     if (tourFlags.includes('FREE_CANCELLATION')) {
-      return 'Free cancellation up to 24 hours before the experience starts (local time). Full refund if canceled at least 24 hours in advance.';
+      return {
+        title: 'Free Cancellation',
+        description: 'For a full refund, cancel at least 24 hours before the scheduled departure time.',
+        details: [
+          'Full refund if canceled 24+ hours in advance',
+          'No refund if canceled within 24 hours of the experience',
+          'Cut-off times are based on the experience\'s local time'
+        ],
+        isFree: true
+      };
     }
-    return 'Cancellation policies vary. Please check the booking details for specific terms.';
-  }, [fullTourData?.cancellationPolicy, tourFlags]);
+
+    const upperPolicy = policyCode.toUpperCase();
+    if (policyMap[upperPolicy]) {
+      return policyMap[upperPolicy];
+    }
+
+    // If we have a custom string policy
+    if (typeof policyCode === 'string' && policyCode.length > 10) {
+      return {
+        title: 'Cancellation Policy',
+        description: policyCode,
+        details: [],
+        isFree: policyCode.toLowerCase().includes('free') || policyCode.toLowerCase().includes('24 hour')
+      };
+    }
+
+    // Default policy
+    return {
+      title: 'Cancellation Policy',
+      description: 'Cancellation terms apply. Please check booking details for specific terms.',
+      details: [
+        'Cancellation policies vary by experience',
+        'Review the booking confirmation for exact terms',
+        'Contact support for cancellation assistance'
+      ],
+      isFree: false
+    };
+  }, [fullTourData, tourFlags]);
 
   if (!fullTourData) return null;
 
@@ -316,11 +494,15 @@ export default function ProductDisplayPage({
 
             {/* TITLE & RATING */}
             <div>
-              {/* Reserve Now & Pay Later badge */}
+              {/* Reserve Now & Pay Later badge - clickable for more info */}
               {tourFlags.includes('FREE_CANCELLATION') && (
-                <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded mb-3">
+                <button
+                  onClick={() => setShowPayLaterInfo(true)}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded mb-3 hover:bg-red-700 transition-colors"
+                >
                   Reserve Now & Pay Later
-                </span>
+                  <Info className="w-3 h-3" />
+                </button>
               )}
 
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
@@ -362,16 +544,17 @@ export default function ProductDisplayPage({
 
             {/* IMAGE GALLERY */}
             <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-              {/* Main Image */}
-              <div className="relative aspect-[16/9] bg-gray-900">
+              {/* Main Image - using object-contain for better quality */}
+              <div className="relative bg-gray-900 flex items-center justify-center" style={{ minHeight: '400px', maxHeight: '500px' }}>
                 {images.length > 0 ? (
                   <img
                     src={images[currentImageIndex]}
                     alt={fullTourData.name}
-                    className="w-full h-full object-cover"
+                    className="max-w-full max-h-[500px] w-auto h-auto object-contain"
+                    loading="eager"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+                  <div className="w-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100" style={{ height: '400px' }}>
                     <MapPin className="w-16 h-16 text-blue-300" />
                   </div>
                 )}
@@ -413,14 +596,14 @@ export default function ProductDisplayPage({
                 )}
               </div>
 
-              {/* Thumbnail strip */}
-              {images.length > 1 && (
+              {/* Thumbnail strip - using smaller optimized images */}
+              {thumbnailImages.length > 1 && (
                 <div className="flex gap-2 p-3 overflow-x-auto bg-gray-50">
-                  {images.slice(0, 8).map((img, idx) => (
+                  {thumbnailImages.slice(0, 8).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden ${
+                      className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden transition-all ${
                         idx === currentImageIndex
                           ? 'ring-2 ring-blue-500'
                           : 'opacity-70 hover:opacity-100'
@@ -430,6 +613,7 @@ export default function ProductDisplayPage({
                         src={img}
                         alt={`${fullTourData.name} ${idx + 1}`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                     </button>
                   ))}
@@ -702,14 +886,39 @@ export default function ProductDisplayPage({
 
             {/* CANCELLATION POLICY */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-500" />
-                Cancellation Policy
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Shield className={`w-5 h-5 ${cancellationPolicyDetails.isFree ? 'text-emerald-500' : 'text-gray-400'}`} />
+                  {cancellationPolicyDetails.title}
+                </h2>
+                {cancellationPolicyDetails.details.length > 0 && (
+                  <button
+                    onClick={() => setShowCancellationDetails(!showCancellationDetails)}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    {showCancellationDetails ? 'Hide' : 'View'} details
+                    {showCancellationDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                )}
+              </div>
+
               <p className="text-gray-600">
-                {cancellationPolicy}
+                {cancellationPolicyDetails.description}
               </p>
-              {tourFlags.includes('FREE_CANCELLATION') && (
+
+              {/* Detailed policy points */}
+              {showCancellationDetails && cancellationPolicyDetails.details.length > 0 && (
+                <ul className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+                  {cancellationPolicyDetails.details.map((detail, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                      <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${cancellationPolicyDetails.isFree ? 'text-emerald-500' : 'text-gray-400'}`} />
+                      <span>{detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {cancellationPolicyDetails.isFree && (
                 <div className="mt-3 flex items-center gap-2 text-emerald-600 font-medium">
                   <Check className="w-5 h-5" />
                   Free cancellation available
@@ -803,7 +1012,10 @@ export default function ProductDisplayPage({
                   </div>
 
                   {fullTourData.reviewCount > 5 && (
-                    <button className="w-full mt-4 py-3 text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition-colors">
+                    <button
+                      onClick={() => setShowAllReviews(true)}
+                      className="w-full mt-4 py-3 text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition-colors"
+                    >
                       See all {fullTourData.reviewCount?.toLocaleString()} reviews
                     </button>
                   )}
@@ -819,13 +1031,13 @@ export default function ProductDisplayPage({
               <div className="mb-4">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm text-gray-500">from</span>
-                  {hasDiscount && fullTourData.originalPrice && (
+                  {hasDiscount && originalPrice && (
                     <span className="text-gray-400 line-through text-lg">
-                      {formatCurrency(fullTourData.originalPrice)}
+                      {formatCurrency(originalPrice)}
                     </span>
                   )}
                   <span className={`text-3xl font-bold ${hasDiscount ? 'text-orange-500' : 'text-gray-900'}`}>
-                    {formatCurrency(displayPrice)}
+                    {displayPrice > 0 ? formatCurrency(displayPrice) : 'Check availability'}
                   </span>
                 </div>
                 <p className="text-sm text-gray-500">
@@ -839,20 +1051,46 @@ export default function ProductDisplayPage({
                 <span>Lowest price guarantee</span>
               </div>
 
-              {/* Date Selection */}
+              {/* Date Selection - Start Date */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  Select Date
+                  {isMultiDay ? 'Start Date' : 'Select Date'}
                 </label>
                 <input
                   type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  value={selectedStartDate}
+                  onChange={(e) => {
+                    setSelectedStartDate(e.target.value);
+                    // Auto-set end date for multi-day tours
+                    if (isMultiDay && e.target.value) {
+                      const startDate = new Date(e.target.value);
+                      startDate.setDate(startDate.getDate() + tourDays - 1);
+                      setSelectedEndDate(startDate.toISOString().split('T')[0]);
+                    }
+                  }}
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+
+              {/* End Date - Only for multi-day tours */}
+              {isMultiDay && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    End Date
+                    <span className="text-xs text-gray-500 ml-1">({tourDays} days)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedEndDate}
+                    onChange={(e) => setSelectedEndDate(e.target.value)}
+                    min={selectedStartDate || new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              )}
 
               {/* Travelers Selection */}
               <div className="mb-6">
@@ -885,16 +1123,22 @@ export default function ProductDisplayPage({
                 </div>
               )}
 
-              {/* Reserve Now & Pay Later */}
+              {/* Reserve Now & Pay Later - clickable for more info */}
               {tourFlags.includes('FREE_CANCELLATION') && (
-                <div className="mb-4 p-3 bg-emerald-50 rounded-lg">
-                  <p className="text-sm text-emerald-700 font-medium">
-                    Reserve Now & Pay Later
-                  </p>
+                <button
+                  onClick={() => setShowPayLaterInfo(true)}
+                  className="w-full mb-4 p-3 bg-emerald-50 rounded-lg text-left hover:bg-emerald-100 transition-colors group"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-emerald-700 font-medium">
+                      Reserve Now & Pay Later
+                    </p>
+                    <Info className="w-4 h-4 text-emerald-600 group-hover:text-emerald-700" />
+                  </div>
                   <p className="text-xs text-emerald-600 mt-1">
                     Secure your spot while staying flexible
                   </p>
-                </div>
+                </button>
               )}
 
               {/* Free Cancellation */}
@@ -974,6 +1218,173 @@ export default function ProductDisplayPage({
                   />
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ALL REVIEWS MODAL */}
+      {showAllReviews && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowAllReviews(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">All Reviews</h3>
+                <p className="text-sm text-gray-500">{fullTourData.reviewCount?.toLocaleString() || 0} total reviews</p>
+              </div>
+              <button
+                onClick={() => setShowAllReviews(false)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Rating Summary */}
+            <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl font-bold text-gray-900">{fullTourData.rating || '4.5'}</div>
+                <div>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <Star
+                        key={star}
+                        className={`w-5 h-5 ${
+                          star <= Math.floor(fullTourData.rating || 4.5)
+                            ? 'text-emerald-500 fill-emerald-500'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-600">Based on {fullTourData.reviewCount?.toLocaleString() || 0} reviews</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable Reviews List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-1">
+                {(fullTourData.reviews?.items || [
+                  { author: 'Sarah M.', rating: 5, title: 'Amazing experience!', text: 'This tour exceeded all my expectations. Our guide was incredibly knowledgeable and made the history come alive. Highly recommend!', date: 'December 2024' },
+                  { author: 'John D.', rating: 4, title: 'Great tour, minor issues', text: 'Overall a fantastic experience. The skip-the-line access was worth it. Only minor complaint was the pace was a bit fast at times.', date: 'November 2024' },
+                  { author: 'Emma L.', rating: 5, title: 'Perfect day out', text: 'Booking was easy, the tour was well organized, and we saw everything we wanted. The guide spoke excellent English and was very friendly.', date: 'November 2024' },
+                  { author: 'Michael R.', rating: 5, title: 'Unforgettable!', text: 'Worth every penny. The small group size meant we could ask plenty of questions and really connect with our guide.', date: 'October 2024' },
+                  { author: 'Lisa K.', rating: 4, title: 'Really enjoyed it', text: 'Great way to see the highlights without the hassle of planning. Would have liked a bit more free time at certain stops.', date: 'October 2024' },
+                  { author: 'David W.', rating: 5, title: 'Exceeded expectations', text: 'Our guide Marco was phenomenal! So passionate and knowledgeable. Made the experience truly memorable.', date: 'September 2024' },
+                  { author: 'Jennifer P.', rating: 5, title: 'Must-do activity', text: 'If you only do one tour, make it this one. Absolutely fantastic from start to finish.', date: 'September 2024' },
+                  { author: 'Robert H.', rating: 4, title: 'Very informative', text: 'Learned so much about the history and culture. The walking was manageable even for older travelers.', date: 'August 2024' }
+                ]).map((review, idx) => (
+                  <ReviewCard key={idx} review={review} />
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 text-center">
+                Reviews are from verified travelers who booked through Viator
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAY LATER INFO MODAL */}
+      {showPayLaterInfo && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPayLaterInfo(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">Reserve Now & Pay Later</h3>
+                <button
+                  onClick={() => setShowPayLaterInfo(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Book Today, Pay Later</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Secure your spot now without paying upfront. Your card won't be charged until closer to your experience date.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Stay Flexible</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Plans change? With free cancellation, you can cancel up to 24 hours before your experience for a full refund.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                  <Check className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Guaranteed Spot</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Your reservation is confirmed immediately. No risk of selling out while you wait.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">How it works:</h4>
+                <ol className="text-sm text-gray-600 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">1</span>
+                    <span>Reserve your experience with no upfront payment</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">2</span>
+                    <span>Receive confirmation and details via email</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">3</span>
+                    <span>Payment is charged 24-48 hours before your experience</span>
+                  </li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowPayLaterInfo(false)}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>
