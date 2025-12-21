@@ -16,7 +16,7 @@ import WhereIsThis from './components/WhereIsThis';
 import { getCachedSearch, setCachedSearch, prewarmDestinations } from './utils/searchCache';
 
 // Lazy load larger components for code splitting
-const BookingPage = lazy(() => import('./components/BookingPage'));
+const CheckoutPage = lazy(() => import('./components/CheckoutPage'));
 const ItineraryModal = lazy(() => import('./components/ItineraryModal'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const ResultsPage = lazy(() => import('./components/ResultsPage'));
@@ -791,14 +791,16 @@ export default function App() {
     );
   }
 
-  // Show Booking Page - wrapped in Suspense for code splitting
+  // Show Checkout Page - wrapped in Suspense for code splitting
   if (showBookingPage) {
     return (
       <Suspense fallback={<PageLoader />}>
-        <BookingPage
+        <CheckoutPage
           cart={cart}
           formatCurrency={formatCurrency}
           onBack={() => setShowBookingPage(false)}
+          removeFromCart={removeFromCart}
+          travelers={conversationContext.travelers || 2}
         />
       </Suspense>
     );
