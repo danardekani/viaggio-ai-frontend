@@ -321,6 +321,86 @@ export default function ProductDisplayPage({
     return 2; // Default to 2 days for multi-day
   }, [fullTourData, isMultiDay]);
 
+  // Extract landmarks from description when itinerary only has "Pass By" entries
+  const extractedLandmarks = useMemo(() => {
+    const itinerary = fullTourData?.itinerary || [];
+
+    // Check if all itinerary items are just "Pass By" with no real location names
+    const allPassBy = itinerary.length > 0 && itinerary.every(stop => {
+      const name = stop.name || stop.title || stop.location || '';
+      const description = stop.description || '';
+      const isGenericName = typeof name === 'string' &&
+        (name.toLowerCase() === 'pass by' || name.toLowerCase() === 'stop' || name === '');
+      const isGenericDesc = typeof description === 'string' &&
+        (description.toLowerCase() === 'pass by' || description === '');
+      return isGenericName && isGenericDesc;
+    });
+
+    if (!allPassBy) return null; // Use original itinerary
+
+    // Try to extract landmarks from the tour description
+    const description = fullTourData?.description || '';
+    if (!description) return null;
+
+    // Common landmark patterns to look for
+    const landmarks = [];
+
+    // Pattern 1: "pass by [Landmark]" or "fly by [Landmark]" or "see [Landmark]"
+    const passPatterns = [
+      /(?:pass(?:ing)?\s*(?:by|over)?|fly(?:ing)?\s*(?:by|over)?|see(?:ing)?|view(?:ing)?|admire|soar\s*(?:over|by)?)\s+(?:the\s+)?([A-Z][A-Za-z\s']+?)(?:\s*[,.]|\s+and\s+|\s+before|\s+as\s+|\s+from|\s+which)/gi,
+      /(?:over|by|past)\s+(?:the\s+)?([A-Z][A-Za-z\s']+?)(?:\s*[,.]|\s+and\s+|\s+before|\s+as\s+|\s+from)/gi
+    ];
+
+    // Known NYC landmarks to look for specifically
+    const knownLandmarks = [
+      'Statue of Liberty', 'Ellis Island', 'One World Trade Center', 'World Trade Center',
+      'Empire State Building', 'Chrysler Building', 'Brooklyn Bridge', 'Manhattan Bridge',
+      'Central Park', 'Times Square', 'Rockefeller Center', 'Hudson River',
+      'East River', 'Freedom Tower', 'Wall Street', 'Battery Park',
+      'Governors Island', 'Liberty Island', 'New York Harbor', 'Manhattan Skyline',
+      'Intrepid', 'USS Intrepid', 'George Washington Bridge', 'Yankee Stadium',
+      'Grand Central', 'Flatiron Building', 'Madison Square Garden'
+    ];
+
+    // Check for known landmarks in description (case-insensitive)
+    const descLower = description.toLowerCase();
+    knownLandmarks.forEach(landmark => {
+      if (descLower.includes(landmark.toLowerCase()) && !landmarks.includes(landmark)) {
+        landmarks.push(landmark);
+      }
+    });
+
+    // Also try to extract using patterns
+    passPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(description)) !== null) {
+        const extracted = match[1]?.trim();
+        if (extracted && extracted.length > 2 && extracted.length < 50) {
+          // Clean up the extracted name
+          const cleaned = extracted
+            .replace(/\s+/g, ' ')
+            .replace(/[,.]$/, '')
+            .trim();
+          if (cleaned && !landmarks.some(l => l.toLowerCase() === cleaned.toLowerCase())) {
+            landmarks.push(cleaned);
+          }
+        }
+      }
+    });
+
+    // If we found landmarks, return them as itinerary items
+    if (landmarks.length > 0) {
+      return landmarks.map((name, idx) => ({
+        name,
+        isPassBy: true,
+        extractedFromDescription: true,
+        originalIndex: idx
+      }));
+    }
+
+    return null;
+  }, [fullTourData]);
+
   // Pricing calculations - check multiple possible price fields
   const { isPerGroup, displayPrice, hasDiscount, totalPrice, originalPrice } = useMemo(() => {
     const perGroup = fullTourData?.pricingType === 'group' || tour?.pricingType === 'group';
@@ -783,7 +863,7 @@ export default function ProductDisplayPage({
             </div>
 
             {/* ITINERARY SECTION */}
-            {(fullTourData.itinerary?.length > 0 || fullTourData.pointsOfInterest?.length > 0) && (
+            {(fullTourData.itinerary?.length > 0 || fullTourData.pointsOfInterest?.length > 0 || extractedLandmarks?.length > 0) && (
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <button
                   onClick={() => toggleSection('itinerary')}
@@ -799,75 +879,108 @@ export default function ProductDisplayPage({
 
                 {expandedSections.itinerary && (
                   <div className="p-6">
-                    {fullTourData.itinerary?.map((stop, idx) => {
-                      // Extract location name from various possible Viator API structures
-                      const locationName = stop.pointOfInterestLocation?.location?.name
-                        || stop.pointOfInterestLocation?.name
-                        || stop.location?.name
-                        || stop.location
-                        || stop.pointOfInterest
-                        || stop.poi?.name
-                        || stop.poi
-                        || stop.attractionName
-                        || stop.name
-                        || stop.title
-                        || 'Stop';
-
-                      // Check if this is a pass-by or actual stop
-                      const isPassBy = stop.passByWithoutStopping
-                        || stop.passBy
-                        || stop.type === 'PASS_BY'
-                        || (stop.name && stop.name.toLowerCase() === 'pass by');
-
-                      // Get description
-                      const description = stop.description
-                        || stop.pointOfInterestLocation?.description
-                        || stop.details
-                        || '';
-
-                      // Get duration
-                      const duration = stop.duration
-                        || stop.durationMinutes
-                        || stop.stopDuration
-                        || '';
-
-                      return (
-                        <div key={idx} className="flex gap-4 pb-6 last:pb-0">
-                          <div className="flex flex-col items-center">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                              isPassBy ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-600'
-                            }`}>
-                              {idx + 1}
-                            </div>
-                            {idx < (fullTourData.itinerary?.length || 0) - 1 && (
-                              <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
-                            )}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-gray-900">{locationName}</h4>
-                              {isPassBy && (
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-                                  Pass by
-                                </span>
+                    {/* Use extracted landmarks if API returned generic "Pass By" */}
+                    {extractedLandmarks ? (
+                      <>
+                        <p className="text-sm text-gray-500 mb-4 italic">
+                          Landmarks and points of interest on this tour:
+                        </p>
+                        {extractedLandmarks.map((stop, idx) => (
+                          <div key={idx} className="flex gap-4 pb-6 last:pb-0">
+                            <div className="flex flex-col items-center">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-blue-100 text-blue-600">
+                                {idx + 1}
+                              </div>
+                              {idx < extractedLandmarks.length - 1 && (
+                                <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
                               )}
                             </div>
-                            {description && (
-                              <p className="text-gray-600 text-sm mt-1">{description}</p>
-                            )}
-                            {duration && (
-                              <p className="text-gray-500 text-xs mt-2">
-                                <Clock className="w-3 h-3 inline mr-1" />
-                                {typeof duration === 'number' ? `${duration} min` : duration}
-                              </p>
-                            )}
+                            <div className="flex-1 pb-4">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-900">{stop.name}</h4>
+                                {stop.isPassBy && (
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                    Pass by
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        ))}
+                      </>
+                    ) : (
+                      /* Original itinerary rendering */
+                      fullTourData.itinerary?.map((stop, idx) => {
+                        // Extract location name from various possible Viator API structures
+                        const locationName = stop.pointOfInterestLocation?.location?.name
+                          || stop.pointOfInterestLocation?.name
+                          || stop.location?.name
+                          || stop.location
+                          || stop.pointOfInterest
+                          || stop.poi?.name
+                          || stop.poi
+                          || stop.attractionName
+                          || stop.name
+                          || stop.title
+                          || 'Stop';
+
+                        // Check if this is a pass-by or actual stop
+                        const isPassBy = stop.passByWithoutStopping
+                          || stop.passBy
+                          || stop.type === 'PASS_BY'
+                          || (stop.name && stop.name.toLowerCase() === 'pass by');
+
+                        // Get description - skip if it's just "Pass By"
+                        const rawDescription = stop.description
+                          || stop.pointOfInterestLocation?.description
+                          || stop.details
+                          || '';
+                        const description = rawDescription.toLowerCase() === 'pass by' ? '' : rawDescription;
+
+                        // Get duration
+                        const duration = stop.duration
+                          || stop.durationMinutes
+                          || stop.stopDuration
+                          || '';
+
+                        return (
+                          <div key={idx} className="flex gap-4 pb-6 last:pb-0">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                                isPassBy ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-600'
+                              }`}>
+                                {idx + 1}
+                              </div>
+                              {idx < (fullTourData.itinerary?.length || 0) - 1 && (
+                                <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-4">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-900">{locationName}</h4>
+                                {isPassBy && (
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                    Pass by
+                                  </span>
+                                )}
+                              </div>
+                              {description && (
+                                <p className="text-gray-600 text-sm mt-1">{description}</p>
+                              )}
+                              {duration && (
+                                <p className="text-gray-500 text-xs mt-2">
+                                  <Clock className="w-3 h-3 inline mr-1" />
+                                  {typeof duration === 'number' ? `${duration} min` : duration}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
 
                     {/* Points of Interest */}
-                    {fullTourData.pointsOfInterest?.length > 0 && !fullTourData.itinerary?.length && (
+                    {fullTourData.pointsOfInterest?.length > 0 && !fullTourData.itinerary?.length && !extractedLandmarks && (
                       <div className="space-y-3">
                         {fullTourData.pointsOfInterest.map((poi, idx) => {
                           const poiName = typeof poi === 'string' ? poi : (poi.name || poi.location || poi);
@@ -1066,23 +1179,53 @@ export default function ProductDisplayPage({
                       <h3 className="font-medium text-gray-900 mb-2">Additional Notes</h3>
                       <ul className="space-y-2">
                         {(() => {
-                          // Parse the text into bullet points
-                          const text = fullTourData.additionalInfo;
-                          // Try to split by common sentence patterns
-                          // Look for patterns like: "Word." followed by capital letter, or specific keywords
-                          const bulletPoints = text
-                            .replace(/\.([A-Z])/g, '.|$1') // Add separator before capital after period
-                            .replace(/([a-z])([A-Z])/g, '$1|$2') // Add separator between camelCase words
-                            .split('|')
-                            .map(s => s.trim())
-                            .filter(s => s.length > 3);
+                          const info = fullTourData.additionalInfo;
 
-                          return bulletPoints.map((point, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
-                              <span>{point}</span>
-                            </li>
-                          ));
+                          // Handle array format (Viator API sometimes returns array)
+                          if (Array.isArray(info)) {
+                            return info.map((item, idx) => {
+                              // Each item might be a string or an object with description
+                              const text = typeof item === 'string'
+                                ? item
+                                : item.description || item.text || item.value || JSON.stringify(item);
+                              return (
+                                <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
+                                  <span>{text}</span>
+                                </li>
+                              );
+                            });
+                          }
+
+                          // Handle string format - parse into bullet points
+                          if (typeof info === 'string') {
+                            const bulletPoints = info
+                              .replace(/\.([A-Z])/g, '.|$1') // Add separator before capital after period
+                              .replace(/([a-z])([A-Z])/g, '$1|$2') // Add separator between camelCase words
+                              .split('|')
+                              .map(s => s.trim())
+                              .filter(s => s.length > 3);
+
+                            return bulletPoints.map((point, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
+                                <span>{point}</span>
+                              </li>
+                            ));
+                          }
+
+                          // Handle object format
+                          if (typeof info === 'object') {
+                            const text = info.description || info.text || JSON.stringify(info);
+                            return (
+                              <li className="flex items-start gap-2 text-gray-600 text-sm">
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
+                                <span>{text}</span>
+                              </li>
+                            );
+                          }
+
+                          return null;
                         })()}
                       </ul>
                     </div>
