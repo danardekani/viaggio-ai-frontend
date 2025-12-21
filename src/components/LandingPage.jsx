@@ -438,14 +438,30 @@ export default function LandingPage({
   const handleSearchIdentifiedLocation = () => {
     if (identifiedLocation?.destination) {
       // destination can be an object with fullName/name or a string
-      const destName = typeof identifiedLocation.destination === 'object' 
+      const destName = typeof identifiedLocation.destination === 'object'
         ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
         : identifiedLocation.destination;
-      
+
       onSearch?.({
         type: 'tours',
         destination: destName,
         travelers
+      });
+    }
+  };
+
+  const handleSearchIdentifiedLocationHotels = () => {
+    if (identifiedLocation?.destination) {
+      // destination can be an object with fullName/name or a string
+      const destName = typeof identifiedLocation.destination === 'object'
+        ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
+        : identifiedLocation.destination;
+
+      onSearch?.({
+        type: 'hotels',
+        destination: destName,
+        guests: hotelGuests,
+        rooms: hotelRooms
       });
     }
   };
@@ -521,7 +537,7 @@ export default function LandingPage({
 
           {/* Search Panel with Integrated Tabs */}
           <div className="w-full max-w-3xl">
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl">
               {/* Integrated Tab Navigation */}
               <div className="flex items-center justify-center gap-1 px-2 pt-3 pb-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
                 <button
@@ -972,15 +988,24 @@ export default function LandingPage({
                         ) : null}
                       </div>
                       
-                      {/* Action Button */}
+                      {/* Action Buttons */}
                       {identifiedLocation?.destination && !identifiedLocation.error && (
-                        <button
-                          onClick={handleSearchIdentifiedLocation}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
-                        >
-                          <Search className="w-5 h-5" />
-                          Find Tours
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            onClick={handleSearchIdentifiedLocation}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+                          >
+                            <MapPin className="w-4 h-4" />
+                            Find Tours
+                          </button>
+                          <button
+                            onClick={handleSearchIdentifiedLocationHotels}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+                          >
+                            <Hotel className="w-4 h-4" />
+                            Find Hotels
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
