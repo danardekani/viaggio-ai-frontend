@@ -494,58 +494,8 @@ export default function LandingPage({
             <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
           </div>
 
-          {/* Center Tabs - scrollable on mobile */}
-          <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full p-0.5 sm:p-1 mx-2 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setActiveTab('tours')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'tours'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Tours & Experiences</span>
-              <span className="sm:hidden">Tours</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('hotels')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'hotels'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              <Hotel className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Hotels
-            </button>
-            <button
-              onClick={() => setActiveTab('whereis')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'whereis'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Where is This?</span>
-              <span className="sm:hidden">Identify</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('deals')}
-              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'deals'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Deals
-            </button>
-          </div>
-
           {/* My Trip Button */}
-          <button 
+          <button
             onClick={() => setCartSidebarOpen(true)}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all flex-shrink-0"
           >
@@ -569,12 +519,68 @@ export default function LandingPage({
             Find and book amazing tours & experiences worldwide
           </p>
 
-          {/* Search Panel */}
+          {/* Search Panel with Integrated Tabs */}
           <div className="w-full max-w-3xl">
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-1.5 sm:p-2">
-              
-              {/* Tours Search Tab */}
-              {activeTab === 'tours' && (
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden">
+              {/* Integrated Tab Navigation */}
+              <div className="flex items-center justify-center gap-1 px-2 pt-3 pb-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
+                <button
+                  onClick={() => setActiveTab('tours')}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'tours'
+                      ? 'bg-blue-50 text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <MapPin className={`w-4 h-4 transition-colors duration-300 ${activeTab === 'tours' ? 'text-blue-500' : ''}`} />
+                  <span className="hidden sm:inline">Tours & Experiences</span>
+                  <span className="sm:hidden">Tours</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('hotels')}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'hotels'
+                      ? 'bg-purple-50 text-purple-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Hotel className={`w-4 h-4 transition-colors duration-300 ${activeTab === 'hotels' ? 'text-purple-500' : ''}`} />
+                  Hotels
+                </button>
+                <button
+                  onClick={() => setActiveTab('whereis')}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'whereis'
+                      ? 'bg-cyan-50 text-cyan-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Camera className={`w-4 h-4 transition-colors duration-300 ${activeTab === 'whereis' ? 'text-cyan-500' : ''}`} />
+                  <span className="hidden sm:inline">Where is This?</span>
+                  <span className="sm:hidden">Identify</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('deals')}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'deals'
+                      ? 'bg-orange-50 text-orange-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Tag className={`w-4 h-4 transition-colors duration-300 ${activeTab === 'deals' ? 'text-orange-500' : ''}`} />
+                  Deals
+                </button>
+              </div>
+
+              {/* Tab Content Container with Transitions */}
+              <div className="relative p-1.5 sm:p-2">
+                {/* Tours Search Tab */}
+                <div className={`transition-all duration-300 ease-in-out ${
+                  activeTab === 'tours'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
+                }`}>
+                  {activeTab === 'tours' && (
                 <form onSubmit={handleToursSearch} className="flex flex-col sm:flex-row items-stretch">
                   {/* Destination */}
                   <div className="flex-1 relative" ref={destinationInputRef}>
@@ -687,7 +693,7 @@ export default function LandingPage({
                   </div>
                   
                   {/* Search Button */}
-                  <button 
+                  <button
                     type="submit"
                     disabled={!destination.trim() || isLoading}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
@@ -699,10 +705,16 @@ export default function LandingPage({
                     )}
                   </button>
                 </form>
-              )}
+                  )}
+                </div>
 
-              {/* Hotels Search Tab */}
-              {activeTab === 'hotels' && (
+                {/* Hotels Search Tab */}
+                <div className={`transition-all duration-300 ease-in-out ${
+                  activeTab === 'hotels'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
+                }`}>
+                  {activeTab === 'hotels' && (
                 <form onSubmit={handleHotelsSearch} className="flex flex-col sm:flex-row items-stretch">
                   {/* Destination */}
                   <div className="flex-1 relative" ref={hotelDestinationInputRef}>
@@ -836,10 +848,16 @@ export default function LandingPage({
                     )}
                   </button>
                 </form>
-              )}
+                  )}
+                </div>
 
-              {/* Where Is This Tab */}
-              {activeTab === 'whereis' && (
+                {/* Where Is This Tab */}
+                <div className={`transition-all duration-300 ease-in-out ${
+                  activeTab === 'whereis'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
+                }`}>
+                  {activeTab === 'whereis' && (
                 <div className="p-4">
                   {/* Hidden file input */}
                   <input
@@ -967,10 +985,16 @@ export default function LandingPage({
                     </div>
                   )}
                 </div>
-              )}
+                  )}
+                </div>
 
-              {/* Deals Tab */}
-              {activeTab === 'deals' && (
+                {/* Deals Tab */}
+                <div className={`transition-all duration-300 ease-in-out ${
+                  activeTab === 'deals'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
+                }`}>
+                  {activeTab === 'deals' && (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <div className="flex-1 relative" ref={destinationInputRef}>
                     <div className="flex items-center gap-3 px-4 py-3">
@@ -1074,7 +1098,9 @@ export default function LandingPage({
                     )}
                   </button>
                 </div>
-              )}
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
