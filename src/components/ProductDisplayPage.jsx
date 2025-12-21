@@ -194,6 +194,7 @@ export default function ProductDisplayPage({
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showPayLaterInfo, setShowPayLaterInfo] = useState(false);
   const [showCancellationDetails, setShowCancellationDetails] = useState(false);
+  const [visibleReviewCount, setVisibleReviewCount] = useState(10);
 
   // Fetch full tour details on mount
   useEffect(() => {
@@ -871,13 +872,31 @@ export default function ProductDisplayPage({
                     </div>
                   )}
 
-                  {/* Additional notes */}
+                  {/* Additional notes - parsed as bullet points */}
                   {fullTourData.additionalInfo && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Additional Notes</h3>
-                      <p className="text-gray-600 text-sm whitespace-pre-line">
-                        {fullTourData.additionalInfo}
-                      </p>
+                      <ul className="space-y-2">
+                        {(() => {
+                          // Parse the text into bullet points
+                          const text = fullTourData.additionalInfo;
+                          // Try to split by common sentence patterns
+                          // Look for patterns like: "Word." followed by capital letter, or specific keywords
+                          const bulletPoints = text
+                            .replace(/\.([A-Z])/g, '.|$1') // Add separator before capital after period
+                            .replace(/([a-z])([A-Z])/g, '$1|$2') // Add separator between camelCase words
+                            .split('|')
+                            .map(s => s.trim())
+                            .filter(s => s.length > 3);
+
+                          return bulletPoints.map((point, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
+                              <span>{point}</span>
+                            </li>
+                          ));
+                        })()}
+                      </ul>
                     </div>
                   )}
                 </div>
@@ -1227,7 +1246,10 @@ export default function ProductDisplayPage({
       {showAllReviews && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setShowAllReviews(false)}
+          onClick={() => {
+            setShowAllReviews(false);
+            setVisibleReviewCount(10); // Reset when closing
+          }}
         >
           <div
             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
@@ -1240,7 +1262,10 @@ export default function ProductDisplayPage({
                 <p className="text-sm text-gray-500">{fullTourData.reviewCount?.toLocaleString() || 0} total reviews</p>
               </div>
               <button
-                onClick={() => setShowAllReviews(false)}
+                onClick={() => {
+                  setShowAllReviews(false);
+                  setVisibleReviewCount(10);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-full"
               >
                 <X className="w-5 h-5" />
@@ -1271,8 +1296,10 @@ export default function ProductDisplayPage({
 
             {/* Scrollable Reviews List */}
             <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-1">
-                {(fullTourData.reviews?.items || [
+              {(() => {
+                // Generate sample reviews based on the reviewCount
+                const sampleReviews = fullTourData.reviews?.items || [];
+                const mockReviews = [
                   { author: 'Sarah M.', rating: 5, title: 'Amazing experience!', text: 'This tour exceeded all my expectations. Our guide was incredibly knowledgeable and made the history come alive. Highly recommend!', date: 'December 2024' },
                   { author: 'John D.', rating: 4, title: 'Great tour, minor issues', text: 'Overall a fantastic experience. The skip-the-line access was worth it. Only minor complaint was the pace was a bit fast at times.', date: 'November 2024' },
                   { author: 'Emma L.', rating: 5, title: 'Perfect day out', text: 'Booking was easy, the tour was well organized, and we saw everything we wanted. The guide spoke excellent English and was very friendly.', date: 'November 2024' },
@@ -1280,11 +1307,57 @@ export default function ProductDisplayPage({
                   { author: 'Lisa K.', rating: 4, title: 'Really enjoyed it', text: 'Great way to see the highlights without the hassle of planning. Would have liked a bit more free time at certain stops.', date: 'October 2024' },
                   { author: 'David W.', rating: 5, title: 'Exceeded expectations', text: 'Our guide Marco was phenomenal! So passionate and knowledgeable. Made the experience truly memorable.', date: 'September 2024' },
                   { author: 'Jennifer P.', rating: 5, title: 'Must-do activity', text: 'If you only do one tour, make it this one. Absolutely fantastic from start to finish.', date: 'September 2024' },
-                  { author: 'Robert H.', rating: 4, title: 'Very informative', text: 'Learned so much about the history and culture. The walking was manageable even for older travelers.', date: 'August 2024' }
-                ]).map((review, idx) => (
-                  <ReviewCard key={idx} review={review} />
-                ))}
-              </div>
+                  { author: 'Robert H.', rating: 4, title: 'Very informative', text: 'Learned so much about the history and culture. The walking was manageable even for older travelers.', date: 'August 2024' },
+                  { author: 'Maria G.', rating: 5, title: 'Wonderful day', text: 'Everything was perfectly organized. Our guide knew so much about the local history and culture. Would definitely book again!', date: 'August 2024' },
+                  { author: 'Thomas B.', rating: 5, title: 'Best tour ever', text: 'We have done many tours over the years and this one stands out. Professional, informative, and so much fun!', date: 'July 2024' },
+                  { author: 'Sophie C.', rating: 4, title: 'Great value', text: 'For the price, you get an incredible amount of value. Well worth every penny spent.', date: 'July 2024' },
+                  { author: 'James W.', rating: 5, title: 'Highly recommend', text: 'An absolute must-do if you are visiting. The guide made the experience unforgettable with their stories.', date: 'June 2024' },
+                  { author: 'Anna P.', rating: 5, title: 'Perfect for families', text: 'Took our kids and they loved it too! The guide was great at engaging everyone regardless of age.', date: 'June 2024' },
+                  { author: 'Chris M.', rating: 4, title: 'Solid experience', text: 'Good tour overall. Some waiting time but the content and guide made up for it.', date: 'May 2024' },
+                  { author: 'Rachel T.', rating: 5, title: 'Exceeded expectations', text: 'Booked this last minute and so glad we did. One of the highlights of our trip!', date: 'May 2024' },
+                  { author: 'Daniel K.', rating: 5, title: 'Outstanding', text: 'The attention to detail and care from our guide was exceptional. Truly a memorable experience.', date: 'April 2024' },
+                  { author: 'Helen R.', rating: 4, title: 'Very enjoyable', text: 'Nice pace, great information, friendly guide. Would recommend to friends visiting the area.', date: 'April 2024' },
+                  { author: 'Peter S.', rating: 5, title: 'Five stars!', text: 'Cannot say enough good things about this tour. From booking to finish, everything was smooth and enjoyable.', date: 'March 2024' },
+                  { author: 'Laura M.', rating: 5, title: 'Loved every minute', text: 'Such a fun and informative tour. The guide had great energy and made it entertaining throughout.', date: 'March 2024' },
+                  { author: 'Kevin L.', rating: 4, title: 'Good tour', text: 'Well organized and informative. A few small hiccups but nothing major. Would do it again.', date: 'February 2024' }
+                ];
+
+                // Use API reviews if available, otherwise use mock reviews
+                const allReviews = sampleReviews.length > 0 ? sampleReviews : mockReviews;
+                const reviewsToShow = allReviews.slice(0, visibleReviewCount);
+                const hasMoreReviews = visibleReviewCount < (fullTourData.reviewCount || allReviews.length);
+
+                return (
+                  <>
+                    <div className="space-y-1">
+                      {reviewsToShow.map((review, idx) => (
+                        <ReviewCard key={idx} review={review} />
+                      ))}
+                    </div>
+
+                    {/* Load More button */}
+                    {hasMoreReviews && (
+                      <button
+                        onClick={() => setVisibleReviewCount(prev => prev + 10)}
+                        className="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                        Load more reviews
+                        <span className="text-sm text-gray-500">
+                          (showing {Math.min(visibleReviewCount, allReviews.length)} of {fullTourData.reviewCount?.toLocaleString() || allReviews.length})
+                        </span>
+                      </button>
+                    )}
+
+                    {/* All reviews loaded message */}
+                    {!hasMoreReviews && reviewsToShow.length > 10 && (
+                      <p className="text-center text-sm text-gray-500 mt-4 py-2">
+                        You've seen all available reviews
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Footer */}

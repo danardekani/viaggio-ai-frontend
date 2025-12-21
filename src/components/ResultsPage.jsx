@@ -40,6 +40,17 @@ const TourCard = memo(function TourCard({
   addToCart,
   removeFromCart
 }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Get all images array
+  const images = useMemo(() => {
+    if (tour.images && tour.images.length > 0) {
+      return tour.images.map(img => typeof img === 'string' ? img : img.url || img);
+    }
+    if (tour.image) return [tour.image];
+    return [];
+  }, [tour.images, tour.image]);
+
   const handleToggleCart = useCallback((e) => {
     e.stopPropagation();
     if (isSelected) {
@@ -53,6 +64,16 @@ const TourCard = memo(function TourCard({
     openQuickView(tour);
   }, [tour, openQuickView]);
 
+  const handlePrevImage = useCallback((e) => {
+    e.stopPropagation();
+    setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1);
+  }, [images.length]);
+
+  const handleNextImage = useCallback((e) => {
+    e.stopPropagation();
+    setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1);
+  }, [images.length]);
+
   return (
     <div
       className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-lg cursor-pointer flex flex-col h-full ${
@@ -60,15 +81,53 @@ const TourCard = memo(function TourCard({
       }`}
       onClick={handleQuickView}
     >
-      {/* Image */}
-      <div className="relative h-48 flex-shrink-0">
-        {tour.image ? (
-          <img
-            src={tour.image}
-            alt={tour.name}
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
+      {/* Image Carousel */}
+      <div className="relative h-48 flex-shrink-0 group">
+        {images.length > 0 ? (
+          <>
+            <img
+              src={images[currentImageIndex]}
+              alt={tour.name}
+              loading="lazy"
+              className="w-full h-full object-cover transition-opacity"
+            />
+            {/* Horizontal dots indicator */}
+            {images.length > 1 && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {images.slice(0, 5).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      idx === currentImageIndex
+                        ? 'bg-white w-4'
+                        : 'bg-white/60 hover:bg-white/80'
+                    }`}
+                  />
+                ))}
+                {images.length > 5 && (
+                  <span className="text-white text-xs ml-1">+{images.length - 5}</span>
+                )}
+              </div>
+            )}
+            {/* Navigation arrows - visible on hover */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-700" />
+                </button>
+                <button
+                  onClick={handleNextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-700" />
+                </button>
+              </>
+            )}
+          </>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
             <MapPin className="w-12 h-12 text-blue-300" />
@@ -88,12 +147,6 @@ const TourCard = memo(function TourCard({
             </span>
           )}
         </div>
-        {/* Image count badge */}
-        {tour.images && tour.images.length > 1 && (
-          <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
-            📷 {tour.images.length}
-          </div>
-        )}
         {/* Rating badge on image */}
         {tour.rating && tour.rating !== 'New' && (
           <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm">
