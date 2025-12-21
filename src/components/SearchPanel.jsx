@@ -502,8 +502,8 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
             <div className="flex gap-1">
               {[
                 { id: 'tours', label: 'Tours', icon: MapPin, color: 'green' },
-                // MVP: Hotels and Flights disabled for initial launch
-                // { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
+                { id: 'hotels', label: 'Hotels', icon: Hotel, color: 'purple' },
+                // MVP: Flights disabled for initial launch
                 // { id: 'flights', label: 'Flights', icon: Plane, color: 'blue' }
               ].map(tab => (
                 <button
@@ -751,8 +751,8 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
           </form>
         )}
 
-        {/* MVP: Hotels Tab - disabled for initial launch */}
-        {false && activeTab === 'hotels' && (
+        {/* Hotels Tab */}
+        {activeTab === 'hotels' && (
           <form onSubmit={(e) => { e.preventDefault(); handleHotelsSearch(); }}>
             <div className="flex flex-wrap gap-2 items-center">
               {/* Destination with Autocomplete */}

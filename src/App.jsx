@@ -20,6 +20,7 @@ const CheckoutPage = lazy(() => import('./components/CheckoutPage'));
 const ItineraryModal = lazy(() => import('./components/ItineraryModal'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const ResultsPage = lazy(() => import('./components/ResultsPage'));
+const HotelResultsPage = lazy(() => import('./components/HotelResultsPage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -44,8 +45,11 @@ export default function App() {
   
   const [showLandingPage, setShowLandingPage] = useState(true);
   const [showResultsPage, setShowResultsPage] = useState(false);
+  const [showHotelResultsPage, setShowHotelResultsPage] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [hotelSearchResults, setHotelSearchResults] = useState([]);
   const [currentSearchParams, setCurrentSearchParams] = useState(null);
+  const [currentHotelSearchParams, setCurrentHotelSearchParams] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showItinerary, setShowItinerary] = useState(false);
@@ -708,8 +712,54 @@ export default function App() {
     }
   };
 
+  // ============================================================================
+  // HOTEL SEARCH HANDLER
+  // ============================================================================
+
+  const handleHotelSearch = async (searchParams) => {
+    setCurrentHotelSearchParams(searchParams);
+    setLoading(true);
+    setShowLandingPage(false);
+    setShowResultsPage(false);
+    setShowHotelResultsPage(true);
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/hotels/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination: searchParams.destination,
+          destinationCode: searchParams.destinationCode,
+          checkIn: searchParams.checkIn,
+          checkOut: searchParams.checkOut,
+          adults: searchParams.guests || 2,
+          rooms: searchParams.rooms || 1
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Hotel search failed');
+      }
+
+      const data = await response.json();
+      const hotels = data.hotels || [];
+      setHotelSearchResults(hotels);
+
+    } catch (error) {
+      console.error('Hotel search error:', error);
+      setHotelSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLandingPageSearch = (searchParams) => {
-    handleResultsPageSearch(searchParams);
+    if (searchParams.type === 'hotels') {
+      handleHotelSearch(searchParams);
+    } else {
+      handleResultsPageSearch(searchParams);
+    }
   };
 
   const handleLandingPageDeals = (cityName) => {
@@ -725,8 +775,11 @@ export default function App() {
   const handleBackToHome = () => {
     setShowLandingPage(true);
     setShowResultsPage(false);
+    setShowHotelResultsPage(false);
     setSearchResults([]);
+    setHotelSearchResults([]);
     setCurrentSearchParams(null);
+    setCurrentHotelSearchParams(null);
   };
 
   const handleOpenWhereIsThis = () => {
@@ -794,6 +847,32 @@ export default function App() {
     );
   }
 
+  // Show Hotel Results Page - wrapped in Suspense for code splitting
+  if (showHotelResultsPage) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <HotelResultsPage
+          searchParams={currentHotelSearchParams}
+          results={hotelSearchResults}
+          isLoading={loading}
+          onNewSearch={handleHotelSearch}
+          onBackToHome={handleBackToHome}
+          cart={cart}
+          addToCart={addToCart}
+          removeFromCart={removeFromCart}
+          isInCart={isInCart}
+          formatCurrency={formatCurrency}
+          travelers={conversationContext.travelers || 2}
+          backendUrl={BACKEND_URL}
+          onCheckout={() => {
+            setShowHotelResultsPage(false);
+            setShowBookingPage(true);
+          }}
+        />
+      </Suspense>
+    );
+  }
+
   // Show Checkout Page - wrapped in Suspense for code splitting
   if (showBookingPage) {
     return (
@@ -803,7 +882,12 @@ export default function App() {
           formatCurrency={formatCurrency}
           onBack={() => {
             setShowBookingPage(false);
-            setShowResultsPage(true);
+            // Return to the page we came from
+            if (hotelSearchResults.length > 0) {
+              setShowHotelResultsPage(true);
+            } else {
+              setShowResultsPage(true);
+            }
           }}
           removeFromCart={removeFromCart}
           travelers={conversationContext.travelers || 2}
