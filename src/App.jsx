@@ -785,7 +785,10 @@ export default function App() {
           formatCurrency={formatCurrency}
           travelers={conversationContext.travelers || 2}
           backendUrl={BACKEND_URL}
-          onCheckout={() => setShowBookingPage(true)}
+          onCheckout={() => {
+            setShowResultsPage(false);
+            setShowBookingPage(true);
+          }}
         />
       </Suspense>
     );
@@ -798,7 +801,10 @@ export default function App() {
         <CheckoutPage
           cart={cart}
           formatCurrency={formatCurrency}
-          onBack={() => setShowBookingPage(false)}
+          onBack={() => {
+            setShowBookingPage(false);
+            setShowResultsPage(true);
+          }}
           removeFromCart={removeFromCart}
           travelers={conversationContext.travelers || 2}
         />
