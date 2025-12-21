@@ -23,7 +23,8 @@ import {
   Users,
   Calendar,
   Shield,
-  Eye
+  Eye,
+  Home
 } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
 
@@ -199,7 +200,8 @@ export default function ResultsPage({
   formatCurrency,
   travelers: initialTravelers = 2,
   backendUrl,
-  onCheckout
+  onCheckout,
+  onOpenProductPage
 }) {
   // ============================================================================
   // STATE
@@ -207,7 +209,7 @@ export default function ResultsPage({
   
   // Travelers (editable)
   const [travelers, setTravelers] = useState(initialTravelers);
-  
+
   // Filters - check prefilter for initial state (not flags, since we want all results)
   const [filters, setFilters] = useState({
     minPrice: '',
@@ -215,6 +217,7 @@ export default function ResultsPage({
     minRating: '',
     minDuration: '',
     maxDuration: '',
+    timeOfDay: [], // morning, afternoon, evening, night
     freeCancel: false,
     skipLine: false,
     privateTour: false,
@@ -223,6 +226,14 @@ export default function ResultsPage({
     // Activity type filters
     activities: []
   });
+
+  // Time of day options
+  const timeOfDayOptions = [
+    { key: 'morning', label: 'Morning', emoji: '🌅', hours: [6, 12] },
+    { key: 'afternoon', label: 'Afternoon', emoji: '☀️', hours: [12, 17] },
+    { key: 'evening', label: 'Evening', emoji: '🌆', hours: [17, 21] },
+    { key: 'night', label: 'Night', emoji: '🌙', hours: [21, 6] }
+  ];
 
   // Activity types with emojis
   const activityTypes = [
@@ -378,6 +389,28 @@ export default function ResultsPage({
       if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
       if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
 
+      // Time of day filter - filter by tour start time or keywords in name/description
+      if (filters.timeOfDay.length > 0) {
+        const tourText = (tour.name || '').toLowerCase() + ' ' + (tour.description || '').toLowerCase();
+        const matchesTimeOfDay = filters.timeOfDay.some(time => {
+          // Check for explicit time keywords in tour name/description
+          if (time === 'morning' && (tourText.includes('morning') || tourText.includes('sunrise') || tourText.includes('breakfast'))) return true;
+          if (time === 'afternoon' && (tourText.includes('afternoon') || tourText.includes('lunch'))) return true;
+          if (time === 'evening' && (tourText.includes('evening') || tourText.includes('sunset') || tourText.includes('dinner'))) return true;
+          if (time === 'night' && (tourText.includes('night') || tourText.includes('after dark') || tourText.includes('nocturnal') || tourText.includes('stargazing'))) return true;
+          // If tour has startTime, check it
+          if (tour.startTime) {
+            const hour = parseInt(tour.startTime.split(':')[0]);
+            if (time === 'morning' && hour >= 6 && hour < 12) return true;
+            if (time === 'afternoon' && hour >= 12 && hour < 17) return true;
+            if (time === 'evening' && hour >= 17 && hour < 21) return true;
+            if (time === 'night' && (hour >= 21 || hour < 6)) return true;
+          }
+          return false;
+        });
+        if (!matchesTimeOfDay) return false;
+      }
+
       // Activity type filters - tour must match at least one selected activity
       if (filters.activities.length > 0) {
         const matchesAnyActivity = filters.activities.some(activityKey =>
@@ -476,8 +509,18 @@ export default function ResultsPage({
     }));
   };
 
+  // Toggle time of day filter
+  const toggleTimeOfDay = (timeKey) => {
+    setFilters(f => ({
+      ...f,
+      timeOfDay: f.timeOfDay.includes(timeKey)
+        ? f.timeOfDay.filter(t => t !== timeKey)
+        : [...f.timeOfDay, timeKey]
+    }));
+  };
+
   const hasActiveFilters = Object.entries(filters).some(([key, v]) => {
-    if (key === 'activities') return v.length > 0;
+    if (key === 'activities' || key === 'timeOfDay') return v.length > 0;
     return v !== '' && v !== false;
   });
 
@@ -905,6 +948,27 @@ export default function ResultsPage({
               </div>
             </div>
 
+            {/* Time of Day */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Time of day</h3>
+              <div className="flex flex-wrap gap-2">
+                {timeOfDayOptions.map(time => (
+                  <button
+                    key={time.key}
+                    onClick={() => toggleTimeOfDay(time.key)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
+                      filters.timeOfDay.includes(time.key)
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+                    }`}
+                  >
+                    <span>{time.emoji}</span>
+                    <span>{time.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Rating */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Minimum rating</h3>
@@ -986,11 +1050,30 @@ export default function ResultsPage({
         {/* ============================================================== */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+            {/* Breadcrumb Navigation */}
+            <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4 overflow-x-auto whitespace-nowrap">
+              <button
+                onClick={onBackToHome}
+                className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                <span className="hidden sm:inline">Home</span>
+              </button>
+              <span className="text-gray-300">/</span>
+              {searchParams?.destination && (
+                <>
+                  <span className="text-gray-600">{searchParams.destination.split(',')[0]}</span>
+                  <span className="text-gray-300">/</span>
+                </>
+              )}
+              <span className="text-gray-400">Tours & Activities</span>
+            </nav>
+
             {/* Results Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {searchParams?.destination || 'Tours'}
+                  {searchParams?.destination ? `Top ${searchParams.destination} Tours` : 'Tours'}
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500">
                   {sortedResults.length} {sortedResults.length === 1 ? 'tour' : 'tours'} available
@@ -1733,6 +1816,7 @@ export default function ResultsPage({
           }}
           isInCart={isInCart('tour', quickViewTour?.id)}
           isLoading={quickViewLoading}
+          onViewFullDetails={onOpenProductPage}
         />
       )}
     </div>

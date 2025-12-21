@@ -24,7 +24,8 @@ const QuickViewModal = memo(function QuickViewModal({
   travelers = 2,
   onAddToTrip,
   isInCart,
-  isLoading = false
+  isLoading = false,
+  onViewFullDetails
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
@@ -372,7 +373,16 @@ const QuickViewModal = memo(function QuickViewModal({
             </p>
           </div>
           
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {onViewFullDetails && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onClose(); onViewFullDetails(tour); }}
+                className="flex-1 sm:flex-none px-4 py-2 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 text-sm font-medium flex items-center justify-center gap-1.5"
+              >
+                <Info className="w-4 h-4" />
+                Full Details
+              </button>
+            )}
             <a
               href={tour.bookingLink || tour.link}
               target="_blank"
@@ -380,7 +390,7 @@ const QuickViewModal = memo(function QuickViewModal({
               className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white text-sm font-medium flex items-center justify-center gap-1.5"
             >
               <ExternalLink className="w-4 h-4" />
-              View on Viator
+              Viator
             </a>
             <button
               onClick={(e) => { e.stopPropagation(); onAddToTrip(); }}
@@ -390,7 +400,7 @@ const QuickViewModal = memo(function QuickViewModal({
                   : 'bg-emerald-500 hover:bg-emerald-600 text-white'
               }`}
             >
-              {isInCart ? 'Remove from Trip' : 'Add to Trip'}
+              {isInCart ? 'Remove' : 'Add to Trip'}
             </button>
           </div>
         </div>

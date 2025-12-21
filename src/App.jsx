@@ -21,6 +21,7 @@ const ItineraryModal = lazy(() => import('./components/ItineraryModal'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const ResultsPage = lazy(() => import('./components/ResultsPage'));
 const HotelResultsPage = lazy(() => import('./components/HotelResultsPage'));
+const ProductDisplayPage = lazy(() => import('./components/ProductDisplayPage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -46,6 +47,8 @@ export default function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
   const [showResultsPage, setShowResultsPage] = useState(false);
   const [showHotelResultsPage, setShowHotelResultsPage] = useState(false);
+  const [showProductPage, setShowProductPage] = useState(false);
+  const [selectedProductTour, setSelectedProductTour] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [hotelSearchResults, setHotelSearchResults] = useState([]);
   const [currentSearchParams, setCurrentSearchParams] = useState(null);
@@ -821,6 +824,33 @@ export default function App() {
     );
   }
 
+  // Show Product Display Page (full tour details) - wrapped in Suspense
+  if (showProductPage && selectedProductTour) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <ProductDisplayPage
+          tour={selectedProductTour}
+          onBack={() => {
+            setShowProductPage(false);
+            setSelectedProductTour(null);
+          }}
+          onAddToCart={() => {
+            if (isInCart('tour', selectedProductTour.id)) {
+              removeFromCart('tour', selectedProductTour.id);
+            } else {
+              addToCart('tour', selectedProductTour);
+            }
+          }}
+          isInCart={isInCart('tour', selectedProductTour.id)}
+          formatCurrency={formatCurrency}
+          travelers={conversationContext.travelers || 2}
+          backendUrl={BACKEND_URL}
+          searchParams={currentSearchParams}
+        />
+      </Suspense>
+    );
+  }
+
   // Show Results Page - wrapped in Suspense for code splitting
   if (showResultsPage) {
     return (
@@ -841,6 +871,10 @@ export default function App() {
           onCheckout={() => {
             setShowResultsPage(false);
             setShowBookingPage(true);
+          }}
+          onOpenProductPage={(tour) => {
+            setSelectedProductTour(tour);
+            setShowProductPage(true);
           }}
         />
       </Suspense>
