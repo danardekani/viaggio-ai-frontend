@@ -324,28 +324,28 @@ export default function LandingPage({
 
   const handleToursSearch = useCallback((e) => {
     e?.preventDefault();
-    if (!destination.trim()) return;
+    if (!destination.trim() || !startDate || !endDate) return;
 
     onSearch?.({
       type: 'tours',
       destination: destination.trim(),
       destinationId: selectedDestinationId,
       travelers,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined
+      startDate,
+      endDate
     });
   }, [destination, selectedDestinationId, travelers, startDate, endDate, onSearch]);
 
   const handleHotelsSearch = useCallback((e) => {
     e?.preventDefault();
-    if (!hotelDestination.trim()) return;
+    if (!hotelDestination.trim() || !hotelCheckIn || !hotelCheckOut) return;
 
     onSearch?.({
       type: 'hotels',
       destination: hotelDestination.trim(),
       destinationCode: selectedHotelDestinationCode,
-      checkIn: hotelCheckIn || undefined,
-      checkOut: hotelCheckOut || undefined,
+      checkIn: hotelCheckIn,
+      checkOut: hotelCheckOut,
       guests: hotelGuests,
       rooms: hotelRooms
     });
@@ -711,8 +711,9 @@ export default function LandingPage({
                   {/* Search Button */}
                   <button
                     type="submit"
-                    disabled={!destination.trim() || isLoading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                    disabled={!destination.trim() || !startDate || !endDate || isLoading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                    title={!startDate || !endDate ? 'Please select travel dates' : ''}
                   >
                     {isLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -763,28 +764,35 @@ export default function LandingPage({
                         ref={hotelSuggestionsRef}
                         className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
                       >
-                        {hotelSuggestions.map((suggestion, index) => (
-                          <button
-                            key={suggestion?.code || index}
-                            type="button"
-                            onClick={() => handleSelectHotelSuggestion(suggestion)}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-                              index === hotelSelectedIndex ? 'bg-purple-50' : ''
-                            } ${index === 0 ? 'rounded-t-xl' : ''} ${
-                              index === hotelSuggestions.length - 1 ? 'rounded-b-xl' : ''
-                            }`}
-                          >
-                            <Building className="w-4 h-4 text-purple-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {suggestion.displayName || suggestion.name}
-                              </p>
-                              {suggestion.countryCode && (
-                                <p className="text-xs text-gray-500">{suggestion.countryCode}</p>
-                              )}
-                            </div>
-                          </button>
-                        ))}
+                        {hotelSuggestions.map((suggestion, index) => {
+                          // Format location subtitle - prefer parentName, fallback to countryName or countryCode
+                          const locationSubtitle = suggestion.parentName
+                            || suggestion.countryName
+                            || (suggestion.countryCode ? suggestion.countryCode : null);
+
+                          return (
+                            <button
+                              key={suggestion?.code || index}
+                              type="button"
+                              onClick={() => handleSelectHotelSuggestion(suggestion)}
+                              className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                                index === hotelSelectedIndex ? 'bg-purple-50' : ''
+                              } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                                index === hotelSuggestions.length - 1 ? 'rounded-b-xl' : ''
+                              }`}
+                            >
+                              <MapPin className="w-4 h-4 text-purple-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {suggestion.displayName || suggestion.name}
+                                </p>
+                                {locationSubtitle && (
+                                  <p className="text-xs text-gray-500">{locationSubtitle}</p>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -854,8 +862,9 @@ export default function LandingPage({
                   {/* Search Button */}
                   <button
                     type="submit"
-                    disabled={!hotelDestination.trim() || isLoading}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                    disabled={!hotelDestination.trim() || !hotelCheckIn || !hotelCheckOut || isLoading}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                    title={!hotelCheckIn || !hotelCheckOut ? 'Please select check-in and check-out dates' : ''}
                   >
                     {isLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />

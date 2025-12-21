@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { 
-  X, 
-  Star, 
-  MapPin, 
+import React, { useState, useMemo, useCallback, memo } from 'react';
+import {
+  X,
+  Star,
+  MapPin,
   Calendar,
   Bed,
   Coffee,
-  CheckCircle, 
-  ChevronDown, 
-  ChevronUp, 
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -20,13 +20,15 @@ import {
   Wind,
   Tv,
   ShowerHead,
-  Building
+  Building,
+  Heart,
+  Info
 } from 'lucide-react';
 
 // Map common facility keywords to icons
 const getFacilityIcon = (facility) => {
   const lowerFacility = facility?.toLowerCase() || '';
-  
+
   if (lowerFacility.includes('wifi') || lowerFacility.includes('internet')) return Wifi;
   if (lowerFacility.includes('parking') || lowerFacility.includes('car')) return Car;
   if (lowerFacility.includes('gym') || lowerFacility.includes('fitness')) return Dumbbell;
@@ -35,74 +37,69 @@ const getFacilityIcon = (facility) => {
   if (lowerFacility.includes('air') || lowerFacility.includes('conditioning')) return Wind;
   if (lowerFacility.includes('tv') || lowerFacility.includes('television')) return Tv;
   if (lowerFacility.includes('shower') || lowerFacility.includes('bath')) return ShowerHead;
-  
+
   return CheckCircle; // Default icon
 };
 
-export default function HotelQuickViewModal({ 
-  hotel, 
-  onClose, 
-  formatCurrency, 
-  onAddToTrip, 
+const HotelQuickViewModal = memo(function HotelQuickViewModal({
+  hotel,
+  onClose,
+  formatCurrency,
+  onAddToTrip,
   isInCart,
   descriptionExpanded,
   onToggleDescription
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [localDescExpanded, setLocalDescExpanded] = useState(descriptionExpanded || false);
 
-  if (!hotel) return null;
-
-  // Get all available images
-  const images = hotel.images && hotel.images.length > 0 
-    ? hotel.images 
-    : hotel.image 
-      ? [{ url: hotel.image, type: 'Main' }] 
-      : [];
+  // Memoize images array
+  const images = useMemo(() => {
+    if (!hotel) return [];
+    if (hotel.images && hotel.images.length > 0) {
+      return hotel.images.map(img => typeof img === 'string' ? img : img.url || img);
+    }
+    if (hotel.image) {
+      return [hotel.image];
+    }
+    return [];
+  }, [hotel]);
 
   const hasMultipleImages = images.length > 1;
 
-  // Handle image navigation
-  const nextImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
+  // Memoize navigation handlers
+  const prevImage = useCallback((e) => {
+    e?.stopPropagation();
+    setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1);
+  }, [images.length]);
 
-  const prevImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  const nextImage = useCallback((e) => {
+    e?.stopPropagation();
+    setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1);
+  }, [images.length]);
 
   // Description handling
-  const description = hotel.description || '';
-  const isLongDescription = description.length > 200;
-  
-  let displayDescription;
-  if (descriptionExpanded || !isLongDescription) {
-    displayDescription = description;
-  } else {
-    const truncateAt = 180;
-    const lastSpace = description.lastIndexOf(' ', truncateAt);
-    const cutPoint = lastSpace > 100 ? lastSpace : truncateAt;
-    displayDescription = description.substring(0, cutPoint) + '...';
-  }
+  const description = hotel?.description || '';
+  const isLongDescription = description.length > 300;
+  const displayDescription = useMemo(() => {
+    if (localDescExpanded || !isLongDescription) return description;
+    return description.substring(0, 300) + '...';
+  }, [description, localDescExpanded, isLongDescription]);
+
+  const handleToggleDesc = useCallback(() => {
+    setLocalDescExpanded(prev => !prev);
+    onToggleDescription?.();
+  }, [onToggleDescription]);
 
   // Facilities/Amenities
-  const facilities = hotel.amenities || hotel.facilities || [];
+  const facilities = useMemo(() =>
+    hotel?.amenities || hotel?.facilities || [],
+    [hotel?.amenities, hotel?.facilities]
+  );
 
   // Star rating display
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Star 
-          key={i} 
-          className={`w-4 h-4 ${i < fullStars ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
-        />
-      );
-    }
-    return stars;
-  };
+  const starRatings = useMemo(() => [1, 2, 3, 4, 5], []);
+  const hotelStars = hotel?.stars || hotel?.rating || 0;
 
   // Format dates for display
   const formatDate = (dateStr) => {
@@ -111,169 +108,238 @@ export default function HotelQuickViewModal({
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
+  // Price calculations
+  const { totalPrice, pricePerNight, nights } = useMemo(() => {
+    const total = parseFloat(hotel?.totalPrice || hotel?.price || 0);
+    const n = hotel?.nights || 1;
+    const perNight = hotel?.pricePerNight
+      ? parseFloat(hotel.pricePerNight)
+      : (total / n);
+    return { totalPrice: total, pricePerNight: perNight, nights: n };
+  }, [hotel?.totalPrice, hotel?.price, hotel?.nights, hotel?.pricePerNight]);
+
+  if (!hotel) return null;
+
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" 
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Image Section with Gallery */}
-        <div className="relative h-52 bg-gray-200 flex-shrink-0">
-          {images.length > 0 ? (
-            <>
-              <img 
-                src={images[currentImageIndex]?.url || images[currentImageIndex]} 
-                alt={`${hotel.name} - Image ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover"
-              />
-              
-              {/* Image Navigation Arrows */}
-              {hasMultipleImages && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-2 transition-colors shadow-lg"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-14 top-1/2 -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-2 transition-colors shadow-lg"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-700" />
-                  </button>
-                </>
-              )}
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-30 p-2 bg-white hover:bg-gray-100 rounded-full shadow-lg transition-colors"
+        >
+          <X className="w-5 h-5 text-gray-600" />
+        </button>
 
-              {/* Image Counter */}
-              {hasMultipleImages && (
-                <div className="absolute bottom-3 left-3 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-lg">
-                  {currentImageIndex + 1} / {images.length}
-                </div>
-              )}
-
-              {/* Thumbnail Strip */}
-              {hasMultipleImages && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {images.slice(0, 5).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex(idx);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        idx === currentImageIndex ? 'bg-white' : 'bg-white/50 hover:bg-white/75'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <Building className="w-16 h-16" />
-            </div>
-          )}
-
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-2 transition-colors shadow-lg"
-          >
-            <X className="w-5 h-5 text-gray-700" />
-          </button>
-          
-          {/* Star Rating Badge */}
-          {(hotel.stars || hotel.rating) && (
-            <div className="absolute bottom-3 right-3 bg-white bg-opacity-95 rounded-lg px-3 py-1.5 flex items-center gap-1 shadow-lg">
-              {renderStars(hotel.stars || hotel.rating)}
-            </div>
-          )}
-        </div>
-
-        {/* Scrollable Content Area */}
+        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-5">
-            {/* Hotel Name */}
-            <h2 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+
+          {/* HEADER: Title + Rating */}
+          <div className="p-4 pb-3 pr-12">
+            <h2 className="text-xl font-bold text-gray-900 leading-tight mb-2">
               {hotel.name}
             </h2>
 
+            {/* Rating row */}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              {hotelStars > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="flex">
+                    {starRatings.map(star => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${star <= Math.floor(hotelStars) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-gray-600 ml-1">
+                    {hotel.stars ? `${hotel.stars}-star hotel` : ''}
+                  </span>
+                </div>
+              )}
+
+              {hotel.reviewScore && (
+                <>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-600">
+                    <span className="font-semibold text-purple-600">{hotel.reviewScore}</span> rating
+                  </span>
+                </>
+              )}
+            </div>
+
             {/* Location */}
             {(hotel.location || hotel.address) && (
-              <div className="flex items-start gap-2 text-sm text-gray-600 mb-4">
+              <div className="flex items-start gap-2 text-sm text-gray-600 mt-2">
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-purple-500" />
                 <span>{hotel.address || hotel.location}</span>
               </div>
             )}
+          </div>
 
-            {/* Quick Info Pills */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {/* Dates */}
-              {hotel.checkIn && hotel.checkOut && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-purple-50 px-3 py-1.5 rounded-full">
-                  <Calendar className="w-4 h-4 text-purple-500" />
-                  <span>{formatDate(hotel.checkIn)} - {formatDate(hotel.checkOut)}</span>
+          {/* IMAGE GALLERY - Matching Tours style */}
+          <div className="flex border-t border-b border-gray-100">
+
+            {/* Thumbnails - LEFT side */}
+            {images.length > 0 && (
+              <div className="hidden sm:flex flex-col gap-1.5 p-2 w-28 flex-shrink-0 bg-gray-50">
+                {images.slice(0, 5).map((img, idx) => (
+                  <button
+                    key={idx}
+                    className={`w-full aspect-[4/3] rounded overflow-hidden transition-all ${
+                      idx === currentImageIndex
+                        ? 'ring-2 ring-purple-500'
+                        : 'opacity-70 hover:opacity-100'
+                    }`}
+                    onClick={() => setCurrentImageIndex(idx)}
+                  >
+                    <img
+                      src={img}
+                      alt={`${hotel.name} ${idx + 1}`}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+
+                {images.length > 5 && (
+                  <button
+                    className="w-full aspect-[4/3] rounded overflow-hidden relative"
+                    onClick={() => setCurrentImageIndex(5)}
+                  >
+                    <img src={images[5]} alt="More" loading="lazy" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">See More</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Main Image */}
+            <div className="flex-1 relative bg-gray-900 flex items-center justify-center" style={{ minHeight: '280px', maxHeight: '350px' }}>
+              {images.length > 0 ? (
+                <img
+                  src={images[currentImageIndex]}
+                  alt={hotel.name}
+                  className="max-w-full max-h-[350px] w-auto h-auto object-contain"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50" style={{ height: '280px' }}>
+                  <Building className="w-12 h-12 text-purple-300" />
                 </div>
               )}
-              
-              {/* Nights */}
-              {hotel.nights && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-purple-50 px-3 py-1.5 rounded-full">
-                  <Bed className="w-4 h-4 text-purple-500" />
-                  <span>{hotel.nights} {hotel.nights === 1 ? 'night' : 'nights'}</span>
-                </div>
+
+              {/* Wishlist button */}
+              <button className="absolute top-3 right-3 px-3 py-1.5 bg-white rounded-full shadow flex items-center gap-1.5 hover:bg-gray-50 text-sm">
+                <Heart className="w-4 h-4 text-gray-500" />
+                <span className="hidden md:inline text-gray-600">Add to Wishlist</span>
+              </button>
+
+              {/* Navigation Arrows */}
+              {hasMultipleImages && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
               )}
 
-              {/* Room Type */}
-              {hotel.roomType && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-                  <Bed className="w-4 h-4" />
-                  <span>{hotel.roomType}</span>
-                </div>
-              )}
-
-              {/* Board Type (Breakfast, etc.) */}
-              {hotel.boardType && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-                  <Coffee className="w-4 h-4" />
-                  <span>{hotel.boardType}</span>
+              {/* Image counter */}
+              {images.length > 1 && (
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                  {currentImageIndex + 1} / {images.length}
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Description */}
+          {/* Mobile thumbnails */}
+          {images.length > 1 && (
+            <div className="sm:hidden flex gap-1.5 p-2 overflow-x-auto bg-gray-50">
+              {images.slice(0, 6).map((img, idx) => (
+                <button
+                  key={idx}
+                  className={`flex-shrink-0 w-14 h-14 rounded overflow-hidden ${
+                    idx === currentImageIndex ? 'ring-2 ring-purple-500' : 'opacity-70'
+                  }`}
+                  onClick={() => setCurrentImageIndex(idx)}
+                >
+                  <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* KEY INFO BAR */}
+          <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-b border-gray-100 text-sm text-gray-600">
+            {hotel.checkIn && hotel.checkOut && (
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-purple-500" />
+                <span>{formatDate(hotel.checkIn)} - {formatDate(hotel.checkOut)}</span>
+              </div>
+            )}
+            {nights > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Bed className="w-4 h-4 text-purple-500" />
+                <span>{nights} {nights === 1 ? 'night' : 'nights'}</span>
+              </div>
+            )}
+            {hotel.roomType && (
+              <div className="flex items-center gap-1.5">
+                <Bed className="w-4 h-4 text-gray-400" />
+                <span>{hotel.roomType}</span>
+              </div>
+            )}
+            {hotel.boardType && (
+              <div className="flex items-center gap-1.5">
+                <Coffee className="w-4 h-4 text-gray-400" />
+                <span>{hotel.boardType}</span>
+              </div>
+            )}
+          </div>
+
+          {/* CONTENT */}
+          <div className="p-4 space-y-5">
+
+            {/* About */}
             {description && (
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">About this hotel</h3>
-                
-                <div className="relative" key={descriptionExpanded ? 'expanded' : 'collapsed'}>
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                    {displayDescription}
-                  </p>
-                  {!descriptionExpanded && isLongDescription && (
-                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
-                  )}
-                </div>
-                
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-gray-400" />
+                  About this hotel
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                  {displayDescription}
+                </p>
                 {isLongDescription && (
                   <button
-                    type="button"
-                    onClick={onToggleDescription}
-                    className="mt-2 text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center gap-1 transition-colors cursor-pointer"
+                    onClick={handleToggleDesc}
+                    className="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
                   >
-                    {descriptionExpanded ? (
+                    {localDescExpanded ? (
                       <>
-                        <span>Show less</span>
+                        View less
                         <ChevronUp className="w-4 h-4" />
                       </>
                     ) : (
                       <>
-                        <span>Read more</span>
+                        View more
                         <ChevronDown className="w-4 h-4" />
                       </>
                     )}
@@ -282,10 +348,13 @@ export default function HotelQuickViewModal({
               </div>
             )}
 
-            {/* Amenities/Facilities */}
+            {/* Amenities */}
             {facilities.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Amenities</h3>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Star className="w-4 h-4 text-purple-500" />
+                  Amenities
+                </h3>
                 <div className="grid grid-cols-2 gap-2">
                   {facilities.filter(f => f).slice(0, 8).map((facility, idx) => {
                     const IconComponent = getFacilityIcon(facility);
@@ -303,67 +372,49 @@ export default function HotelQuickViewModal({
               </div>
             )}
 
-            {/* Price Breakdown */}
-            <div className="bg-purple-50 rounded-lg p-4 mb-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Price Details</h3>
-              {(() => {
-                // Parse the total price (API returns it as string "totalPrice")
-                const totalPrice = parseFloat(hotel.totalPrice || hotel.price || 0);
-                const nights = hotel.nights || 1;
-                const pricePerNight = hotel.pricePerNight 
-                  ? parseFloat(hotel.pricePerNight) 
-                  : (totalPrice / nights);
-                
-                return (
-                  <div className="space-y-2">
-                    {totalPrice > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">
-                          {formatCurrency(pricePerNight)} × {nights} night{nights > 1 ? 's' : ''}
-                        </span>
-                        <span className="text-gray-900">{formatCurrency(totalPrice)}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-purple-200 pt-2 flex justify-between">
-                      <span className="font-semibold text-gray-900">Total</span>
-                      <span className="font-bold text-xl text-purple-600">{formatCurrency(totalPrice)}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
           </div>
         </div>
 
-        {/* Fixed Footer with Actions */}
-        <div className="border-t bg-gray-50 p-4 flex gap-3 flex-shrink-0">
-          {/* Add/Remove from Trip */}
-          <button
-            type="button"
-            onClick={onAddToTrip}
-            className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-colors ${
-              isInCart 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-purple-600 hover:bg-purple-700'
-            }`}
-          >
-            {isInCart ? 'Remove from Trip' : 'Add to Trip'}
-          </button>
+        {/* FOOTER */}
+        <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-center sm:text-left">
+            <div className="flex items-baseline gap-2 justify-center sm:justify-start">
+              <span className="text-2xl font-bold text-purple-600">
+                {formatCurrency(totalPrice)}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {formatCurrency(pricePerNight)} per night × {nights} night{nights > 1 ? 's' : ''}
+            </p>
+          </div>
 
-          {/* Book Now */}
-          {hotel.bookingLink && (
-            <a
-              href={hotel.bookingLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-3 px-4 rounded-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {hotel.bookingLink && (
+              <a
+                href={hotel.bookingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white text-sm font-medium flex items-center justify-center gap-1.5"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Book Now
+              </a>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddToTrip(); }}
+              className={`flex-1 sm:flex-none px-5 py-2 rounded-lg font-medium text-sm ${
+                isInCart
+                  ? 'bg-red-500 hover:bg-red-600 text-white'
+                  : 'bg-purple-500 hover:bg-purple-600 text-white'
+              }`}
             >
-              <span>Book Now</span>
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          )}
+              {isInCart ? 'Remove from Trip' : 'Add to Trip'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default HotelQuickViewModal;

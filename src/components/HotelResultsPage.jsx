@@ -17,10 +17,25 @@ import {
   Wifi,
   Car,
   Coffee,
-  Waves
+  Waves,
+  Dumbbell,
+  Utensils,
+  Wind,
+  Check
 } from 'lucide-react';
 import HotelCard from './HotelCard';
 import HotelQuickViewModal from './HotelQuickViewModal';
+
+// Common amenities for filtering
+const COMMON_AMENITIES = [
+  { key: 'wifi', label: 'Free WiFi', icon: Wifi },
+  { key: 'parking', label: 'Parking', icon: Car },
+  { key: 'pool', label: 'Pool', icon: Waves },
+  { key: 'gym', label: 'Fitness Center', icon: Dumbbell },
+  { key: 'restaurant', label: 'Restaurant', icon: Utensils },
+  { key: 'breakfast', label: 'Breakfast', icon: Coffee },
+  { key: 'air', label: 'Air Conditioning', icon: Wind },
+];
 
 // ============================================================================
 // HOTEL RESULTS PAGE COMPONENT
@@ -65,6 +80,7 @@ export default function HotelResultsPage({
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,12 +89,29 @@ export default function HotelResultsPage({
   // Filtering
   const [sortBy, setSortBy] = useState('recommended');
   const [starFilter, setStarFilter] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minRating, setMinRating] = useState('');
+  const [selectedAmenities, setSelectedAmenities] = useState([]);
 
   // Refs
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const justSelectedRef = useRef(!!searchParams?.destination);
+
+  // ============================================================================
+  // PRICE RANGE CALCULATION
+  // ============================================================================
+
+  const priceRange = useMemo(() => {
+    if (results.length === 0) return { min: 0, max: 1000 };
+    const prices = results.map(h => parseFloat(h.totalPrice) || 0).filter(p => p > 0);
+    if (prices.length === 0) return { min: 0, max: 1000 };
+    return {
+      min: Math.floor(Math.min(...prices)),
+      max: Math.ceil(Math.max(...prices))
+    };
+  }, [results]);
 
   // ============================================================================
   // FILTERING & SORTING
@@ -91,6 +124,33 @@ export default function HotelResultsPage({
     if (starFilter) {
       const minStars = parseInt(starFilter);
       filtered = filtered.filter(hotel => (hotel.stars || 0) >= minStars);
+    }
+
+    // Price filter
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      filtered = filtered.filter(hotel => (parseFloat(hotel.totalPrice) || 0) >= min);
+    }
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      filtered = filtered.filter(hotel => (parseFloat(hotel.totalPrice) || 0) <= max);
+    }
+
+    // Rating filter
+    if (minRating) {
+      const rating = parseFloat(minRating);
+      filtered = filtered.filter(hotel => (hotel.reviewScore || 0) >= rating);
+    }
+
+    // Amenities filter
+    if (selectedAmenities.length > 0) {
+      filtered = filtered.filter(hotel => {
+        const hotelAmenities = (hotel.amenities || hotel.facilities || [])
+          .map(a => a?.toLowerCase() || '');
+        return selectedAmenities.every(amenity =>
+          hotelAmenities.some(a => a.includes(amenity))
+        );
+      });
     }
 
     // Sorting
@@ -113,7 +173,36 @@ export default function HotelResultsPage({
     }
 
     return filtered;
-  }, [results, starFilter, sortBy]);
+  }, [results, starFilter, sortBy, minPrice, maxPrice, minRating, selectedAmenities]);
+
+  // Active filter count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (starFilter) count++;
+    if (minPrice) count++;
+    if (maxPrice) count++;
+    if (minRating) count++;
+    if (selectedAmenities.length > 0) count += selectedAmenities.length;
+    return count;
+  }, [starFilter, minPrice, maxPrice, minRating, selectedAmenities]);
+
+  // Clear all filters
+  const clearFilters = useCallback(() => {
+    setStarFilter('');
+    setMinPrice('');
+    setMaxPrice('');
+    setMinRating('');
+    setSelectedAmenities([]);
+  }, []);
+
+  // Toggle amenity
+  const toggleAmenity = useCallback((amenityKey) => {
+    setSelectedAmenities(prev =>
+      prev.includes(amenityKey)
+        ? prev.filter(a => a !== amenityKey)
+        : [...prev, amenityKey]
+    );
+  }, []);
 
   // Pagination
   const totalPages = Math.ceil(filteredResults.length / ITEMS_PER_PAGE);
@@ -125,7 +214,7 @@ export default function HotelResultsPage({
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [starFilter, sortBy]);
+  }, [starFilter, sortBy, minPrice, maxPrice, minRating, selectedAmenities]);
 
   // ============================================================================
   // CART CALCULATIONS
@@ -305,28 +394,35 @@ export default function HotelResultsPage({
                     ref={suggestionsRef}
                     className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-64 overflow-y-auto"
                   >
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        key={suggestion.code || index}
-                        type="button"
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                          index === selectedSuggestionIndex
-                            ? 'bg-purple-50 text-purple-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <Building className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {suggestion.displayName || suggestion.name}
-                          </p>
-                          {suggestion.countryCode && (
-                            <p className="text-xs text-gray-500">{suggestion.countryCode}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                    {suggestions.map((suggestion, index) => {
+                      // Format location subtitle - prefer parentName, fallback to countryName or countryCode
+                      const locationSubtitle = suggestion.parentName
+                        || suggestion.countryName
+                        || (suggestion.countryCode ? suggestion.countryCode : null);
+
+                      return (
+                        <button
+                          key={suggestion.code || index}
+                          type="button"
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                          className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                            index === selectedSuggestionIndex
+                              ? 'bg-purple-50 text-purple-700'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <MapPin className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {suggestion.displayName || suggestion.name}
+                            </p>
+                            {locationSubtitle && (
+                              <p className="text-xs text-gray-500">{locationSubtitle}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -397,46 +493,209 @@ export default function HotelResultsPage({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <main className="flex-1">
-          {/* Results Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Hotels in {searchParams?.destination || 'your destination'}
-              </h1>
-              <p className="text-gray-500 mt-1">
-                {filteredResults.length} {filteredResults.length === 1 ? 'hotel' : 'hotels'} found
-                {checkInDate && checkOutDate && ` • ${checkInDate} to ${checkOutDate}`}
-              </p>
+        <div className="flex gap-6">
+          {/* Filter Sidebar - Desktop */}
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky top-24">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filters
+                </h2>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+
+              {/* Price Range */}
+              <div className="mb-5">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Price Range</h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      placeholder={`$${priceRange.min}`}
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <span className="text-gray-400">-</span>
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      placeholder={`$${priceRange.max}`}
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Star Rating */}
+              <div className="mb-5">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Star Rating</h3>
+                <div className="space-y-2">
+                  {['', '3', '4', '5'].map((value) => (
+                    <label key={value || 'all'} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="starFilter"
+                        value={value}
+                        checked={starFilter === value}
+                        onChange={(e) => setStarFilter(e.target.value)}
+                        className="text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-600">
+                        {value === '' ? 'All Stars' : (
+                          <span className="flex items-center gap-1">
+                            {value}+ <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Minimum Rating */}
+              <div className="mb-5">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Guest Rating</h3>
+                <select
+                  value={minRating}
+                  onChange={(e) => setMinRating(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Any Rating</option>
+                  <option value="7">7+ Good</option>
+                  <option value="8">8+ Very Good</option>
+                  <option value="9">9+ Excellent</option>
+                </select>
+              </div>
+
+              {/* Amenities */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Amenities</h3>
+                <div className="space-y-2">
+                  {COMMON_AMENITIES.map(({ key, label, icon: Icon }) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedAmenities.includes(key)}
+                        onChange={() => toggleAmenity(key)}
+                        className="rounded text-purple-600 focus:ring-purple-500"
+                      />
+                      <Icon className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Results Area */}
+          <main className="flex-1 min-w-0">
+            {/* Results Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Hotels in {searchParams?.destination || 'your destination'}
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  {filteredResults.length} {filteredResults.length === 1 ? 'hotel' : 'hotels'} found
+                  {checkInDate && checkOutDate && ` • ${checkInDate} to ${checkOutDate}`}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Mobile Filter Button */}
+                <button
+                  onClick={() => setShowFilterPanel(true)}
+                  className="lg:hidden flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Sort */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="recommended">Recommended</option>
+                  <option value="price_low">Price: Low to High</option>
+                  <option value="price_high">Price: High to Low</option>
+                  <option value="rating">Guest Rating</option>
+                  <option value="stars">Star Rating</option>
+                </select>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Star Filter */}
-              <select
-                value={starFilter}
-                onChange={(e) => setStarFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="">All Stars</option>
-                <option value="3">3+ Stars</option>
-                <option value="4">4+ Stars</option>
-                <option value="5">5 Stars</option>
-              </select>
-
-              {/* Sort */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="recommended">Recommended</option>
-                <option value="price_low">Price: Low to High</option>
-                <option value="price_high">Price: High to Low</option>
-                <option value="rating">Guest Rating</option>
-                <option value="stars">Star Rating</option>
-              </select>
-            </div>
-          </div>
+            {/* Active Filters Tags */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <span className="text-sm text-gray-500">Active filters:</span>
+                {starFilter && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    {starFilter}+ Stars
+                    <button onClick={() => setStarFilter('')} className="hover:text-purple-900">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {minPrice && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    Min ${minPrice}
+                    <button onClick={() => setMinPrice('')} className="hover:text-purple-900">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {maxPrice && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    Max ${maxPrice}
+                    <button onClick={() => setMaxPrice('')} className="hover:text-purple-900">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {minRating && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    {minRating}+ Rating
+                    <button onClick={() => setMinRating('')} className="hover:text-purple-900">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedAmenities.map(amenity => (
+                  <span key={amenity} className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full capitalize">
+                    {amenity}
+                    <button onClick={() => toggleAmenity(amenity)} className="hover:text-purple-900">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
 
           {/* Loading Skeleton */}
           {isLoading && (
@@ -545,8 +804,135 @@ export default function HotelResultsPage({
               )}
             </>
           )}
-        </main>
+          </main>
+        </div>
       </div>
+
+      {/* Mobile Filter Panel */}
+      {showFilterPanel && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowFilterPanel(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl flex flex-col animate-slide-in-left">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5" />
+                Filters
+              </h2>
+              <button
+                onClick={() => setShowFilterPanel(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Filter Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Price Range */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Price Range</h3>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder={`$${priceRange.min}`}
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <span className="text-gray-400">-</span>
+                  <input
+                    type="number"
+                    placeholder={`$${priceRange.max}`}
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Star Rating */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Star Rating</h3>
+                <div className="space-y-2">
+                  {['', '3', '4', '5'].map((value) => (
+                    <label key={value || 'all'} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="mobileStarFilter"
+                        value={value}
+                        checked={starFilter === value}
+                        onChange={(e) => setStarFilter(e.target.value)}
+                        className="text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-600">
+                        {value === '' ? 'All Stars' : (
+                          <span className="flex items-center gap-1">
+                            {value}+ <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Guest Rating */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Guest Rating</h3>
+                <select
+                  value={minRating}
+                  onChange={(e) => setMinRating(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Any Rating</option>
+                  <option value="7">7+ Good</option>
+                  <option value="8">8+ Very Good</option>
+                  <option value="9">9+ Excellent</option>
+                </select>
+              </div>
+
+              {/* Amenities */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Amenities</h3>
+                <div className="space-y-2">
+                  {COMMON_AMENITIES.map(({ key, label, icon: Icon }) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedAmenities.includes(key)}
+                        onChange={() => toggleAmenity(key)}
+                        className="rounded text-purple-600 focus:ring-purple-500"
+                      />
+                      <Icon className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 p-4 flex gap-3">
+              <button
+                onClick={clearFilters}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+              >
+                Clear All
+              </button>
+              <button
+                onClick={() => setShowFilterPanel(false)}
+                className="flex-1 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700"
+              >
+                Show {filteredResults.length} Hotels
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cart Sidebar */}
       {cartSidebarOpen && (
@@ -700,6 +1086,13 @@ export default function HotelResultsPage({
         }
         .animate-slide-in-right {
           animation: slide-in-right 0.3s ease-out;
+        }
+        @keyframes slide-in-left {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-left {
+          animation: slide-in-left 0.3s ease-out;
         }
       `}</style>
     </div>
