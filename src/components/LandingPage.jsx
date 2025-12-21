@@ -13,7 +13,9 @@ import {
   ShoppingBag,
   Plane,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  Hotel,
+  Building
 } from 'lucide-react';
 import ViaChat from './ViaChat';
 import { prewarmDestination } from '../utils/searchCache';
@@ -79,7 +81,22 @@ export default function LandingPage({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [travelers, setTravelers] = useState(2);
-  
+
+  // Hotel-specific state
+  const [hotelDestination, setHotelDestination] = useState('');
+  const [hotelCheckIn, setHotelCheckIn] = useState('');
+  const [hotelCheckOut, setHotelCheckOut] = useState('');
+  const [hotelGuests, setHotelGuests] = useState(2);
+  const [hotelRooms, setHotelRooms] = useState(1);
+  const [hotelSuggestions, setHotelSuggestions] = useState([]);
+  const [showHotelSuggestions, setShowHotelSuggestions] = useState(false);
+  const [loadingHotelSuggestions, setLoadingHotelSuggestions] = useState(false);
+  const [hotelSelectedIndex, setHotelSelectedIndex] = useState(-1);
+  const [selectedHotelDestinationCode, setSelectedHotelDestinationCode] = useState(null);
+  const hotelDestinationInputRef = useRef(null);
+  const hotelSuggestionsRef = useRef(null);
+  const justSelectedHotelRef = useRef(false);
+
   // Cart sidebar state
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   
@@ -195,6 +212,95 @@ export default function LandingPage({
     setSuggestions([]);
   }, []);
 
+  // ============================================================================
+  // HOTEL DESTINATION AUTOCOMPLETE
+  // ============================================================================
+
+  // Click outside to close hotel suggestions
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        hotelDestinationInputRef.current &&
+        !hotelDestinationInputRef.current.contains(e.target) &&
+        hotelSuggestionsRef.current &&
+        !hotelSuggestionsRef.current.contains(e.target)
+      ) {
+        setShowHotelSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced hotel autocomplete with AbortController
+  useEffect(() => {
+    // Skip if a suggestion was just selected
+    if (justSelectedHotelRef.current) {
+      justSelectedHotelRef.current = false;
+      return;
+    }
+
+    if (!hotelDestination || hotelDestination.length < 2) {
+      setHotelSuggestions([]);
+      setShowHotelSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoadingHotelSuggestions(true);
+      try {
+        const response = await fetch(
+          `${backendUrl}/api/hotels/destinations/autocomplete?q=${encodeURIComponent(hotelDestination)}`,
+          { signal: controller.signal }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setHotelSuggestions(data.suggestions || []);
+          setShowHotelSuggestions(true);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Hotel autocomplete error:', error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingHotelSuggestions(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [hotelDestination, backendUrl]);
+
+  const handleSelectHotelSuggestion = useCallback((suggestion) => {
+    justSelectedHotelRef.current = true;
+    setHotelDestination(suggestion.displayName || suggestion.name);
+    setSelectedHotelDestinationCode(suggestion.code);
+    setShowHotelSuggestions(false);
+    setHotelSuggestions([]);
+  }, []);
+
+  const handleHotelDestinationKeyDown = useCallback((e) => {
+    if (!showHotelSuggestions || hotelSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHotelSelectedIndex(prev => Math.min(prev + 1, hotelSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHotelSelectedIndex(prev => Math.max(prev - 1, -1));
+    } else if (e.key === 'Enter' && hotelSelectedIndex >= 0) {
+      e.preventDefault();
+      handleSelectHotelSuggestion(hotelSuggestions[hotelSelectedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowHotelSuggestions(false);
+    }
+  }, [showHotelSuggestions, hotelSuggestions, hotelSelectedIndex, handleSelectHotelSuggestion]);
+
   const handleDestinationKeyDown = useCallback((e) => {
     if (!showSuggestions || suggestions.length === 0) return;
 
@@ -229,6 +335,21 @@ export default function LandingPage({
       endDate: endDate || undefined
     });
   }, [destination, selectedDestinationId, travelers, startDate, endDate, onSearch]);
+
+  const handleHotelsSearch = useCallback((e) => {
+    e?.preventDefault();
+    if (!hotelDestination.trim()) return;
+
+    onSearch?.({
+      type: 'hotels',
+      destination: hotelDestination.trim(),
+      destinationCode: selectedHotelDestinationCode,
+      checkIn: hotelCheckIn || undefined,
+      checkOut: hotelCheckOut || undefined,
+      guests: hotelGuests,
+      rooms: hotelRooms
+    });
+  }, [hotelDestination, selectedHotelDestinationCode, hotelCheckIn, hotelCheckOut, hotelGuests, hotelRooms, onSearch]);
 
   const handleDealsSearch = useCallback((cityName) => {
     onSearchDeals?.(cityName);
@@ -378,8 +499,8 @@ export default function LandingPage({
             <button
               onClick={() => setActiveTab('tours')}
               className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'tours' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
+                activeTab === 'tours'
+                  ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-white hover:bg-white/10'
               }`}
             >
@@ -388,10 +509,21 @@ export default function LandingPage({
               <span className="sm:hidden">Tours</span>
             </button>
             <button
+              onClick={() => setActiveTab('hotels')}
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === 'hotels'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              <Hotel className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              Hotels
+            </button>
+            <button
               onClick={() => setActiveTab('whereis')}
               className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'whereis' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
+                activeTab === 'whereis'
+                  ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-white hover:bg-white/10'
               }`}
             >
@@ -402,8 +534,8 @@ export default function LandingPage({
             <button
               onClick={() => setActiveTab('deals')}
               className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'deals' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
+                activeTab === 'deals'
+                  ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-white hover:bg-white/10'
               }`}
             >
@@ -559,6 +691,143 @@ export default function LandingPage({
                     type="submit"
                     disabled={!destination.trim() || isLoading}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Search className="w-5 h-5" />
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Hotels Search Tab */}
+              {activeTab === 'hotels' && (
+                <form onSubmit={handleHotelsSearch} className="flex flex-col sm:flex-row items-stretch">
+                  {/* Destination */}
+                  <div className="flex-1 relative" ref={hotelDestinationInputRef}>
+                    <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                      <Hotel className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">Destination</p>
+                        <input
+                          type="text"
+                          placeholder="City or hotel name"
+                          value={hotelDestination}
+                          onChange={(e) => {
+                            setHotelDestination(e.target.value);
+                            setSelectedHotelDestinationCode(null);
+                          }}
+                          onKeyDown={handleHotelDestinationKeyDown}
+                          onFocus={() => hotelSuggestions.length > 0 && setShowHotelSuggestions(true)}
+                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                          autoComplete="off"
+                        />
+                      </div>
+                      {loadingHotelSuggestions && (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      )}
+                    </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {showHotelSuggestions && hotelSuggestions.length > 0 && (
+                      <div
+                        ref={hotelSuggestionsRef}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                      >
+                        {hotelSuggestions.map((suggestion, index) => (
+                          <button
+                            key={suggestion?.code || index}
+                            type="button"
+                            onClick={() => handleSelectHotelSuggestion(suggestion)}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                              index === hotelSelectedIndex ? 'bg-purple-50' : ''
+                            } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                              index === hotelSuggestions.length - 1 ? 'rounded-b-xl' : ''
+                            }`}
+                          >
+                            <Building className="w-4 h-4 text-purple-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {suggestion.displayName || suggestion.name}
+                              </p>
+                              {suggestion.countryCode && (
+                                <p className="text-xs text-gray-500">{suggestion.countryCode}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dates */}
+                  <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                    <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Check-in / Check-out</p>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="date"
+                          value={hotelCheckIn}
+                          onChange={(e) => setHotelCheckIn(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                        />
+                        <span className="text-gray-400 text-sm">-</span>
+                        <input
+                          type="date"
+                          value={hotelCheckOut}
+                          onChange={(e) => setHotelCheckOut(e.target.value)}
+                          min={hotelCheckIn || new Date().toISOString().split('T')[0]}
+                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Guests & Rooms */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div className="flex gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Guests</p>
+                        <div className="relative">
+                          <select
+                            value={hotelGuests}
+                            onChange={(e) => setHotelGuests(parseInt(e.target.value))}
+                            className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-5 cursor-pointer text-sm"
+                          >
+                            {[1,2,3,4,5,6].map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Rooms</p>
+                        <div className="relative">
+                          <select
+                            value={hotelRooms}
+                            onChange={(e) => setHotelRooms(parseInt(e.target.value))}
+                            className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-5 cursor-pointer text-sm"
+                          >
+                            {[1,2,3,4].map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <button
+                    type="submit"
+                    disabled={!hotelDestination.trim() || isLoading}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
                   >
                     {isLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
