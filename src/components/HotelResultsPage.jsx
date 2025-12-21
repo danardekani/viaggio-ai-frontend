@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import HotelCard from './HotelCard';
 import HotelQuickViewModal from './HotelQuickViewModal';
+import { getHotelThumbnailUrl } from '../utils/hotelbedsImages';
 
 // Common amenities for filtering
 const COMMON_AMENITIES = [
@@ -970,12 +971,15 @@ export default function HotelResultsPage({
                         Hotels ({cart.hotels.length})
                       </h3>
                       <div className="space-y-2">
-                        {cart.hotels.map(hotel => (
+                        {cart.hotels.map(hotel => {
+                          const rawImage = hotel.images?.[0]?.path || hotel.images?.[0]?.url || hotel.images?.[0] || hotel.image;
+                          const hotelImage = getHotelThumbnailUrl(rawImage);
+                          return (
                           <div key={hotel.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                              {hotel.images?.[0]?.url || hotel.image ? (
+                              {hotelImage ? (
                                 <img
-                                  src={hotel.images?.[0]?.url || hotel.image}
+                                  src={hotelImage}
                                   alt={hotel.name}
                                   className="w-full h-full object-cover"
                                 />
@@ -998,7 +1002,7 @@ export default function HotelResultsPage({
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                        ))}
+                        );})}
                       </div>
                     </div>
                   )}
