@@ -930,12 +930,19 @@ export default function ProductDisplayPage({
                           || stop.type === 'PASS_BY'
                           || (stop.name && stop.name.toLowerCase() === 'pass by');
 
-                        // Get description - skip if it's just "Pass By"
+                        // Get description - skip if it's just "Pass By" or same as location name
                         const rawDescription = stop.description
                           || stop.pointOfInterestLocation?.description
                           || stop.details
                           || '';
-                        const description = rawDescription.toLowerCase() === 'pass by' ? '' : rawDescription;
+                        // Don't show description if it's "Pass By" or duplicates the location name
+                        const descLower = rawDescription.toLowerCase().trim();
+                        const nameLower = locationName.toLowerCase().trim();
+                        const isDuplicateOrGeneric = descLower === 'pass by'
+                          || descLower === nameLower
+                          || descLower.startsWith(nameLower)
+                          || nameLower.startsWith(descLower);
+                        const description = isDuplicateOrGeneric ? '' : rawDescription;
 
                         // Get duration
                         const duration = stop.duration
@@ -956,14 +963,12 @@ export default function ProductDisplayPage({
                               )}
                             </div>
                             <div className="flex-1 pb-4">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-gray-900">{locationName}</h4>
-                                {isPassBy && (
-                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-                                    Pass by
-                                  </span>
-                                )}
-                              </div>
+                              <h4 className="font-medium text-gray-900">{locationName}</h4>
+                              {isPassBy && (
+                                <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                  Pass by
+                                </span>
+                              )}
                               {description && (
                                 <p className="text-gray-600 text-sm mt-1">{description}</p>
                               )}
