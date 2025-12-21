@@ -223,8 +223,11 @@ export default function ResultsPage({
     privateTour: false,
     likelyToSellOut: false,
     specialOffer: searchParams?.prefilter === 'SPECIAL_OFFER' || searchParams?.flags?.includes('SPECIAL_OFFER') || false,
-    // Activity type filters
-    activities: []
+    // New Viator-compliant filters
+    kidFriendly: false,
+    multiDay: false,
+    // Category filters using Viator tag IDs
+    categories: []
   });
 
   // Time of day options
@@ -235,19 +238,32 @@ export default function ResultsPage({
     { key: 'night', label: 'Night', emoji: '🌙', hours: [21, 6] }
   ];
 
-  // Activity types with emojis
-  const activityTypes = [
-    { key: 'food', label: 'Food & Drink', emoji: '🍴', keywords: ['food', 'drink', 'culinary', 'wine', 'beer', 'cuisine', 'tasting', 'cooking', 'restaurant', 'dining'] },
-    { key: 'history', label: 'History & Culture', emoji: '🏛️', keywords: ['history', 'culture', 'heritage', 'historical', 'ancient', 'museum', 'monument'] },
-    { key: 'walking', label: 'Walking Tours', emoji: '🚶', keywords: ['walking', 'walk', 'stroll', 'on foot', 'pedestrian'] },
-    { key: 'adventure', label: 'Adventure', emoji: '🎢', keywords: ['adventure', 'thrill', 'extreme', 'adrenaline', 'zip', 'climb', 'bungee'] },
-    { key: 'nature', label: 'Nature & Wildlife', emoji: '🌿', keywords: ['nature', 'wildlife', 'animal', 'safari', 'park', 'garden', 'botanical', 'eco'] },
-    { key: 'art', label: 'Art & Museums', emoji: '🎨', keywords: ['art', 'museum', 'gallery', 'exhibition', 'painting', 'sculpture'] },
-    { key: 'nightlife', label: 'Nightlife', emoji: '🌙', keywords: ['night', 'evening', 'bar', 'club', 'pub', 'nightlife', 'after dark'] },
-    { key: 'water', label: 'Water Activities', emoji: '🌊', keywords: ['water', 'boat', 'cruise', 'sailing', 'kayak', 'snorkel', 'dive', 'beach', 'swim'] },
-    { key: 'daytrip', label: 'Day Trips', emoji: '🚌', keywords: ['day trip', 'excursion', 'full day', 'day tour', 'outside'] },
-    { key: 'photo', label: 'Photography', emoji: '📸', keywords: ['photo', 'photography', 'instagram', 'picture', 'scenic'] }
+  // Viator-compliant category tags (approved for front-end display)
+  // These use actual Viator tag IDs for proper filtering
+  const viatorCategories = [
+    { key: 'sightseeing', label: 'Tours & Sightseeing', emoji: '🏛️', tagIds: [21913, 21725], keywords: ['tour', 'sightseeing', 'cruise'] },
+    { key: 'food', label: 'Food & Drink', emoji: '🍴', tagIds: [11910, 11965], keywords: ['food', 'drink', 'culinary', 'wine', 'dining', 'tasting'] },
+    { key: 'outdoor', label: 'Outdoor Activities', emoji: '🏞️', tagIds: [11926], keywords: ['outdoor', 'hiking', 'nature', 'adventure'] },
+    { key: 'art', label: 'Art & Culture', emoji: '🎨', tagIds: [21911], keywords: ['art', 'culture', 'museum', 'gallery', 'history'] },
+    { key: 'water', label: 'Water Sports', emoji: '🌊', tagIds: [11917], keywords: ['water', 'boat', 'cruise', 'kayak', 'snorkel', 'diving'] },
+    { key: 'walking', label: 'Walking & Bike Tours', emoji: '🚶', tagIds: [11918, 13018], keywords: ['walking', 'bike', 'bicycle', 'cycling'] },
+    { key: 'daytrip', label: 'Day Trips', emoji: '🚌', tagIds: [11915], keywords: ['day trip', 'excursion', 'full day'] },
+    { key: 'classes', label: 'Classes & Workshops', emoji: '👨‍🍳', tagIds: [11912], keywords: ['class', 'workshop', 'lesson', 'cooking'] },
+    { key: 'shows', label: 'Shows & Entertainment', emoji: '🎭', tagIds: [21765, 18953], keywords: ['show', 'entertainment', 'performance', 'theater', 'concert'] },
+    { key: 'tickets', label: 'Tickets & Passes', emoji: '🎟️', tagIds: [11919], keywords: ['ticket', 'pass', 'admission', 'entry'] }
   ];
+
+  // Special product feature tags (Viator-compliant)
+  const VIATOR_TAGS = {
+    KID_FRIENDLY: 11819,
+    ADULTS_ONLY: 18884,
+    MULTI_DAY: 11922,
+    SKIP_THE_LINE: 12074,
+    FREE_CANCELLATION: 'FREE_CANCELLATION', // This is a flag, not a tag ID
+    PRIVATE_TOUR: 'PRIVATE_TOUR', // This is a flag
+    SPECIAL_OFFER: 'SPECIAL_OFFER', // This is a flag
+    LIKELY_TO_SELL_OUT: 'LIKELY_TO_SELL_OUT' // This is a flag (use carefully per guidelines)
+  };
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -350,21 +366,35 @@ export default function ResultsPage({
   // FILTERING & SORTING - Memoized for performance
   // ============================================================================
 
-  // Helper to check if tour matches an activity type
-  const tourMatchesActivity = useCallback((tour, activityKey) => {
-    const activity = activityTypes.find(a => a.key === activityKey);
-    if (!activity) return false;
+  // Helper to check if tour matches a Viator category (using tag IDs and keywords)
+  const tourMatchesCategory = useCallback((tour, categoryKey) => {
+    const category = viatorCategories.find(c => c.key === categoryKey);
+    if (!category) return false;
 
-    // Check tour name, description, and categories for keywords
+    // Get tour's tag IDs (from API response)
+    const tourTagIds = tour.tags || [];
+
+    // First, check if tour has any of the category's tag IDs
+    const hasMatchingTag = category.tagIds.some(tagId =>
+      tourTagIds.includes(tagId) || tourTagIds.includes(String(tagId))
+    );
+    if (hasMatchingTag) return true;
+
+    // Fallback: check keywords in tour name, description, and categories
     const searchText = [
       tour.name || '',
       tour.description || '',
-      ...(tour.categories || []),
-      ...(tour.tags || [])
+      ...(tour.categories || [])
     ].join(' ').toLowerCase();
 
-    return activity.keywords.some(keyword => searchText.includes(keyword.toLowerCase()));
-  }, [activityTypes]);
+    return category.keywords.some(keyword => searchText.includes(keyword.toLowerCase()));
+  }, [viatorCategories]);
+
+  // Helper to check if tour has a specific Viator tag ID
+  const tourHasTag = useCallback((tour, tagId) => {
+    const tourTagIds = tour.tags || [];
+    return tourTagIds.includes(tagId) || tourTagIds.includes(String(tagId));
+  }, []);
 
   // Memoize filtered results to avoid recalculating on every render
   const filteredResults = useMemo(() => {
@@ -381,13 +411,31 @@ export default function ResultsPage({
       if (filters.minDuration && durationHours < parseFloat(filters.minDuration)) return false;
       if (filters.maxDuration && durationHours > parseFloat(filters.maxDuration)) return false;
 
-      // Flag filters
+      // Flag-based filters
       const tourFlags = tour.flags || [];
       if (filters.freeCancel && !tourFlags.includes('FREE_CANCELLATION')) return false;
       if (filters.skipLine && !tourFlags.includes('SKIP_THE_LINE')) return false;
       if (filters.privateTour && !tourFlags.includes('PRIVATE_TOUR')) return false;
       if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
       if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
+
+      // Tag-based filters (Viator compliant)
+      if (filters.kidFriendly) {
+        // Check for kid-friendly tag or keywords
+        const hasKidTag = tourHasTag(tour, VIATOR_TAGS.KID_FRIENDLY);
+        const tourText = ((tour.name || '') + ' ' + (tour.description || '')).toLowerCase();
+        const hasKidKeyword = tourText.includes('kid') || tourText.includes('child') || tourText.includes('family') || tourText.includes('families');
+        if (!hasKidTag && !hasKidKeyword) return false;
+      }
+
+      if (filters.multiDay) {
+        // Check for multi-day tag or duration
+        const hasMultiDayTag = tourHasTag(tour, VIATOR_TAGS.MULTI_DAY);
+        const tourText = ((tour.name || '') + ' ' + (tour.duration || '')).toLowerCase();
+        const isMultiDay = tourText.includes('multi-day') || tourText.includes('multiday') ||
+                          tourText.includes('days') || durationHours >= 24;
+        if (!hasMultiDayTag && !isMultiDay) return false;
+      }
 
       // Time of day filter - filter by tour start time or keywords in name/description
       if (filters.timeOfDay.length > 0) {
@@ -411,17 +459,17 @@ export default function ResultsPage({
         if (!matchesTimeOfDay) return false;
       }
 
-      // Activity type filters - tour must match at least one selected activity
-      if (filters.activities.length > 0) {
-        const matchesAnyActivity = filters.activities.some(activityKey =>
-          tourMatchesActivity(tour, activityKey)
+      // Category filters - tour must match at least one selected category
+      if (filters.categories.length > 0) {
+        const matchesAnyCategory = filters.categories.some(categoryKey =>
+          tourMatchesCategory(tour, categoryKey)
         );
-        if (!matchesAnyActivity) return false;
+        if (!matchesAnyCategory) return false;
       }
 
       return true;
     });
-  }, [results, filters, tourMatchesActivity]);
+  }, [results, filters, tourMatchesCategory, tourHasTag]);
 
   // Memoize sorted results to avoid re-sorting on every render
   const sortedResults = useMemo(() => {
@@ -490,22 +538,25 @@ export default function ResultsPage({
       minRating: '',
       minDuration: '',
       maxDuration: '',
+      timeOfDay: [],
       freeCancel: false,
       skipLine: false,
       privateTour: false,
       likelyToSellOut: false,
       specialOffer: false,
-      activities: []
+      kidFriendly: false,
+      multiDay: false,
+      categories: []
     });
   };
 
-  // Toggle activity filter
-  const toggleActivity = (activityKey) => {
+  // Toggle category filter (Viator-compliant)
+  const toggleCategory = (categoryKey) => {
     setFilters(f => ({
       ...f,
-      activities: f.activities.includes(activityKey)
-        ? f.activities.filter(a => a !== activityKey)
-        : [...f.activities, activityKey]
+      categories: f.categories.includes(categoryKey)
+        ? f.categories.filter(c => c !== categoryKey)
+        : [...f.categories, categoryKey]
     }));
   };
 
@@ -520,7 +571,7 @@ export default function ResultsPage({
   };
 
   const hasActiveFilters = Object.entries(filters).some(([key, v]) => {
-    if (key === 'activities' || key === 'timeOfDay') return v.length > 0;
+    if (key === 'categories' || key === 'timeOfDay') return v.length > 0;
     return v !== '' && v !== false;
   });
 
@@ -993,16 +1044,16 @@ export default function ResultsPage({
               </div>
             </div>
 
-            {/* Tour Features */}
+            {/* Specials / Tour Features (Viator-compliant) */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Tour features</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Specials</h3>
               <div className="space-y-2">
                 {[
                   { key: 'freeCancel', label: 'Free cancellation', icon: '✓' },
                   { key: 'skipLine', label: 'Skip the line', icon: '⚡' },
                   { key: 'privateTour', label: 'Private tour', icon: '👤' },
-                  { key: 'likelyToSellOut', label: 'Likely to sell out', icon: '🔥' },
-                  { key: 'specialOffer', label: 'Special offer', icon: '🏷️' }
+                  { key: 'specialOffer', label: 'Deals & discounts', icon: '🏷️' },
+                  { key: 'likelyToSellOut', label: 'Likely to sell out', icon: '🔥' }
                 ].map(feature => (
                   <label
                     key={feature.key}
@@ -1022,22 +1073,51 @@ export default function ResultsPage({
               </div>
             </div>
 
-            {/* Activity Types */}
+            {/* Target Audience (Viator-compliant tags) */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Activity type</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Good for</h3>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={filters.kidFriendly}
+                    onChange={(e) => setFilters(f => ({ ...f, kidFriendly: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                    👨‍👩‍👧 Kid-friendly
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={filters.multiDay}
+                    onChange={(e) => setFilters(f => ({ ...f, multiDay: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                    🗓️ Multi-day tours
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Categories (Viator-compliant tag IDs) */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
               <div className="flex flex-wrap gap-2">
-                {activityTypes.map(activity => (
+                {viatorCategories.map(category => (
                   <button
-                    key={activity.key}
-                    onClick={() => toggleActivity(activity.key)}
+                    key={category.key}
+                    onClick={() => toggleCategory(category.key)}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
-                      filters.activities.includes(activity.key)
+                      filters.categories.includes(category.key)
                         ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
                     }`}
                   >
-                    <span>{activity.emoji}</span>
-                    <span>{activity.label}</span>
+                    <span>{category.emoji}</span>
+                    <span>{category.label}</span>
                   </button>
                 ))}
               </div>
