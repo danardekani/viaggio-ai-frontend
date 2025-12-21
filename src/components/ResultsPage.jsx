@@ -316,7 +316,8 @@ export default function ResultsPage({
   
   // Search bar state
   const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
-  const [searchDate, setSearchDate] = useState(searchParams?.startDate || '');
+  const [searchStartDate, setSearchStartDate] = useState(searchParams?.startDate || '');
+  const [searchEndDate, setSearchEndDate] = useState(searchParams?.endDate || '');
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -494,10 +495,11 @@ export default function ResultsPage({
       destination: searchDestination.trim(),
       destinationId: selectedDestinationId,
       travelers: travelers,
-      startDate: searchDate || undefined,
+      startDate: searchStartDate || undefined,
+      endDate: searchEndDate || undefined,
       sortBy
     });
-  }, [searchDestination, selectedDestinationId, travelers, searchDate, sortBy, onNewSearch]);
+  }, [searchDestination, selectedDestinationId, travelers, searchStartDate, searchEndDate, sortBy, onNewSearch]);
 
   // ============================================================================
   // AUTOCOMPLETE - Debounced with AbortController
@@ -779,13 +781,26 @@ export default function ResultsPage({
                 )}
               </div>
               <span className="text-gray-300 hidden md:block">|</span>
-              <input
-                type="date"
-                value={searchDate}
-                onChange={(e) => setSearchDate(e.target.value)}
-                className="hidden md:block bg-transparent focus:outline-none text-sm text-gray-600 w-28"
-              />
-              <span className="text-gray-300">|</span>
+              <div className="hidden md:flex items-center gap-1">
+                <input
+                  type="date"
+                  value={searchStartDate}
+                  onChange={(e) => setSearchStartDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-28"
+                  title="Start date"
+                />
+                <span className="text-gray-400 text-xs">to</span>
+                <input
+                  type="date"
+                  value={searchEndDate}
+                  onChange={(e) => setSearchEndDate(e.target.value)}
+                  min={searchStartDate || new Date().toISOString().split('T')[0]}
+                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-28"
+                  title="End date"
+                />
+              </div>
+              <span className="text-gray-300 hidden md:block">|</span>
               <select
                 value={travelers}
                 onChange={(e) => setTravelers(parseInt(e.target.value))}
@@ -1323,14 +1338,27 @@ export default function ResultsPage({
                   </div>
                 )}
               </div>
-              <div>
-                <label className="text-xs text-gray-500 font-medium">Date</label>
-                <input
-                  type="date"
-                  value={searchDate}
-                  onChange={(e) => setSearchDate(e.target.value)}
-                  className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Start Date</label>
+                  <input
+                    type="date"
+                    value={searchStartDate}
+                    onChange={(e) => setSearchStartDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">End Date</label>
+                  <input
+                    type="date"
+                    value={searchEndDate}
+                    onChange={(e) => setSearchEndDate(e.target.value)}
+                    min={searchStartDate || new Date().toISOString().split('T')[0]}
+                    className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-medium">Guests</label>
