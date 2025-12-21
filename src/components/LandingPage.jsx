@@ -509,33 +509,28 @@ export default function LandingPage({
                     )}
                   </div>
                   
-                  {/* Start Date */}
+                  {/* Dates */}
                   <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
                     <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Start</p>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  {/* End Date */}
-                  <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-                    <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">End</p>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        min={startDate || new Date().toISOString().split('T')[0]}
-                        className="text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent text-sm"
-                      />
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Dates</p>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                        />
+                        <span className="text-gray-400 text-sm">-</span>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          min={startDate || new Date().toISOString().split('T')[0]}
+                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                        />
+                      </div>
                     </div>
                   </div>
                   

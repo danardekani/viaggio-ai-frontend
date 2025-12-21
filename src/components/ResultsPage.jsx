@@ -787,16 +787,16 @@ export default function ResultsPage({
                   value={searchStartDate}
                   onChange={(e) => setSearchStartDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-28"
+                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-[105px]"
                   title="Start date"
                 />
-                <span className="text-gray-400 text-xs">to</span>
+                <span className="text-gray-400">-</span>
                 <input
                   type="date"
                   value={searchEndDate}
                   onChange={(e) => setSearchEndDate(e.target.value)}
                   min={searchStartDate || new Date().toISOString().split('T')[0]}
-                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-28"
+                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-[105px]"
                   title="End date"
                 />
               </div>
@@ -1338,25 +1338,23 @@ export default function ResultsPage({
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 font-medium">Start Date</label>
+              <div>
+                <label className="text-xs text-gray-500 font-medium">Dates</label>
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1">
                   <input
                     type="date"
                     value={searchStartDate}
                     onChange={(e) => setSearchStartDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-transparent text-sm focus:outline-none"
                   />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 font-medium">End Date</label>
+                  <span className="text-gray-400">-</span>
                   <input
                     type="date"
                     value={searchEndDate}
                     onChange={(e) => setSearchEndDate(e.target.value)}
                     min={searchStartDate || new Date().toISOString().split('T')[0]}
-                    className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-transparent text-sm focus:outline-none"
                   />
                 </div>
               </div>
