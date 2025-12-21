@@ -912,7 +912,7 @@ export default function ProductDisplayPage({
                       /* Original itinerary rendering */
                       fullTourData.itinerary?.map((stop, idx) => {
                         // Extract location name from various possible Viator API structures
-                        const locationName = stop.pointOfInterestLocation?.location?.name
+                        const rawLocationName = stop.pointOfInterestLocation?.location?.name
                           || stop.pointOfInterestLocation?.name
                           || stop.location?.name
                           || stop.location
@@ -922,27 +922,62 @@ export default function ProductDisplayPage({
                           || stop.attractionName
                           || stop.name
                           || stop.title
-                          || 'Stop';
+                          || '';
+
+                        // Get description
+                        const rawDescription = stop.description
+                          || stop.pointOfInterestLocation?.description
+                          || stop.details
+                          || '';
+
+                        // Check if location name is a LOC- ID string or other invalid format
+                        const isInvalidName = !rawLocationName
+                          || rawLocationName.startsWith('LOC-')
+                          || rawLocationName.startsWith('loc-')
+                          || rawLocationName.match(/^[A-Za-z0-9+/=]{20,}$/) // Base64-like strings
+                          || rawLocationName.toLowerCase() === 'pass by'
+                          || rawLocationName.toLowerCase() === 'stop';
+
+                        // If name is invalid, try to extract a title from description
+                        let locationName = rawLocationName;
+                        let description = rawDescription;
+
+                        if (isInvalidName && rawDescription) {
+                          // Use description as the location name, truncated at first sentence or reasonable length
+                          const firstSentence = rawDescription.split(/[.!?]/)[0]?.trim();
+                          if (firstSentence && firstSentence.length <= 150) {
+                            locationName = firstSentence;
+                            // Don't show description if we used it as the name
+                            description = '';
+                          } else if (rawDescription.length <= 200) {
+                            locationName = rawDescription;
+                            description = '';
+                          } else {
+                            // Truncate for title and keep rest as description
+                            locationName = rawDescription.substring(0, 100) + '...';
+                            description = '';
+                          }
+                        } else if (!isInvalidName) {
+                          // Don't show description if it duplicates the location name
+                          const descLower = rawDescription.toLowerCase().trim();
+                          const nameLower = locationName.toLowerCase().trim();
+                          const isDuplicate = descLower === nameLower
+                            || descLower.startsWith(nameLower)
+                            || nameLower.startsWith(descLower)
+                            || descLower === 'pass by';
+                          description = isDuplicate ? '' : rawDescription;
+                        }
+
+                        // Fallback if still no name
+                        if (!locationName || locationName === 'pass by') {
+                          locationName = `Stop ${idx + 1}`;
+                        }
 
                         // Check if this is a pass-by or actual stop
                         const isPassBy = stop.passByWithoutStopping
                           || stop.passBy
                           || stop.type === 'PASS_BY'
                           || (stop.name && stop.name.toLowerCase() === 'pass by');
-
-                        // Get description - skip if it's just "Pass By" or same as location name
-                        const rawDescription = stop.description
-                          || stop.pointOfInterestLocation?.description
-                          || stop.details
-                          || '';
-                        // Don't show description if it's "Pass By" or duplicates the location name
-                        const descLower = rawDescription.toLowerCase().trim();
-                        const nameLower = locationName.toLowerCase().trim();
-                        const isDuplicateOrGeneric = descLower === 'pass by'
-                          || descLower === nameLower
-                          || descLower.startsWith(nameLower)
-                          || nameLower.startsWith(descLower);
-                        const description = isDuplicateOrGeneric ? '' : rawDescription;
 
                         // Get duration
                         const duration = stop.duration
