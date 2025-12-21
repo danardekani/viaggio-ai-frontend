@@ -208,10 +208,17 @@ export default function ProductDisplayPage({
         );
         if (response.ok) {
           const data = await response.json();
-          setFullTourData(prev => ({
-            ...prev,
-            ...(data.tour || data)
-          }));
+          const fetchedData = data.tour || data;
+
+          // Merge fetched data but preserve original price if API doesn't return one
+          setFullTourData(prev => {
+            const merged = { ...prev, ...fetchedData };
+            // Preserve price from original tour if fetched data doesn't have a valid price
+            if (!merged.price && !merged.fromPrice && !merged.retailPrice && prev?.price) {
+              merged.price = prev.price;
+            }
+            return merged;
+          });
         }
       } catch (error) {
         console.error('Failed to fetch tour details:', error);
@@ -315,8 +322,9 @@ export default function ProductDisplayPage({
 
   // Pricing calculations - check multiple possible price fields
   const { isPerGroup, displayPrice, hasDiscount, totalPrice, originalPrice } = useMemo(() => {
-    const perGroup = fullTourData?.pricingType === 'group';
+    const perGroup = fullTourData?.pricingType === 'group' || tour?.pricingType === 'group';
     // Check multiple possible price field names from Viator API
+    // Also fall back to original tour prop if fullTourData doesn't have price
     const price = fullTourData?.price
       || fullTourData?.fromPrice
       || fullTourData?.retailPrice
@@ -324,21 +332,25 @@ export default function ProductDisplayPage({
       || fullTourData?.pricing?.retail
       || fullTourData?.pricing?.fromPrice
       || fullTourData?.priceFrom
+      || tour?.price  // Fallback to original tour prop
+      || tour?.fromPrice
+      || tour?.retailPrice
       || 0;
 
     const origPrice = fullTourData?.originalPrice
       || fullTourData?.pricing?.original
       || fullTourData?.strikethrough
+      || tour?.originalPrice  // Fallback to original tour prop
       || null;
 
     return {
       isPerGroup: perGroup,
       displayPrice: price,
       originalPrice: origPrice,
-      hasDiscount: fullTourData?.hasDiscount || tourFlags.includes('SPECIAL_OFFER') || origPrice > price,
+      hasDiscount: fullTourData?.hasDiscount || tour?.hasDiscount || tourFlags.includes('SPECIAL_OFFER') || (origPrice && origPrice > price),
       totalPrice: perGroup ? price : price * selectedTravelers
     };
-  }, [fullTourData, tourFlags, selectedTravelers]);
+  }, [fullTourData, tour, tourFlags, selectedTravelers]);
 
   // Navigation handlers
   const prevImage = useCallback(() => {
