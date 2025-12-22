@@ -85,6 +85,7 @@ export default function App() {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const isInitialMount = useRef(true);
+  const pendingUrlSearch = useRef(null); // Track if we need to trigger a search from URL
 
   // ============================================================================
   // BROWSER HISTORY & URL ROUTING
@@ -244,7 +245,7 @@ export default function App() {
       const destination = searchParams.get('destination');
       const destinationId = searchParams.get('destId');
       if (destination) {
-        // Trigger a search with the URL parameters
+        // Store params for pending search - will be triggered after handlers are ready
         const params = {
           type: 'tours',
           destination,
@@ -253,10 +254,9 @@ export default function App() {
           endDate: searchParams.get('endDate'),
           travelers: searchParams.get('travelers') ? parseInt(searchParams.get('travelers')) : 2
         };
-        setCurrentSearchParams(params);
+        pendingUrlSearch.current = { type: 'tours', params };
         setShowLandingPage(false);
         setShowResultsPage(true);
-        // The search will be triggered by ResultsPage
       }
     } else if (path === '/hotels') {
       const destination = searchParams.get('destination');
@@ -267,7 +267,7 @@ export default function App() {
           checkOut: searchParams.get('checkOut'),
           travelers: searchParams.get('travelers') ? parseInt(searchParams.get('travelers')) : 2
         };
-        setCurrentHotelSearchParams(params);
+        pendingUrlSearch.current = { type: 'hotels', params };
         setShowLandingPage(false);
         setShowHotelResultsPage(true);
       }
@@ -999,6 +999,24 @@ export default function App() {
     setShowResultsPage(false);
     setSidebarOpen(true);
   };
+
+  // ============================================================================
+  // TRIGGER PENDING URL SEARCH
+  // ============================================================================
+
+  // This effect runs after handlers are defined to trigger any pending search from URL
+  useEffect(() => {
+    if (pendingUrlSearch.current) {
+      const { type, params } = pendingUrlSearch.current;
+      pendingUrlSearch.current = null; // Clear to prevent re-triggering
+
+      if (type === 'tours') {
+        handleResultsPageSearch(params);
+      } else if (type === 'hotels') {
+        handleHotelSearch(params);
+      }
+    }
+  }, []); // Run once after mount
 
   // ============================================================================
   // RENDER
