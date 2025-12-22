@@ -84,6 +84,215 @@ export default function App() {
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const isInitialMount = useRef(true);
+
+  // ============================================================================
+  // BROWSER HISTORY & URL ROUTING
+  // ============================================================================
+
+  // Helper to build URL from current state
+  const buildUrl = useCallback((page, params = {}) => {
+    const url = new URL(window.location.origin);
+
+    switch (page) {
+      case 'landing':
+        url.pathname = '/';
+        break;
+      case 'results':
+        url.pathname = '/search';
+        if (params.destination) url.searchParams.set('destination', params.destination);
+        if (params.destinationId) url.searchParams.set('destId', params.destinationId);
+        if (params.startDate) url.searchParams.set('startDate', params.startDate);
+        if (params.endDate) url.searchParams.set('endDate', params.endDate);
+        if (params.travelers) url.searchParams.set('travelers', params.travelers);
+        break;
+      case 'hotels':
+        url.pathname = '/hotels';
+        if (params.destination) url.searchParams.set('destination', params.destination);
+        if (params.checkIn) url.searchParams.set('checkIn', params.checkIn);
+        if (params.checkOut) url.searchParams.set('checkOut', params.checkOut);
+        if (params.travelers) url.searchParams.set('travelers', params.travelers);
+        break;
+      case 'product':
+        url.pathname = '/tour/' + (params.productCode || params.id || 'unknown');
+        break;
+      case 'checkout':
+        url.pathname = '/checkout';
+        break;
+      default:
+        url.pathname = '/';
+    }
+
+    return url.toString();
+  }, []);
+
+  // Navigate to a page and update browser history
+  const navigateTo = useCallback((page, params = {}, options = {}) => {
+    const { replace = false, skipHistory = false } = options;
+
+    // Update state based on page
+    switch (page) {
+      case 'landing':
+        setShowLandingPage(true);
+        setShowResultsPage(false);
+        setShowHotelResultsPage(false);
+        setShowProductPage(false);
+        setShowBookingPage(false);
+        break;
+      case 'results':
+        setShowLandingPage(false);
+        setShowResultsPage(true);
+        setShowHotelResultsPage(false);
+        setShowProductPage(false);
+        setShowBookingPage(false);
+        if (params.searchParams) setCurrentSearchParams(params.searchParams);
+        break;
+      case 'hotels':
+        setShowLandingPage(false);
+        setShowResultsPage(false);
+        setShowHotelResultsPage(true);
+        setShowProductPage(false);
+        setShowBookingPage(false);
+        if (params.searchParams) setCurrentHotelSearchParams(params.searchParams);
+        break;
+      case 'product':
+        setShowLandingPage(false);
+        setShowResultsPage(false);
+        setShowHotelResultsPage(false);
+        setShowProductPage(true);
+        setShowBookingPage(false);
+        if (params.tour) setSelectedProductTour(params.tour);
+        break;
+      case 'checkout':
+        setShowLandingPage(false);
+        setShowResultsPage(false);
+        setShowHotelResultsPage(false);
+        setShowProductPage(false);
+        setShowBookingPage(true);
+        break;
+    }
+
+    // Update browser history
+    if (!skipHistory) {
+      const url = buildUrl(page, params);
+      const historyState = { page, params };
+
+      if (replace) {
+        window.history.replaceState(historyState, '', url);
+      } else {
+        window.history.pushState(historyState, '', url);
+      }
+    }
+  }, [buildUrl]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const state = event.state;
+
+      if (state?.page) {
+        // Navigate using the stored state
+        navigateTo(state.page, state.params || {}, { skipHistory: true });
+      } else {
+        // No state - parse URL to determine page
+        const path = window.location.pathname;
+        const searchParams = new URLSearchParams(window.location.search);
+
+        if (path === '/' || path === '') {
+          navigateTo('landing', {}, { skipHistory: true });
+        } else if (path === '/search') {
+          const params = {
+            destination: searchParams.get('destination'),
+            destinationId: searchParams.get('destId'),
+            startDate: searchParams.get('startDate'),
+            endDate: searchParams.get('endDate'),
+            travelers: searchParams.get('travelers')
+          };
+          navigateTo('results', { searchParams: params }, { skipHistory: true });
+        } else if (path === '/hotels') {
+          const params = {
+            destination: searchParams.get('destination'),
+            checkIn: searchParams.get('checkIn'),
+            checkOut: searchParams.get('checkOut'),
+            travelers: searchParams.get('travelers')
+          };
+          navigateTo('hotels', { searchParams: params }, { skipHistory: true });
+        } else if (path.startsWith('/tour/')) {
+          const productCode = path.split('/tour/')[1];
+          navigateTo('product', { productCode }, { skipHistory: true });
+        } else if (path === '/checkout') {
+          navigateTo('checkout', {}, { skipHistory: true });
+        } else {
+          navigateTo('landing', {}, { skipHistory: true });
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigateTo]);
+
+  // Parse URL on initial mount to restore state
+  useEffect(() => {
+    if (!isInitialMount.current) return;
+    isInitialMount.current = false;
+
+    const path = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+
+    if (path === '/search') {
+      const destination = searchParams.get('destination');
+      const destinationId = searchParams.get('destId');
+      if (destination) {
+        // Trigger a search with the URL parameters
+        const params = {
+          type: 'tours',
+          destination,
+          destinationId,
+          startDate: searchParams.get('startDate'),
+          endDate: searchParams.get('endDate'),
+          travelers: searchParams.get('travelers') ? parseInt(searchParams.get('travelers')) : 2
+        };
+        setCurrentSearchParams(params);
+        setShowLandingPage(false);
+        setShowResultsPage(true);
+        // The search will be triggered by ResultsPage
+      }
+    } else if (path === '/hotels') {
+      const destination = searchParams.get('destination');
+      if (destination) {
+        const params = {
+          destination,
+          checkIn: searchParams.get('checkIn'),
+          checkOut: searchParams.get('checkOut'),
+          travelers: searchParams.get('travelers') ? parseInt(searchParams.get('travelers')) : 2
+        };
+        setCurrentHotelSearchParams(params);
+        setShowLandingPage(false);
+        setShowHotelResultsPage(true);
+      }
+    } else if (path.startsWith('/tour/')) {
+      const productCode = path.split('/tour/')[1];
+      if (productCode && productCode !== 'unknown') {
+        // Set minimal tour data - ProductDisplayPage will fetch full details
+        setSelectedProductTour({ productCode, id: productCode });
+        setShowLandingPage(false);
+        setShowProductPage(true);
+      }
+    } else if (path === '/checkout') {
+      setShowLandingPage(false);
+      setShowBookingPage(true);
+    }
+    // For '/' or any other path, stay on landing page (default state)
+
+    // Replace current history entry with proper state
+    const currentPage = showBookingPage ? 'checkout'
+      : showProductPage ? 'product'
+      : showHotelResultsPage ? 'hotels'
+      : showResultsPage ? 'results'
+      : 'landing';
+    window.history.replaceState({ page: currentPage }, '', window.location.href);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -168,23 +377,23 @@ export default function App() {
     
     // Set results directly without making another API call
     setSearchResults(preloadedData.tours);
-    setCurrentSearchParams({
+    const searchParams = {
       type: 'tours',
       destination: destination,
       destinationId: viatorDestinationId,
       travelers: conversationContext.travelers || 2
-    });
-    
+    };
+    setCurrentSearchParams(searchParams);
+
     // Update context
     setConversationContext(prev => ({
       ...prev,
       destination: destination,
       travelers: prev.travelers || 2
     }));
-    
+
     // Show results page immediately
-    setShowLandingPage(false);
-    setShowResultsPage(true);
+    navigateTo('results', searchParams);
     setWhereIsThisOpen(false);
     setLoading(false);
     return;
@@ -646,8 +855,7 @@ export default function App() {
         searchTerms: searchParams.searchTerms || null,
         sortBy: searchParams.sortBy || 'popular'
       }));
-      setShowLandingPage(false);
-      setShowResultsPage(true);
+      navigateTo('results', searchParams);
 
       // If cache is fresh, we're done
       if (cached.isFresh) {
@@ -660,8 +868,7 @@ export default function App() {
     } else {
       // No cache - show loading state
       setLoading(true);
-      setShowLandingPage(false);
-      setShowResultsPage(true);
+      navigateTo('results', searchParams);
     }
 
     // Fetch fresh data
@@ -722,9 +929,7 @@ export default function App() {
   const handleHotelSearch = async (searchParams) => {
     setCurrentHotelSearchParams(searchParams);
     setLoading(true);
-    setShowLandingPage(false);
-    setShowResultsPage(false);
-    setShowHotelResultsPage(true);
+    navigateTo('hotels', searchParams);
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/hotels/search`, {
@@ -776,9 +981,7 @@ export default function App() {
   };
 
   const handleBackToHome = () => {
-    setShowLandingPage(true);
-    setShowResultsPage(false);
-    setShowHotelResultsPage(false);
+    navigateTo('landing');
     setSearchResults([]);
     setHotelSearchResults([]);
     setCurrentSearchParams(null);
@@ -813,10 +1016,7 @@ export default function App() {
           cart={cart}
           removeFromCart={removeFromCart}
           formatCurrency={formatCurrency}
-          onCheckout={() => {
-            setShowLandingPage(false);
-            setShowBookingPage(true);
-          }}
+          onCheckout={() => navigateTo('checkout')}
           isLoading={loading}
           backendUrl={BACKEND_URL}
         />
@@ -831,8 +1031,12 @@ export default function App() {
         <ProductDisplayPage
           tour={selectedProductTour}
           onBack={() => {
-            setShowProductPage(false);
-            setSelectedProductTour(null);
+            // Go back in history if possible, otherwise go to results or landing
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              navigateTo('results', currentSearchParams || {});
+            }
           }}
           onAddToCart={() => {
             if (isInCart('tour', selectedProductTour.id)) {
@@ -868,13 +1072,14 @@ export default function App() {
           formatCurrency={formatCurrency}
           travelers={conversationContext.travelers || 2}
           backendUrl={BACKEND_URL}
-          onCheckout={() => {
-            setShowResultsPage(false);
-            setShowBookingPage(true);
-          }}
+          onCheckout={() => navigateTo('checkout')}
           onOpenProductPage={(tour) => {
             setSelectedProductTour(tour);
-            setShowProductPage(true);
+            navigateTo('product', {
+              tour,
+              productCode: tour.productCode || tour.id,
+              id: tour.id
+            });
           }}
         />
       </Suspense>
@@ -898,10 +1103,7 @@ export default function App() {
           formatCurrency={formatCurrency}
           travelers={conversationContext.travelers || 2}
           backendUrl={BACKEND_URL}
-          onCheckout={() => {
-            setShowHotelResultsPage(false);
-            setShowBookingPage(true);
-          }}
+          onCheckout={() => navigateTo('checkout')}
         />
       </Suspense>
     );
@@ -915,12 +1117,13 @@ export default function App() {
           cart={cart}
           formatCurrency={formatCurrency}
           onBack={() => {
-            setShowBookingPage(false);
-            // Return to the page we came from
-            if (hotelSearchResults.length > 0) {
-              setShowHotelResultsPage(true);
+            // Go back in history if possible
+            if (window.history.length > 1) {
+              window.history.back();
+            } else if (hotelSearchResults.length > 0) {
+              navigateTo('hotels', currentHotelSearchParams || {});
             } else {
-              setShowResultsPage(true);
+              navigateTo('results', currentSearchParams || {});
             }
           }}
           removeFromCart={removeFromCart}
