@@ -945,25 +945,6 @@ export default function ProductDisplayPage({
                 </div>
               )}
 
-                    {/* Points of Interest */}
-                    {fullTourData.pointsOfInterest?.length > 0 && !fullTourData.itinerary?.length && !extractedLandmarks && (
-                      <div className="space-y-3">
-                        {fullTourData.pointsOfInterest.map((poi, idx) => {
-                          const poiName = typeof poi === 'string' ? poi : (poi.name || poi.location || poi);
-                          return (
-                            <div key={idx} className="flex items-start gap-3">
-                              <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-gray-700">{poiName}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* MEETING AND PICKUP SECTION */}
             {(fullTourData.meetingPoint || fullTourData.logistics?.start || fullTourData.logistics?.travelerPickup ||
               fullTourData.departurePoint || fullTourData.pickupDetails || fullTourData.startingLocations?.length > 0) && (
