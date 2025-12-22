@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Eye, Ticket } from 'lucide-react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -320,86 +321,6 @@ export default function ProductDisplayPage({
     if (nameMatch) return parseInt(nameMatch[1]);
     return 2; // Default to 2 days for multi-day
   }, [fullTourData, isMultiDay]);
-
-  // Extract landmarks from description when itinerary only has "Pass By" entries
-  const extractedLandmarks = useMemo(() => {
-    const itinerary = fullTourData?.itinerary || [];
-
-    // Check if all itinerary items are just "Pass By" with no real location names
-    const allPassBy = itinerary.length > 0 && itinerary.every(stop => {
-      const name = stop.name || stop.title || stop.location || '';
-      const description = stop.description || '';
-      const isGenericName = typeof name === 'string' &&
-        (name.toLowerCase() === 'pass by' || name.toLowerCase() === 'stop' || name === '');
-      const isGenericDesc = typeof description === 'string' &&
-        (description.toLowerCase() === 'pass by' || description === '');
-      return isGenericName && isGenericDesc;
-    });
-
-    if (!allPassBy) return null; // Use original itinerary
-
-    // Try to extract landmarks from the tour description
-    const description = fullTourData?.description || '';
-    if (!description) return null;
-
-    // Common landmark patterns to look for
-    const landmarks = [];
-
-    // Pattern 1: "pass by [Landmark]" or "fly by [Landmark]" or "see [Landmark]"
-    const passPatterns = [
-      /(?:pass(?:ing)?\s*(?:by|over)?|fly(?:ing)?\s*(?:by|over)?|see(?:ing)?|view(?:ing)?|admire|soar\s*(?:over|by)?)\s+(?:the\s+)?([A-Z][A-Za-z\s']+?)(?:\s*[,.]|\s+and\s+|\s+before|\s+as\s+|\s+from|\s+which)/gi,
-      /(?:over|by|past)\s+(?:the\s+)?([A-Z][A-Za-z\s']+?)(?:\s*[,.]|\s+and\s+|\s+before|\s+as\s+|\s+from)/gi
-    ];
-
-    // Known NYC landmarks to look for specifically
-    const knownLandmarks = [
-      'Statue of Liberty', 'Ellis Island', 'One World Trade Center', 'World Trade Center',
-      'Empire State Building', 'Chrysler Building', 'Brooklyn Bridge', 'Manhattan Bridge',
-      'Central Park', 'Times Square', 'Rockefeller Center', 'Hudson River',
-      'East River', 'Freedom Tower', 'Wall Street', 'Battery Park',
-      'Governors Island', 'Liberty Island', 'New York Harbor', 'Manhattan Skyline',
-      'Intrepid', 'USS Intrepid', 'George Washington Bridge', 'Yankee Stadium',
-      'Grand Central', 'Flatiron Building', 'Madison Square Garden'
-    ];
-
-    // Check for known landmarks in description (case-insensitive)
-    const descLower = description.toLowerCase();
-    knownLandmarks.forEach(landmark => {
-      if (descLower.includes(landmark.toLowerCase()) && !landmarks.includes(landmark)) {
-        landmarks.push(landmark);
-      }
-    });
-
-    // Also try to extract using patterns
-    passPatterns.forEach(pattern => {
-      let match;
-      while ((match = pattern.exec(description)) !== null) {
-        const extracted = match[1]?.trim();
-        if (extracted && extracted.length > 2 && extracted.length < 50) {
-          // Clean up the extracted name
-          const cleaned = extracted
-            .replace(/\s+/g, ' ')
-            .replace(/[,.]$/, '')
-            .trim();
-          if (cleaned && !landmarks.some(l => l.toLowerCase() === cleaned.toLowerCase())) {
-            landmarks.push(cleaned);
-          }
-        }
-      }
-    });
-
-    // If we found landmarks, return them as itinerary items
-    if (landmarks.length > 0) {
-      return landmarks.map((name, idx) => ({
-        name,
-        isPassBy: true,
-        extractedFromDescription: true,
-        originalIndex: idx
-      }));
-    }
-
-    return null;
-  }, [fullTourData]);
 
   // Pricing calculations - check multiple possible price fields
   const { isPerGroup, displayPrice, hasDiscount, totalPrice, originalPrice } = useMemo(() => {
