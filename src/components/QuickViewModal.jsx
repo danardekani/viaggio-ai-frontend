@@ -280,69 +280,50 @@ const QuickViewModal = memo(({
               Highlights
             </h3>
             
-            {/* Horizontal scrollable container */}
-            <div className="overflow-x-auto pb-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600 flex-nowrap">
+            {/* Wrapping horizontal container */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
                 {/* Use API highlights if available */}
                 {tour.highlights?.length > 0 ? (
                   tour.highlights.slice(0, 5).map((highlight, i) => (
-                    <React.Fragment key={i}>
-                      <div className="flex items-center gap-2 whitespace-nowrap px-2 py-1">
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        <span>{highlight}</span>
-                      </div>
-                      {i < tour.highlights.slice(0, 5).length - 1 && (
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      )}
-                    </React.Fragment>
+                    <div key={i} className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <span>{highlight}</span>
+                    </div>
                   ))
                 ) : (
                   /* Generate highlights from flags and features if no API highlights */
                   <>
                     {tourFlags.includes('FREE_CANCELLATION') && (
-                      <>
-                        <div className="flex items-center gap-2 whitespace-nowrap px-2 py-1">
-                          <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span>Free cancellation available</span>
-                        </div>
+                      <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      </>
+                        <span>Free cancellation available</span>
+                      </div>
                     )}
                     {tourFlags.includes('SKIP_THE_LINE') && (
-                      <>
-                        <div className="flex items-center gap-2 whitespace-nowrap px-2 py-1">
-                          <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span>Skip-the-line access</span>
-                        </div>
+                      <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      </>
+                        <span>Skip-the-line access</span>
+                      </div>
                     )}
                     {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                      <>
-                        <div className="flex items-center gap-2 whitespace-nowrap px-2 py-1">
-                          <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span>Popular experience - book early!</span>
-                        </div>
+                      <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      </>
+                        <span>Popular experience - book early!</span>
+                      </div>
                     )}
                     {tour.languages?.length > 0 && (
-                      <>
-                        <div className="flex items-center gap-2 whitespace-nowrap px-2 py-1">
-                          <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span>Professional local guide</span>
-                        </div>
+                      <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      </>
+                        <span>Professional local guide</span>
+                      </div>
                     )}
-                    <div className="flex items-center gap-2 whitespace-nowrap px-2 py-1">
+                    <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span>Mobile ticket accepted</span>
                     </div>
                   </>
                 )}
               </div>
-            </div>
           </div>
 
         </div>
