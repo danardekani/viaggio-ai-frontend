@@ -154,6 +154,12 @@ const TourCard = memo(function TourCard({
             <span className="font-semibold text-gray-900 text-sm">{tour.rating}</span>
           </div>
         )}
+        {/* Source badge */}
+        <div className="absolute bottom-3 left-3">
+          <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+            Viator
+          </span>
+        </div>
       </div>
 
       {/* Content */}
