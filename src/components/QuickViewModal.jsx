@@ -1,366 +1,344 @@
-import React, { useState, useMemo, useCallback, memo } from 'react';
-import {
-  X,
-  Star,
-  Clock,
-  MapPin,
+import React, { useState, useEffect, memo } from 'react';
+import { 
+  X, 
+  ExternalLink, 
+  Clock, 
+  Star, 
+  Smartphone, 
+  Globe, 
+  Info,
+  Check,
+  Loader2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  Globe,
-  Check,
-  Loader2,
-  Smartphone,
-  Heart,
-  Info
+  ChevronUp
 } from 'lucide-react';
 
-const QuickViewModal = memo(function QuickViewModal({
+const QuickViewModal = memo(({ 
   tour,
   onClose,
   formatCurrency,
-  travelers = 2,
+  travelers = 1,
   onAddToTrip,
   isInCart,
-  isLoading = false,
-  onViewFullDetails
-}) {
+  descriptionExpanded: externalDescriptionExpanded,
+  onToggleDescription: externalOnToggleDescription,
+  onViewFullDetails,
+  isLoading
+}) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(externalDescriptionExpanded || false);
 
-  // Memoize images array
-  const images = useMemo(() => {
-    if (!tour) return [];
-    if (tour.images && tour.images.length > 0) {
-      return tour.images.map(img => typeof img === 'string' ? img : img.url || img);
+  // Use external state if provided
+  useEffect(() => {
+    if (externalDescriptionExpanded !== undefined) {
+      setDescriptionExpanded(externalDescriptionExpanded);
     }
-    if (tour.image) {
-      return [tour.image];
+  }, [externalDescriptionExpanded]);
+
+  const handleToggleDescription = () => {
+    if (externalOnToggleDescription) {
+      externalOnToggleDescription();
+    } else {
+      setDescriptionExpanded(!descriptionExpanded);
     }
-    return [];
-  }, [tour]);
+  };
 
-  // Memoize derived values
-  const hasMultipleImages = images.length > 1;
-  const tourFlags = useMemo(() => tour?.flags || [], [tour?.flags]);
+  // Prepare images
+  const images = tour.images || tour.thumbnails || [];
+  
+  // Determine pricing
+  const isPerGroup = tour.pricingUnit === 'per group' || 
+                     (tour.price && tour.price.toString().toLowerCase().includes('per group'));
+  const displayPrice = tour.price || 0;
+  const hasDiscount = tour.hasDiscount || (tour.originalPrice && tour.originalPrice > tour.price);
 
-  // Memoize pricing calculations
-  const { isPerGroup, displayPrice, hasDiscount } = useMemo(() => ({
-    isPerGroup: tour?.pricingType === 'group',
-    displayPrice: tour?.price,
-    hasDiscount: tour?.hasDiscount || tourFlags.includes('SPECIAL_OFFER')
-  }), [tour?.pricingType, tour?.price, tour?.hasDiscount, tourFlags]);
+  // Extract tour flags
+  const tourFlags = tour.flags || [];
+  
+  // Calculate recommendation percent
+  const recommendationPercent = tour.recommendationPercent || 
+    (tour.recommendationCount && tour.reviewCount 
+      ? Math.round((tour.recommendationCount / tour.reviewCount) * 100)
+      : null);
 
-  // Memoize navigation handlers
-  const prevImage = useCallback(() =>
-    setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1),
-    [images.length]
-  );
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
-  const nextImage = useCallback(() =>
-    setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1),
-    [images.length]
-  );
+  // Navigate carousel
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
 
-  // Memoize recommendation percentage
-  const recommendationPercent = useMemo(() =>
-    tour?.rating ? Math.min(99, Math.round(tour.rating * 20)) : null,
-    [tour?.rating]
-  );
-
-  // Memoize star rating array
-  const starRatings = useMemo(() => [1, 2, 3, 4, 5], []);
-
-  if (!tour) return null;
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4" 
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-30 p-2 bg-white hover:bg-gray-100 rounded-full shadow-lg transition-colors"
-        >
-          <X className="w-5 h-5 text-gray-600" />
-        </button>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto">
-          
-          {/* HEADER: Title + Rating */}
-          <div className="p-4 pb-3 pr-12">
-            {/* Source badge */}
-            <div className="mb-2">
-              {tour.source === 'hotelbeds' ? (
-                <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
-                  Hotelbeds
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
-                  Viator
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-xl font-bold text-gray-900 leading-tight mb-2">
-              {tour.name}
-            </h2>
-
-            {/* Rating row */}
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              {tour.rating && tour.rating !== 'New' && (
-                <div className="flex items-center gap-1">
-                  <div className="flex">
-                    {starRatings.map(star => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${star <= Math.floor(tour.rating) ? 'text-emerald-500 fill-emerald-500' : 'text-gray-300'}`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-gray-600 ml-1">
-                    {tour.reviewCount?.toLocaleString() || 0} Reviews
+        {/* HEADER */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 z-10">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              {/* Source badge */}
+              <div className="mb-2">
+                {tour.source === 'hotelbeds' ? (
+                  <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
+                    Hotelbeds
                   </span>
-                </div>
-              )}
-              
-              {recommendationPercent && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  <span className="text-gray-600">
-                    <span className="text-red-500">❤️</span> Recommended by {recommendationPercent}% of travelers
+                ) : (
+                  <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+                    Viator
                   </span>
-                </>
-              )}
-            </div>
-            
-            {isLoading && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading details...
-              </div>
-            )}
-          </div>
-
-          {/* IMAGE GALLERY */}
-          <div className="flex border-t border-b border-gray-100">
-            
-            {/* Thumbnails - LEFT side */}
-            {images.length > 0 && (
-              <div className="hidden sm:flex flex-col gap-1.5 p-2 w-28 flex-shrink-0 bg-gray-50">
-                {images.slice(0, 5).map((img, idx) => (
-                  <button 
-                    key={idx}
-                    className={`w-full aspect-[4/3] rounded overflow-hidden transition-all ${
-                      idx === currentImageIndex 
-                        ? 'ring-2 ring-emerald-500' 
-                        : 'opacity-70 hover:opacity-100'
-                    }`}
-                    onClick={() => setCurrentImageIndex(idx)}
-                  >
-                    <img
-                      src={img}
-                      alt={`${tour.name} ${idx + 1}`}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-                
-                {images.length > 5 && (
-                  <button 
-                    className="w-full aspect-[4/3] rounded overflow-hidden relative"
-                    onClick={() => setCurrentImageIndex(5)}
-                  >
-                    <img src={images[5]} alt="More" loading="lazy" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-xs font-medium">See More</span>
-                    </div>
-                  </button>
                 )}
               </div>
-            )}
 
-            {/* Main Image */}
-            <div className="flex-1 relative bg-gray-900 flex items-center justify-center" style={{ minHeight: '280px', maxHeight: '350px' }}>
-              {images.length > 0 ? (
-                <img
-                  src={images[currentImageIndex]}
-                  alt={tour.name}
-                  className="max-w-full max-h-[350px] w-auto h-auto object-contain"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50" style={{ height: '280px' }}>
-                  <MapPin className="w-12 h-12 text-blue-300" />
+              <h2 className="text-lg font-bold text-gray-900 leading-tight pr-8">
+                {tour.name || tour.title}
+              </h2>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Rating & Reviews */}
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+            {tour.rating && (
+              <div className="flex items-center gap-1">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(tour.rating) 
+                          ? 'text-emerald-500 fill-emerald-500' 
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
                 </div>
-              )}
-              
-              {/* Wishlist button */}
-              <button className="absolute top-3 right-3 px-3 py-1.5 bg-white rounded-full shadow flex items-center gap-1.5 hover:bg-gray-50 text-sm">
-                <Heart className="w-4 h-4 text-gray-500" />
-                <span className="hidden md:inline text-gray-600">Add to Wishlist</span>
-              </button>
+                <span className="text-gray-600 ml-1">
+                  {tour.reviewCount?.toLocaleString() || 0} Reviews
+                </span>
+              </div>
+            )}
+            
+            {recommendationPercent && (
+              <>
+                <span className="text-gray-300">|</span>
+                <span className="text-gray-600">
+                  <span className="text-red-500">❤️</span> Recommended by {recommendationPercent}% of travelers
+                </span>
+              </>
+            )}
+          </div>
+          
+          {isLoading && (
+            <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading details...
+            </div>
+          )}
+        </div>
 
+        {/* IMAGE GALLERY - Main Image */}
+        <div className="relative bg-gray-900 flex items-center justify-center" style={{ minHeight: '280px', maxHeight: '400px' }}>
+          {images.length > 0 ? (
+            <>
+              <img
+                src={images[currentImageIndex]}
+                alt={tour.name}
+                className="w-full h-full object-contain"
+                style={{ maxHeight: '400px' }}
+              />
+              
               {/* Navigation Arrows */}
-              {hasMultipleImages && (
+              {images.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors backdrop-blur-sm"
+                    aria-label="Previous image"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors backdrop-blur-sm"
+                    aria-label="Next image"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
+
+                  {/* Image Counter */}
+                  <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/60 text-white text-xs font-medium rounded-full backdrop-blur-sm">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
                 </>
               )}
-              
-              {/* Image counter */}
-              {images.length > 1 && (
-                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                  {currentImageIndex + 1} / {images.length}
-                </div>
-              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-80 text-gray-400">
+              <Info className="w-12 h-12" />
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Mobile thumbnails */}
-          {images.length > 1 && (
-            <div className="sm:hidden flex gap-1.5 p-2 overflow-x-auto bg-gray-50">
-              {images.slice(0, 6).map((img, idx) => (
+        {/* HORIZONTAL THUMBNAIL CAROUSEL - Below Main Image */}
+        {images.length > 1 && (
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 overflow-x-auto">
+            <div className="flex gap-2">
+              {images.map((img, idx) => (
                 <button 
                   key={idx}
-                  className={`flex-shrink-0 w-14 h-14 rounded overflow-hidden ${
-                    idx === currentImageIndex ? 'ring-2 ring-emerald-500' : 'opacity-70'
+                  className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden transition-all border-2 ${
+                    idx === currentImageIndex 
+                      ? 'border-emerald-500 ring-2 ring-emerald-200' 
+                      : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-300'
                   }`}
                   onClick={() => setCurrentImageIndex(idx)}
                 >
-                  <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+                  <img 
+                    src={img} 
+                    alt={`Thumbnail ${idx + 1}`} 
+                    loading="lazy" 
+                    className="w-full h-full object-cover" 
+                  />
                 </button>
               ))}
             </div>
-          )}
-
-          {/* KEY INFO BAR */}
-          <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-b border-gray-100 text-sm text-gray-600">
-            {tour.duration && (
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <span>{tour.duration}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5">
-              <Smartphone className="w-4 h-4 text-gray-400" />
-              <span>Mobile ticket</span>
-            </div>
-            {tour.languages && tour.languages.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-gray-400" />
-                <span>Offered in: {tour.languages.slice(0, 2).join(', ')}</span>
-              </div>
-            )}
           </div>
+        )}
 
-          {/* CONTENT */}
-          <div className="p-4 space-y-5">
-            
-            {/* About */}
-            {tour.description && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-gray-400" />
-                  About this tour
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {descriptionExpanded || tour.description.length <= 300
-                    ? tour.description
-                    : tour.description.substring(0, 300) + '...'}
-                </p>
-                {tour.description.length > 300 && (
-                  <button
-                    onClick={() => setDescriptionExpanded(!descriptionExpanded)}
-                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                  >
-                    {descriptionExpanded ? (
-                      <>
-                        View less
-                        <ChevronUp className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        View more
-                        <ChevronDown className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            )}
+        {/* KEY INFO BAR */}
+        <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-b border-gray-100 text-sm text-gray-600">
+          {tour.duration && (
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span>{tour.duration}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <Smartphone className="w-4 h-4 text-gray-400" />
+            <span>Mobile ticket</span>
+          </div>
+          {tour.languages && tour.languages.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Globe className="w-4 h-4 text-gray-400" />
+              <span>Offered in: {tour.languages.slice(0, 2).join(', ')}</span>
+            </div>
+          )}
+        </div>
 
-            {/* Highlights */}
+        {/* CONTENT */}
+        <div className="p-4 space-y-5">
+          
+          {/* About */}
+          {tour.description && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                Highlights
+                <Info className="w-4 h-4 text-gray-400" />
+                About this tour
               </h3>
-              <ul className="space-y-1.5">
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {descriptionExpanded || tour.description.length <= 300
+                  ? tour.description
+                  : tour.description.substring(0, 300) + '...'}
+              </p>
+              {tour.description.length > 300 && (
+                <button
+                  onClick={handleToggleDescription}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  {descriptionExpanded ? (
+                    <>
+                      View less
+                      <ChevronUp className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      View more
+                      <ChevronDown className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* HORIZONTAL HIGHLIGHTS */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Star className="w-4 h-4 text-yellow-500" />
+              Highlights
+            </h3>
+            
+            {/* Wrapping horizontal container */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
                 {/* Use API highlights if available */}
                 {tour.highlights?.length > 0 ? (
-                  tour.highlights.slice(0, 5).map((h, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span>{h}</span>
-                    </li>
+                  tour.highlights.slice(0, 5).map((highlight, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <span>{highlight}</span>
+                    </div>
                   ))
                 ) : (
                   /* Generate highlights from flags and features if no API highlights */
                   <>
                     {tourFlags.includes('FREE_CANCELLATION') && (
-                      <li className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span>Free cancellation available</span>
-                      </li>
+                      </div>
                     )}
                     {tourFlags.includes('SKIP_THE_LINE') && (
-                      <li className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span>Skip-the-line access</span>
-                      </li>
+                      </div>
                     )}
                     {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-                      <li className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span>Popular experience - book early!</span>
-                      </li>
+                      </div>
                     )}
                     {tour.languages?.length > 0 && (
-                      <li className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span>Professional local guide</span>
-                      </li>
+                      </div>
                     )}
-                    <li className="flex items-start gap-2 text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span>Mobile ticket accepted</span>
-                    </li>
+                    </div>
                   </>
                 )}
-              </ul>
-            </div>
-
+              </div>
           </div>
+
         </div>
 
         {/* FOOTER */}
@@ -418,6 +396,30 @@ const QuickViewModal = memo(function QuickViewModal({
           </div>
         </div>
       </div>
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 });

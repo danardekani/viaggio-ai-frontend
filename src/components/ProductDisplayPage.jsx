@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Eye, Ticket } from 'lucide-react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -320,86 +321,6 @@ export default function ProductDisplayPage({
     if (nameMatch) return parseInt(nameMatch[1]);
     return 2; // Default to 2 days for multi-day
   }, [fullTourData, isMultiDay]);
-
-  // Extract landmarks from description when itinerary only has "Pass By" entries
-  const extractedLandmarks = useMemo(() => {
-    const itinerary = fullTourData?.itinerary || [];
-
-    // Check if all itinerary items are just "Pass By" with no real location names
-    const allPassBy = itinerary.length > 0 && itinerary.every(stop => {
-      const name = stop.name || stop.title || stop.location || '';
-      const description = stop.description || '';
-      const isGenericName = typeof name === 'string' &&
-        (name.toLowerCase() === 'pass by' || name.toLowerCase() === 'stop' || name === '');
-      const isGenericDesc = typeof description === 'string' &&
-        (description.toLowerCase() === 'pass by' || description === '');
-      return isGenericName && isGenericDesc;
-    });
-
-    if (!allPassBy) return null; // Use original itinerary
-
-    // Try to extract landmarks from the tour description
-    const description = fullTourData?.description || '';
-    if (!description) return null;
-
-    // Common landmark patterns to look for
-    const landmarks = [];
-
-    // Pattern 1: "pass by [Landmark]" or "fly by [Landmark]" or "see [Landmark]"
-    const passPatterns = [
-      /(?:pass(?:ing)?\s*(?:by|over)?|fly(?:ing)?\s*(?:by|over)?|see(?:ing)?|view(?:ing)?|admire|soar\s*(?:over|by)?)\s+(?:the\s+)?([A-Z][A-Za-z\s']+?)(?:\s*[,.]|\s+and\s+|\s+before|\s+as\s+|\s+from|\s+which)/gi,
-      /(?:over|by|past)\s+(?:the\s+)?([A-Z][A-Za-z\s']+?)(?:\s*[,.]|\s+and\s+|\s+before|\s+as\s+|\s+from)/gi
-    ];
-
-    // Known NYC landmarks to look for specifically
-    const knownLandmarks = [
-      'Statue of Liberty', 'Ellis Island', 'One World Trade Center', 'World Trade Center',
-      'Empire State Building', 'Chrysler Building', 'Brooklyn Bridge', 'Manhattan Bridge',
-      'Central Park', 'Times Square', 'Rockefeller Center', 'Hudson River',
-      'East River', 'Freedom Tower', 'Wall Street', 'Battery Park',
-      'Governors Island', 'Liberty Island', 'New York Harbor', 'Manhattan Skyline',
-      'Intrepid', 'USS Intrepid', 'George Washington Bridge', 'Yankee Stadium',
-      'Grand Central', 'Flatiron Building', 'Madison Square Garden'
-    ];
-
-    // Check for known landmarks in description (case-insensitive)
-    const descLower = description.toLowerCase();
-    knownLandmarks.forEach(landmark => {
-      if (descLower.includes(landmark.toLowerCase()) && !landmarks.includes(landmark)) {
-        landmarks.push(landmark);
-      }
-    });
-
-    // Also try to extract using patterns
-    passPatterns.forEach(pattern => {
-      let match;
-      while ((match = pattern.exec(description)) !== null) {
-        const extracted = match[1]?.trim();
-        if (extracted && extracted.length > 2 && extracted.length < 50) {
-          // Clean up the extracted name
-          const cleaned = extracted
-            .replace(/\s+/g, ' ')
-            .replace(/[,.]$/, '')
-            .trim();
-          if (cleaned && !landmarks.some(l => l.toLowerCase() === cleaned.toLowerCase())) {
-            landmarks.push(cleaned);
-          }
-        }
-      }
-    });
-
-    // If we found landmarks, return them as itinerary items
-    if (landmarks.length > 0) {
-      return landmarks.map((name, idx) => ({
-        name,
-        isPassBy: true,
-        extractedFromDescription: true,
-        originalIndex: idx
-      }));
-    }
-
-    return null;
-  }, [fullTourData]);
 
   // Pricing calculations - check multiple possible price fields
   const { isPerGroup, displayPrice, hasDiscount, totalPrice, originalPrice } = useMemo(() => {
@@ -876,180 +797,166 @@ export default function ProductDisplayPage({
             </div>
 
             {/* ITINERARY SECTION */}
-            {(fullTourData.itinerary?.length > 0 || fullTourData.pointsOfInterest?.length > 0 || extractedLandmarks?.length > 0) && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <button
-                  onClick={() => toggleSection('itinerary')}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
-                >
-                  <h2 className="text-lg font-semibold text-gray-900">Itinerary</h2>
-                  {expandedSections.itinerary ? (
-                    <ChevronUp className="w-5 h-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                  )}
-                </button>
-
-                {expandedSections.itinerary && (
-                  <div className="p-6">
-                    {/* Use extracted landmarks if API returned generic "Pass By" */}
-                    {extractedLandmarks ? (
-                      <>
-                        <p className="text-sm text-gray-500 mb-4 italic">
-                          Landmarks and points of interest on this tour:
-                        </p>
-                        {extractedLandmarks.map((stop, idx) => (
-                          <div key={idx} className="flex gap-4 pb-6 last:pb-0">
-                            <div className="flex flex-col items-center">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-blue-100 text-blue-600">
-                                {idx + 1}
-                              </div>
-                              {idx < extractedLandmarks.length - 1 && (
-                                <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
-                              )}
-                            </div>
-                            <div className="flex-1 pb-4">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-gray-900">{stop.name}</h4>
-                                {stop.isPassBy && (
-                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-                                    Pass by
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </>
+              {(fullTourData.itinerary?.length > 0 || fullTourData.pointsOfInterest?.length > 0) && (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <button
+                    onClick={() => toggleSection('itinerary')}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900">What to Expect</h2>
+                    {expandedSections.itinerary ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
                     ) : (
-                      /* Original itinerary rendering */
-                      fullTourData.itinerary?.map((stop, idx) => {
-                        // Extract location name from various possible Viator API structures
-                        const rawLocationName = stop.pointOfInterestLocation?.location?.name
-                          || stop.pointOfInterestLocation?.name
-                          || stop.location?.name
-                          || stop.location
-                          || stop.pointOfInterest
-                          || stop.poi?.name
-                          || stop.poi
-                          || stop.attractionName
-                          || stop.name
-                          || stop.title
-                          || '';
-
-                        // Get description
-                        const rawDescription = stop.description
-                          || stop.pointOfInterestLocation?.description
-                          || stop.details
-                          || '';
-
-                        // Check if location name is a LOC- ID string or other invalid format
-                        const isInvalidName = !rawLocationName
-                          || rawLocationName.startsWith('LOC-')
-                          || rawLocationName.startsWith('loc-')
-                          || rawLocationName.match(/^[A-Za-z0-9+/=]{20,}$/) // Base64-like strings
-                          || rawLocationName.toLowerCase() === 'pass by'
-                          || rawLocationName.toLowerCase() === 'stop';
-
-                        // If name is invalid, try to extract a title from description
-                        let locationName = rawLocationName;
-                        let description = rawDescription;
-
-                        if (isInvalidName && rawDescription) {
-                          // Use description as the location name, truncated at first sentence or reasonable length
-                          const firstSentence = rawDescription.split(/[.!?]/)[0]?.trim();
-                          if (firstSentence && firstSentence.length <= 150) {
-                            locationName = firstSentence;
-                            // Don't show description if we used it as the name
-                            description = '';
-                          } else if (rawDescription.length <= 200) {
-                            locationName = rawDescription;
-                            description = '';
-                          } else {
-                            // Truncate for title and keep rest as description
-                            locationName = rawDescription.substring(0, 100) + '...';
-                            description = '';
-                          }
-                        } else if (!isInvalidName) {
-                          // Don't show description if it duplicates the location name
-                          const descLower = rawDescription.toLowerCase().trim();
-                          const nameLower = locationName.toLowerCase().trim();
-                          const isDuplicate = descLower === nameLower
-                            || descLower.startsWith(nameLower)
-                            || nameLower.startsWith(descLower)
-                            || descLower === 'pass by';
-                          description = isDuplicate ? '' : rawDescription;
-                        }
-
-                        // Fallback if still no name
-                        if (!locationName || locationName === 'pass by') {
-                          locationName = `Stop ${idx + 1}`;
-                        }
-
-                        // Check if this is a pass-by or actual stop
-                        const isPassBy = stop.passByWithoutStopping
-                          || stop.passBy
-                          || stop.type === 'PASS_BY'
-                          || (stop.name && stop.name.toLowerCase() === 'pass by');
-
-                        // Get duration
-                        const duration = stop.duration
-                          || stop.durationMinutes
-                          || stop.stopDuration
-                          || '';
-
-                        return (
-                          <div key={idx} className="flex gap-4 pb-6 last:pb-0">
-                            <div className="flex flex-col items-center">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                                isPassBy ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-600'
-                              }`}>
-                                {idx + 1}
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+              
+                  {expandedSections.itinerary && (
+                    <div className="p-6">
+                      {/* Render itinerary items */}
+                      {fullTourData.itinerary?.length > 0 ? (
+                        <div className="space-y-1">
+                          {fullTourData.itinerary.map((stop, idx) => {
+                            // The backend now provides properly resolved names
+                            const locationName = stop.name || `Stop ${idx + 1}`;
+                            const description = stop.description || '';
+                            const duration = stop.duration;
+                            const isPassBy = stop.passByWithoutStopping || stop.isPassBy;
+                            const admissionIncluded = stop.admissionIncluded;
+                            const address = stop.address;
+                            const isUnstructured = stop.isUnstructured;
+                            const dayNumber = stop.dayNumber;
+                            const routeName = stop.routeName;
+                            const isStop = stop.isStop;
+                            const isPOI = stop.isPOI;
+              
+                            // Handle unstructured itinerary (free-form text)
+                            if (isUnstructured) {
+                              return (
+                                <div key={idx} className="bg-gray-50 rounded-lg p-4">
+                                  <p className="text-gray-700 whitespace-pre-line">{description}</p>
+                                </div>
+                              );
+                            }
+              
+                            return (
+                              <div key={idx} className="flex gap-4 pb-6 last:pb-0">
+                                {/* Timeline indicator */}
+                                <div className="flex flex-col items-center">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                                    isPassBy 
+                                      ? 'bg-gray-100 text-gray-500' 
+                                      : isPOI 
+                                        ? 'bg-purple-100 text-purple-600'
+                                        : isStop 
+                                          ? 'bg-orange-100 text-orange-600'
+                                          : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                    {idx + 1}
+                                  </div>
+                                  {idx < (fullTourData.itinerary?.length || 0) - 1 && (
+                                    <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
+                                  )}
+                                </div>
+              
+                                {/* Content */}
+                                <div className="flex-1 pb-4">
+                                  {/* Day number for multi-day tours */}
+                                  {dayNumber && (
+                                    <span className="inline-block mb-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                                      Day {dayNumber}
+                                    </span>
+                                  )}
+              
+                                  {/* Route name for hop-on-hop-off */}
+                                  {routeName && (
+                                    <span className="inline-block mb-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                                      {routeName}
+                                    </span>
+                                  )}
+              
+                                  {/* Location name */}
+                                  <h4 className="font-medium text-gray-900">{locationName}</h4>
+              
+                                  {/* Badges row */}
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {isPassBy && (
+                                      <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                        <Eye className="w-3 h-3 mr-1" />
+                                        Pass by
+                                      </span>
+                                    )}
+                                    {admissionIncluded === 'YES' && (
+                                      <span className="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                                        <Ticket className="w-3 h-3 mr-1" />
+                                        Admission included
+                                      </span>
+                                    )}
+                                    {admissionIncluded === 'NO' && (
+                                      <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
+                                        <Ticket className="w-3 h-3 mr-1" />
+                                        Admission not included
+                                      </span>
+                                    )}
+                                    {isStop && (
+                                      <span className="inline-flex items-center px-2 py-0.5 bg-orange-100 text-orange-600 text-xs rounded-full">
+                                        Bus stop
+                                      </span>
+                                    )}
+                                    {isPOI && (
+                                      <span className="inline-flex items-center px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
+                                        Point of interest
+                                      </span>
+                                    )}
+                                  </div>
+              
+                                  {/* Description */}
+                                  {description && description !== 'Visit' && !isUnstructured && (
+                                    <p className="text-gray-600 text-sm mt-2">{description}</p>
+                                  )}
+              
+                                  {/* Address if available */}
+                                  {address && (
+                                    <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {[address.street, address.administrativeArea, address.country]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                    </p>
+                                  )}
+              
+                                  {/* Duration */}
+                                  {duration && (
+                                    <p className="text-gray-500 text-xs mt-2 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {typeof duration === 'number' ? `${duration} min` : duration}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                              {idx < (fullTourData.itinerary?.length || 0) - 1 && (
-                                <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
-                              )}
-                            </div>
-                            <div className="flex-1 pb-4">
-                              <h4 className="font-medium text-gray-900">{locationName}</h4>
-                              {isPassBy && (
-                                <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-                                  Pass by
-                                </span>
-                              )}
-                              {description && (
-                                <p className="text-gray-600 text-sm mt-1">{description}</p>
-                              )}
-                              {duration && (
-                                <p className="text-gray-500 text-xs mt-2">
-                                  <Clock className="w-3 h-3 inline mr-1" />
-                                  {typeof duration === 'number' ? `${duration} min` : duration}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-
-                    {/* Points of Interest */}
-                    {fullTourData.pointsOfInterest?.length > 0 && !fullTourData.itinerary?.length && !extractedLandmarks && (
-                      <div className="space-y-3">
-                        {fullTourData.pointsOfInterest.map((poi, idx) => {
-                          const poiName = typeof poi === 'string' ? poi : (poi.name || poi.location || poi);
-                          return (
-                            <div key={idx} className="flex items-start gap-3">
-                              <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-gray-700">{poiName}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                            );
+                          })}
+                        </div>
+                      ) : fullTourData.pointsOfInterest?.length > 0 ? (
+                        /* Fallback: Points of Interest only */
+                        <div className="space-y-3">
+                          {fullTourData.pointsOfInterest.map((poi, idx) => {
+                            const poiName = typeof poi === 'string' ? poi : (poi.name || poi.location || poi);
+                            return (
+                              <div key={idx} className="flex items-start gap-3">
+                                <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                <span className="text-gray-700">{poiName}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic">Itinerary details not available for this tour.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* MEETING AND PICKUP SECTION */}
             {(fullTourData.meetingPoint || fullTourData.logistics?.start || fullTourData.logistics?.travelerPickup ||
