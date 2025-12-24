@@ -322,29 +322,27 @@ export default function LandingPage({
   // SEARCH HANDLERS - Memoized with useCallback
   // ============================================================================
 
+  // FIXED: Single handleToursSearch with proper date validation
   const handleToursSearch = useCallback((e) => {
     e?.preventDefault();
     if (!destination.trim()) return;
 
-    const handleToursSearch = useCallback((e) => {
-      e?.preventDefault();
-      if (!destination.trim()) return;
-    
-      // Validate dates if provided
-      let validStartDate = startDate;
-      let validEndDate = endDate;
-    
-      if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const today = new Date();
-        const maxDate = new Date();
-        maxDate.setFullYear(maxDate.getFullYear() + 1);
-    
-        if (start < today || end < start || start > maxDate) {
-          console.warn('Dates invalid or too far out, searching without date filter');
-          validStartDate = undefined;
-          validEndDate = undefined;
+    // Validate dates if provided
+    let validStartDate = startDate;
+    let validEndDate = endDate;
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time for comparison
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 1);
+
+      if (start < today || end < start || start > maxDate) {
+        console.warn('Dates invalid or too far out, searching without date filter');
+        validStartDate = undefined;
+        validEndDate = undefined;
       }
     }
 
@@ -353,8 +351,10 @@ export default function LandingPage({
       destination: destination.trim(),
       destinationId: selectedDestinationId,
       travelers,
-      startDate,
-      endDate
+      // Only include dates if both are valid
+      ...(validStartDate && validEndDate 
+        ? { startDate: validStartDate, endDate: validEndDate } 
+        : {})
     });
   }, [destination, selectedDestinationId, travelers, startDate, endDate, onSearch]);
 
@@ -689,7 +689,7 @@ export default function LandingPage({
                   <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
                     <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Dates</p>
+                      <p className="text-xs text-gray-500 font-medium">Dates (optional)</p>
                       <div className="flex items-center gap-1">
                         <input
                           type="date"
@@ -735,7 +735,7 @@ export default function LandingPage({
                     type="submit"
                     disabled={!destination.trim() || isLoading}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
-                    title={!startDate || !endDate ? 'Please select travel dates' : ''}
+                    title={!destination.trim() ? 'Please enter a destination' : ''}
                   >
                     {isLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
