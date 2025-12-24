@@ -324,7 +324,29 @@ export default function LandingPage({
 
   const handleToursSearch = useCallback((e) => {
     e?.preventDefault();
-    if (!destination.trim() || !startDate || !endDate) return;
+    if (!destination.trim()) return;
+
+    const handleToursSearch = useCallback((e) => {
+      e?.preventDefault();
+      if (!destination.trim()) return;
+    
+      // Validate dates if provided
+      let validStartDate = startDate;
+      let validEndDate = endDate;
+    
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const today = new Date();
+        const maxDate = new Date();
+        maxDate.setFullYear(maxDate.getFullYear() + 1);
+    
+        if (start < today || end < start || start > maxDate) {
+          console.warn('Dates invalid or too far out, searching without date filter');
+          validStartDate = undefined;
+          validEndDate = undefined;
+      }
+    }
 
     onSearch?.({
       type: 'tours',
@@ -711,7 +733,7 @@ export default function LandingPage({
                   {/* Search Button */}
                   <button
                     type="submit"
-                    disabled={!destination.trim() || !startDate || !endDate || isLoading}
+                    disabled={!destination.trim() || isLoading}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
                     title={!startDate || !endDate ? 'Please select travel dates' : ''}
                   >
