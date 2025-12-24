@@ -509,6 +509,19 @@ export default function ProductDisplayPage({
 
             {/* TITLE & RATING */}
             <div>
+              {/* Source badge */}
+              <div className="mb-2">
+                {(fullTourData.source || tour?.source) === 'hotelbeds' ? (
+                  <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
+                    Hotelbeds
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+                    Viator
+                  </span>
+                )}
+              </div>
+
               {/* Reserve Now & Pay Later badge - clickable for more info */}
               {tourFlags.includes('FREE_CANCELLATION') && (
                 <button

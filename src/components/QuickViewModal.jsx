@@ -94,11 +94,24 @@ const QuickViewModal = memo(({
         <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 z-10">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
+              {/* Source badge */}
+              <div className="mb-2">
+                {tour.source === 'hotelbeds' ? (
+                  <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
+                    Hotelbeds
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+                    Viator
+                  </span>
+                )}
+              </div>
+
               <h2 className="text-lg font-bold text-gray-900 leading-tight pr-8">
                 {tour.name || tour.title}
               </h2>
             </div>
-            
+
             <button
               onClick={onClose}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
