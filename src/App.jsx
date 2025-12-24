@@ -13,7 +13,7 @@ import Sidebar from './components/Sidebar';
 import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
 import WhereIsThis from './components/WhereIsThis';
-import { getCachedSearch, setCachedSearch, prewarmDestinations } from './utils/searchCache';
+import { cacheManager, prewarmDestinations } from './utils/cacheManager';
 
 // Lazy load larger components for code splitting
 const CheckoutPage = lazy(() => import('./components/CheckoutPage'));
