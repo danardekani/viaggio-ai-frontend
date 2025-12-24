@@ -97,10 +97,23 @@ const QuickViewModal = memo(function QuickViewModal({
           
           {/* HEADER: Title + Rating */}
           <div className="p-4 pb-3 pr-12">
+            {/* Source badge */}
+            <div className="mb-2">
+              {tour.source === 'hotelbeds' ? (
+                <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
+                  Hotelbeds
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+                  Viator
+                </span>
+              )}
+            </div>
+
             <h2 className="text-xl font-bold text-gray-900 leading-tight mb-2">
               {tour.name}
             </h2>
-            
+
             {/* Rating row */}
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {tour.rating && tour.rating !== 'New' && (
