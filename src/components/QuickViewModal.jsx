@@ -96,15 +96,9 @@ const QuickViewModal = memo(({
             <div className="flex-1 min-w-0">
               {/* Source badge */}
               <div className="mb-2">
-                {tour.source === 'hotelbeds' ? (
-                  <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
-                    Hotelbeds
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
-                    Viator
-                  </span>
-                )}
+                <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+                  Viator
+                </span>
               </div>
 
               <h2 className="text-lg font-bold text-gray-900 leading-tight pr-8">
