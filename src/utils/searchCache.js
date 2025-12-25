@@ -1,53 +1,72 @@
 // ============================================================================
-// SEARCH CACHE UTILITY
-// Provides localStorage caching with TTL and stale-while-revalidate pattern
+// SEARCH CACHE UTILITY - IndexedDB Version
+// Provides persistent caching with TTL and stale-while-revalidate pattern
 // ============================================================================
 
-const CACHE_KEY = 'viaggio_search_cache';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes - data is "fresh"
-const STALE_TTL = 30 * 60 * 1000; // 30 minutes - data is "stale but usable"
-const MAX_ENTRIES = 20;
+const DB_NAME = 'viaggio_cache';
+const DB_VERSION = 1;
+const STORE_NAME = 'searches';
+
+// Cache durations
+const CACHE_TTL = 15 * 60 * 1000;      // 15 minutes - data is "fresh"
+const STALE_TTL = 60 * 60 * 1000;      // 1 hour - data is "stale but usable"
+const EXPIRE_TTL = 24 * 60 * 60 * 1000; // 24 hours - delete
+
+// Memory cache for instant access (L1)
+const memoryCache = new Map();
+const MAX_MEMORY_ENTRIES = 50;
+
+// IndexedDB instance
+let db = null;
+let dbReady = null;
 
 // ============================================================================
-// CACHE HELPERS
+// INDEXEDDB INITIALIZATION
 // ============================================================================
 
-function getCache() {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    return cached ? JSON.parse(cached) : {};
-  } catch (e) {
-    console.warn('Cache read error:', e);
-    return {};
-  }
-}
+function initDB() {
+  if (dbReady) return dbReady;
 
-function setCache(cache) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch (e) {
-    console.warn('Cache write error:', e);
-    // If localStorage is full, clear old entries
-    if (e.name === 'QuotaExceededError') {
-      clearOldEntries(cache, 10);
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-      } catch (e2) {
-        console.warn('Cache write failed after cleanup:', e2);
-      }
+  dbReady = new Promise((resolve) => {
+    if (!window.indexedDB) {
+      console.warn('IndexedDB not available, using memory-only cache');
+      resolve(null);
+      return;
     }
-  }
+
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => {
+      console.error('IndexedDB error:', request.error);
+      resolve(null);
+    };
+
+    request.onsuccess = () => {
+      db = request.result;
+      console.log('📦 IndexedDB stores created');
+      console.log('📦 IndexedDB cache initialized');
+      resolve(db);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const database = event.target.result;
+      if (!database.objectStoreNames.contains(STORE_NAME)) {
+        const store = database.createObjectStore(STORE_NAME, { keyPath: 'cacheKey' });
+        store.createIndex('destination', 'destination', { unique: false });
+        store.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+    };
+  });
+
+  return dbReady;
 }
 
-function clearOldEntries(cache, keepCount) {
-  const entries = Object.entries(cache);
-  if (entries.length <= keepCount) return;
+// Initialize on load
+initDB();
 
-  // Sort by timestamp (oldest first) and remove oldest
-  entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-  const toRemove = entries.slice(0, entries.length - keepCount);
-  toRemove.forEach(([key]) => delete cache[key]);
-}
+// ============================================================================
+// CACHE KEY GENERATION
+// ============================================================================
 
 function generateCacheKey(destination, options = {}) {
   const parts = [
@@ -60,60 +79,166 @@ function generateCacheKey(destination, options = {}) {
 }
 
 // ============================================================================
-// PUBLIC API
+// MEMORY CACHE (L1 - Instant)
+// ============================================================================
+
+function getFromMemory(key) {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+
+  const age = Date.now() - entry.timestamp;
+  if (age >= EXPIRE_TTL) {
+    memoryCache.delete(key);
+    return null;
+  }
+
+  return {
+    data: entry.data,
+    isFresh: age < CACHE_TTL,
+    isStale: age >= CACHE_TTL && age < STALE_TTL,
+    age
+  };
+}
+
+function setInMemory(key, data, timestamp = Date.now()) {
+  // LRU eviction
+  if (memoryCache.size >= MAX_MEMORY_ENTRIES) {
+    const firstKey = memoryCache.keys().next().value;
+    memoryCache.delete(firstKey);
+  }
+  memoryCache.set(key, { data, timestamp });
+}
+
+// ============================================================================
+// INDEXEDDB CACHE (L2 - Persistent)
+// ============================================================================
+
+async function getFromIDB(key) {
+  await initDB();
+  if (!db) return null;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        const entry = request.result;
+        if (!entry) {
+          resolve(null);
+          return;
+        }
+
+        const age = Date.now() - entry.timestamp;
+        if (age >= EXPIRE_TTL) {
+          // Async cleanup
+          deleteFromIDB(key);
+          resolve(null);
+          return;
+        }
+
+        resolve({
+          data: entry.data,
+          isFresh: age < CACHE_TTL,
+          isStale: age >= CACHE_TTL && age < STALE_TTL,
+          age
+        });
+      };
+
+      request.onerror = () => resolve(null);
+    } catch (e) {
+      console.warn('IDB read error:', e);
+      resolve(null);
+    }
+  });
+}
+
+async function setInIDB(key, data, destination, options = {}) {
+  await initDB();
+  if (!db) return;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+
+      const entry = {
+        cacheKey: key,
+        data,
+        destination: destination?.toLowerCase().trim(),
+        options,
+        timestamp: Date.now()
+      };
+
+      const request = store.put(entry);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => {
+        console.warn('IDB write error:', request.error);
+        resolve(false);
+      };
+    } catch (e) {
+      console.warn('IDB transaction error:', e);
+      resolve(false);
+    }
+  });
+}
+
+async function deleteFromIDB(key) {
+  await initDB();
+  if (!db) return;
+
+  try {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(key);
+  } catch (e) {
+    console.warn('IDB delete error:', e);
+  }
+}
+
+// ============================================================================
+// PUBLIC API - Same interface as before
 // ============================================================================
 
 /**
  * Get cached search results
  * @returns {Object} { data, isFresh, isStale } or null if not cached
  */
-export function getCachedSearch(destination, options = {}) {
-  const cache = getCache();
+export async function getCachedSearch(destination, options = {}) {
   const key = generateCacheKey(destination, options);
-  const entry = cache[key];
 
-  if (!entry) return null;
-
-  const age = Date.now() - entry.timestamp;
-  const isFresh = age < CACHE_TTL;
-  const isStale = age >= CACHE_TTL && age < STALE_TTL;
-  const isExpired = age >= STALE_TTL;
-
-  if (isExpired) {
-    // Remove expired entry
-    delete cache[key];
-    setCache(cache);
-    return null;
+  // L1: Check memory first (instant)
+  const memoryResult = getFromMemory(key);
+  if (memoryResult) {
+    console.log(`⚡ Memory cache hit for "${destination}"`);
+    return memoryResult;
   }
 
-  return {
-    data: entry.data,
-    isFresh,
-    isStale,
-    age
-  };
+  // L2: Check IndexedDB
+  const idbResult = await getFromIDB(key);
+  if (idbResult) {
+    console.log(`💾 IndexedDB cache ${idbResult.isFresh ? 'hit' : 'stale'} for "${destination}"`);
+    // Promote to memory
+    setInMemory(key, idbResult.data, Date.now() - idbResult.age);
+    return idbResult;
+  }
+
+  console.log(`❌ Cache miss for "${destination}"`);
+  return null;
 }
 
 /**
  * Store search results in cache
  */
-export function setCachedSearch(destination, options = {}, data) {
-  const cache = getCache();
+export async function setCachedSearch(destination, options = {}, data) {
   const key = generateCacheKey(destination, options);
+  const timestamp = Date.now();
 
-  // Enforce max entries
-  if (Object.keys(cache).length >= MAX_ENTRIES) {
-    clearOldEntries(cache, MAX_ENTRIES - 1);
-  }
+  // Store in both layers
+  setInMemory(key, data, timestamp);
+  await setInIDB(key, data, destination, options);
 
-  cache[key] = {
-    data,
-    timestamp: Date.now(),
-    destination,
-    options
-  };
-
-  setCache(cache);
   console.log(`📦 Cached search for "${destination}" (${data.tours?.length || 0} tours)`);
 }
 
@@ -122,15 +247,19 @@ export function setCachedSearch(destination, options = {}, data) {
  */
 export async function prewarmDestination(backendUrl, destination, destinationId = null) {
   const key = generateCacheKey(destination, { destinationId });
-  const cache = getCache();
 
-  // Skip if already cached and not expired
-  if (cache[key]) {
-    const age = Date.now() - cache[key].timestamp;
-    if (age < STALE_TTL) {
-      console.log(`⏭️ Skip prewarm "${destination}" - already cached`);
-      return cache[key].data;
-    }
+  // Check memory first
+  const memoryResult = getFromMemory(key);
+  if (memoryResult && !memoryResult.isStale) {
+    console.log(`⏭️ Skip prewarm "${destination}" - already cached`);
+    return memoryResult.data;
+  }
+
+  // Check IDB
+  const idbResult = await getFromIDB(key);
+  if (idbResult && !idbResult.isStale) {
+    console.log(`⏭️ Skip prewarm "${destination}" - already in IndexedDB`);
+    return idbResult.data;
   }
 
   try {
@@ -142,15 +271,16 @@ export async function prewarmDestination(backendUrl, destination, destinationId 
       body: JSON.stringify({
         destination,
         destinationId,
-        resultCount: 20,
+        resultCount: 100,
         sortBy: 'popular'
+        // NO DATES - ensures we get results
       })
     });
 
     if (!response.ok) throw new Error('Prewarm fetch failed');
 
     const data = await response.json();
-    setCachedSearch(destination, { destinationId }, data);
+    await setCachedSearch(destination, { destinationId }, data);
 
     console.log(`✅ Pre-warmed "${destination}" (${data.tours?.length || 0} tours)`);
     return data;
@@ -161,54 +291,82 @@ export async function prewarmDestination(backendUrl, destination, destinationId 
 }
 
 /**
- * Pre-warm multiple destinations in parallel (with staggering to avoid overwhelming the server)
+ * Pre-warm multiple destinations in parallel (with staggering)
  */
 export async function prewarmDestinations(backendUrl, destinations) {
-  console.log(`🚀 Starting pre-warm for ${destinations.length} destinations...`);
+  console.log(`🔥 Pre-warming cache for ${destinations.length} destinations...`);
 
-  // Stagger requests by 200ms to avoid overwhelming the server
-  const results = [];
   for (let i = 0; i < destinations.length; i++) {
     const dest = destinations[i];
+    await prewarmDestination(backendUrl, dest.name, dest.destinationId);
 
-    // Start fetch (don't await yet)
-    const promise = prewarmDestination(backendUrl, dest.name, dest.destinationId);
-    results.push(promise);
-
-    // Small delay between requests (except for last one)
+    // Small delay between requests
     if (i < destinations.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
   }
 
-  // Wait for all to complete
-  await Promise.allSettled(results);
   console.log(`🏁 Pre-warm complete for ${destinations.length} destinations`);
 }
 
 /**
  * Clear all cached searches
  */
-export function clearSearchCache() {
-  localStorage.removeItem(CACHE_KEY);
+export async function clearSearchCache() {
+  memoryCache.clear();
+
+  await initDB();
+  if (db) {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.clear();
+    } catch (e) {
+      console.warn('Failed to clear IDB:', e);
+    }
+  }
+
   console.log('🗑️ Search cache cleared');
 }
 
 /**
  * Get cache stats for debugging
  */
-export function getCacheStats() {
-  const cache = getCache();
-  const entries = Object.entries(cache);
-  const now = Date.now();
+export async function getCacheStats() {
+  await initDB();
 
-  return {
-    totalEntries: entries.length,
-    freshEntries: entries.filter(([, v]) => now - v.timestamp < CACHE_TTL).length,
-    staleEntries: entries.filter(([, v]) => {
-      const age = now - v.timestamp;
-      return age >= CACHE_TTL && age < STALE_TTL;
-    }).length,
-    destinations: entries.map(([, v]) => v.destination)
+  const stats = {
+    memoryEntries: memoryCache.size,
+    idbAvailable: !!db,
+    idbEntries: 0
+  };
+
+  if (db) {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const countRequest = store.count();
+
+      await new Promise((resolve) => {
+        countRequest.onsuccess = () => {
+          stats.idbEntries = countRequest.result;
+          resolve();
+        };
+        countRequest.onerror = () => resolve();
+      });
+    } catch (e) {
+      console.warn('Failed to get IDB stats:', e);
+    }
+  }
+
+  return stats;
+}
+
+// Expose for debugging
+if (typeof window !== 'undefined') {
+  window.viaggioCache = {
+    stats: getCacheStats,
+    clear: clearSearchCache,
+    memory: memoryCache
   };
 }
