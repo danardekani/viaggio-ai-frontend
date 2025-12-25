@@ -633,7 +633,7 @@ export default function App() {
       sortBy: searchParams.sortBy,
       searchTerms: searchParams.searchTerms
     };
-    const cached = getCachedSearch(searchParams.destination, cacheOptions);
+    const cached = await getCachedSearch(searchParams.destination, cacheOptions);
 
     if (cached) {
       // Show cached results immediately
