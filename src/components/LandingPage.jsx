@@ -115,9 +115,9 @@ export default function LandingPage({
   onOpenChat,
   onOpenTripBuilder,
   onOpenProductPage={(tour) => {
-  setSelectedProductTour(tour);
-  setShowProductPage(true);
-  setShowLandingPage(false);
+    setSelectedProductTour(tour);
+    setShowProductPage(true);
+    setShowLandingPage(false);
 }}
   cart = { tours: [], hotels: [], flights: [] },
   removeFromCart,
