@@ -775,17 +775,18 @@ export default function LandingPage({
               <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
             </div>
 
-            {/* Top Destinations Dropdown */}
+            {/* Top Destinations Dropdown - Click to open/close */}
             <div 
               ref={destinationsMenuRef}
               className="relative hidden sm:block"
             >
               <button
-                onMouseEnter={() => {
-                  if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
-                  setShowDestinationsMenu(true);
+                onClick={() => {
+                  setShowDestinationsMenu(!showDestinationsMenu);
+                  if (!showDestinationsMenu) {
+                    setActiveRegion('North America'); // Default to first region
+                  }
                 }}
-                onClick={() => setShowDestinationsMenu(!showDestinationsMenu)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
               >
                 Top Destinations
@@ -794,18 +795,7 @@ export default function LandingPage({
 
               {/* Mega Menu Dropdown */}
               {showDestinationsMenu && (
-                <div 
-                  className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in"
-                  onMouseEnter={() => {
-                    if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
-                  }}
-                  onMouseLeave={() => {
-                    menuTimeoutRef.current = setTimeout(() => {
-                      setShowDestinationsMenu(false);
-                      setActiveRegion(null);
-                    }, 300);
-                  }}
-                >
+                <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in">
                   {/* Regions List */}
                   <div className="w-60 bg-white border-r border-gray-100">
                     <div className="px-5 py-4 border-b border-gray-100">
@@ -818,12 +808,11 @@ export default function LandingPage({
                       {REGION_LIST.map((region) => (
                         <button
                           key={region}
-                          onMouseEnter={() => handleRegionHover(region)}
-                          onClick={() => handleRegionHover(region)}
+                          onMouseEnter={() => setActiveRegion(region)}
                           className={`w-full px-5 py-3 text-left text-[15px] transition-colors flex items-center justify-between ${
                             activeRegion === region
                               ? 'text-blue-600 font-bold bg-blue-50/50'
-                              : 'text-gray-700 hover:text-gray-900 font-semibold'
+                              : 'text-gray-700 hover:text-gray-900 font-semibold hover:bg-gray-50'
                           }`}
                         >
                           <span>{region}</span>
@@ -834,7 +823,7 @@ export default function LandingPage({
 
                   {/* Cities Grid Panel with Images */}
                   {activeRegion && (
-                    <div className="w-[580px] p-5 bg-gray-50/50 animate-fade-in">
+                    <div className="w-[580px] p-5 bg-gray-50/50">
                       <div className="grid grid-cols-3 gap-x-4 gap-y-3">
                         {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
                           <button
