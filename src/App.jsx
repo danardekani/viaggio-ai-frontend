@@ -814,6 +814,11 @@ export default function App() {
           onSearchDeals={handleLandingPageDeals}
           onOpenWhereIsThis={handleOpenWhereIsThis}
           onOpenTripBuilder={handleOpenTripBuilder}
+          onOpenProductPage={(tour) => {
+            setSelectedProductTour(tour);
+            setShowProductPage(true);
+            setShowLandingPage(false);
+          }}
           cart={cart}
           removeFromCart={removeFromCart}
           formatCurrency={formatCurrency}
