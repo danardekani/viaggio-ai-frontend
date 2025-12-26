@@ -857,8 +857,9 @@ export default function App() {
           searchParams={currentSearchParams}
           cart={cart}                              
           removeFromCart={removeFromCart}          
-          onOpenProductPage={(tour) => {
+          onOpenProductPage={(tour) => {           
             setSelectedProductTour(tour);
+          }}
         />
       </Suspense>
     );
