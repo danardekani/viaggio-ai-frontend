@@ -81,6 +81,12 @@ const FEATURED_DESTINATIONS = [
     deal: 'Temples & street food', 
     image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=400&q=80'
   },
+  { 
+    name: 'Santorini', 
+    country: 'Greece', 
+    deal: 'Stunning Island Views', 
+    image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=400&q=80'
+  },
 ];
 
 // ============================================================================
