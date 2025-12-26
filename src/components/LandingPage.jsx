@@ -114,11 +114,6 @@ export default function LandingPage({
   onOpenWhereIsThis,
   onOpenChat,
   onOpenTripBuilder,
-  onOpenProductPage = {(tour) => {
-    setSelectedProductTour(tour);
-    setShowProductPage(true);
-    setShowLandingPage(false);
-}},
   cart = { tours: [], hotels: [], flights: [] },
   removeFromCart,
   formatCurrency = (amount) => `$${(amount || 0).toFixed(2)}`,
