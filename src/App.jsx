@@ -120,7 +120,8 @@ export default function App() {
       { name: 'New York', destinationId: null },
       { name: 'London', destinationID: null },
       { name: 'Lisbon', destinationID: null },
-      { name: 'Bangkok', destinationID: null }
+      { name: 'Bangkok', destinationID: null },
+      { name: 'Santorini', destinationID: null }
     ];
 
     // Start pre-warm after a brief delay to let critical resources load first
