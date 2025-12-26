@@ -638,7 +638,7 @@ export default function ResultsPage({
       {/* ================================================================== */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center justify-between gap-3">
             {/* Logo / Back */}
             <button
               onClick={onBackToHome}
@@ -649,8 +649,8 @@ export default function ResultsPage({
               <span className="font-semibold hidden md:inline">Viaggio</span>
             </button>
 
-            {/* Search Form */}
-            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 max-w-xl">
+            {/* Search Form - Centered */}
+            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 max-w-xl mx-auto">
               <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 ref={searchInputRef}
@@ -682,7 +682,7 @@ export default function ResultsPage({
               </button>
             </form>
 
-            {/* Cart Button */}
+            {/* Cart Button - Right aligned */}
             <button
               onClick={() => setCartSidebarOpen(!cartSidebarOpen)}
               className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors flex-shrink-0"
@@ -738,10 +738,10 @@ export default function ResultsPage({
         {/* ============================================================== */}
         {/* LEFT SIDEBAR - FILTERS */}
         {/* ============================================================== */}
-        <aside className={`hidden lg:block w-72 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0 transition-all duration-300 ${
+        <aside className={`hidden lg:flex flex-col w-72 bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 ${
           filterSidebarOpen ? '' : 'lg:w-0 lg:overflow-hidden'
         }`}>
-          <div className="p-5">
+          <div className="flex-1 overflow-y-auto p-5">
             {/* Filter Header */}
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -783,7 +783,7 @@ export default function ResultsPage({
             {/* Rating Filter */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Minimum rating</h3>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {[3, 3.5, 4, 4.5].map((rating) => (
                   <button
                     key={rating}
