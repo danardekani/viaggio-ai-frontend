@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Eye, Ticket } from 'lucide-react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,22 +26,23 @@ import {
   Loader2,
   Home,
   Building,
-  Plane
+  Plane,
+  ShoppingBag,
+  Eye,
+  Ticket
 } from 'lucide-react';
 
 // ============================================================================
 // BREADCRUMB COMPONENT
 // ============================================================================
 const Breadcrumb = ({ destination, onNavigate }) => {
-  // Parse destination into hierarchy (simplified - would use API data in production)
   const parts = useMemo(() => {
     const result = [{ label: 'Home', path: 'home' }];
     if (destination) {
-      // Add destination parts
       const destParts = destination.split(',').map(p => p.trim());
       if (destParts.length >= 2) {
-        result.push({ label: destParts[1], path: 'country' }); // Country
-        result.push({ label: destParts[0], path: 'city' }); // City
+        result.push({ label: destParts[1], path: 'country' });
+        result.push({ label: destParts[0], path: 'city' });
       } else {
         result.push({ label: destination, path: 'destination' });
       }
@@ -74,18 +74,16 @@ const Breadcrumb = ({ destination, onNavigate }) => {
 // RATING BREAKDOWN COMPONENT
 // ============================================================================
 const RatingBreakdown = ({ reviews, totalReviews, averageRating }) => {
-  // Calculate distribution (mock if not provided)
   const distribution = useMemo(() => {
     if (reviews?.distribution) return reviews.distribution;
-    // Generate realistic distribution based on average
     const avg = averageRating || 4.5;
     const total = totalReviews || 100;
     return {
       5: Math.round(total * (avg > 4.5 ? 0.65 : avg > 4 ? 0.5 : 0.35)),
-      4: Math.round(total * (avg > 4 ? 0.25 : 0.3)),
-      3: Math.round(total * 0.07),
-      2: Math.round(total * 0.02),
-      1: Math.round(total * 0.01)
+      4: Math.round(total * (avg > 4 ? 0.2 : 0.25)),
+      3: Math.round(total * 0.08),
+      2: Math.round(total * 0.04),
+      1: Math.round(total * 0.03)
     };
   }, [reviews, totalReviews, averageRating]);
 
@@ -93,18 +91,16 @@ const RatingBreakdown = ({ reviews, totalReviews, averageRating }) => {
 
   return (
     <div className="space-y-2">
-      {[5, 4, 3, 2, 1].map(stars => (
-        <div key={stars} className="flex items-center gap-3">
-          <span className="text-sm text-gray-600 w-12">{stars} stars</span>
+      {[5, 4, 3, 2, 1].map(rating => (
+        <div key={rating} className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 w-12">{rating} star</span>
           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-emerald-500 rounded-full"
-              style={{ width: `${(distribution[stars] / maxCount) * 100}%` }}
+              className="h-full bg-yellow-400 rounded-full transition-all"
+              style={{ width: `${(distribution[rating] / maxCount) * 100}%` }}
             />
           </div>
-          <span className="text-sm text-gray-500 w-12 text-right">
-            {distribution[stars]?.toLocaleString() || 0}
-          </span>
+          <span className="text-sm text-gray-500 w-10 text-right">{distribution[rating]}</span>
         </div>
       ))}
     </div>
@@ -118,34 +114,25 @@ const ReviewCard = ({ review }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border-b border-gray-100 py-4 last:border-0">
+    <div className="border-b border-gray-100 pb-4 last:border-0">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-          <span className="text-gray-600 font-medium">
-            {review.author?.charAt(0)?.toUpperCase() || 'A'}
-          </span>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+          {review.author?.[0]?.toUpperCase() || 'A'}
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-gray-900">{review.author || 'Anonymous'}</span>
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map(star => (
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
                 <Star
-                  key={star}
-                  className={`w-3.5 h-3.5 ${
-                    star <= (review.rating || 5)
-                      ? 'text-emerald-500 fill-emerald-500'
-                      : 'text-gray-300'
-                  }`}
+                  key={i}
+                  className={`w-3.5 h-3.5 ${i < (review.rating || 5) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                 />
               ))}
             </div>
           </div>
-          {review.title && (
-            <h4 className="font-medium text-gray-900 mb-1">{review.title}</h4>
-          )}
-          <p className="text-gray-600 text-sm">
-            {expanded || (review.text?.length || 0) <= 200
+          <p className="text-gray-600 text-sm mt-1">
+            {expanded || !review.text || review.text.length <= 200
               ? review.text
               : review.text?.substring(0, 200) + '...'}
           </p>
@@ -177,7 +164,10 @@ export default function ProductDisplayPage({
   formatCurrency,
   travelers = 2,
   backendUrl,
-  searchParams
+  searchParams,
+  cart = { tours: [], hotels: [], flights: [] },
+  removeFromCart,
+  onOpenProductPage
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedStartDate, setSelectedStartDate] = useState('');
@@ -197,6 +187,7 @@ export default function ProductDisplayPage({
   const [showPayLaterInfo, setShowPayLaterInfo] = useState(false);
   const [showCancellationDetails, setShowCancellationDetails] = useState(false);
   const [visibleReviewCount, setVisibleReviewCount] = useState(10);
+  const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
 
   // Fetch full tour details on mount
   useEffect(() => {
@@ -212,10 +203,8 @@ export default function ProductDisplayPage({
           const data = await response.json();
           const fetchedData = data.tour || data;
 
-          // Merge fetched data but preserve original price if API doesn't return one
           setFullTourData(prev => {
             const merged = { ...prev, ...fetchedData };
-            // Preserve price from original tour if fetched data doesn't have a valid price
             if (!merged.price && !merged.fromPrice && !merged.retailPrice && prev?.price) {
               merged.price = prev.price;
             }
@@ -232,400 +221,218 @@ export default function ProductDisplayPage({
     fetchFullDetails();
   }, [tour?.productCode, tour?.id, backendUrl]);
 
-  // Helper to get optimized image URL (Viator images support different sizes)
+  // Helper to get optimized image URL
   const getOptimizedImageUrl = useCallback((imageUrl, size = 'large') => {
     if (!imageUrl || typeof imageUrl !== 'string') return imageUrl;
-
-    // Viator images often have size parameters in URL
-    // Common patterns: /photos/, /thumbnail/, etc.
-    // Replace with appropriate size
-    const sizeMap = {
-      thumb: { width: 200, height: 150 },
-      small: { width: 400, height: 300 },
-      medium: { width: 800, height: 600 },
-      large: { width: 1200, height: 900 }
-    };
-
-    // If URL already has width/height params, try to update them
-    if (imageUrl.includes('width=') || imageUrl.includes('w=')) {
-      return imageUrl
-        .replace(/width=\d+/g, `width=${sizeMap[size].width}`)
-        .replace(/height=\d+/g, `height=${sizeMap[size].height}`)
-        .replace(/w=\d+/g, `w=${sizeMap[size].width}`)
-        .replace(/h=\d+/g, `h=${sizeMap[size].height}`);
-    }
-
-    // Viator CDN pattern - append size if not present
-    if (imageUrl.includes('media.viator.com') && !imageUrl.includes('?')) {
-      return `${imageUrl}?w=${sizeMap[size].width}&h=${sizeMap[size].height}&fit=crop`;
-    }
-
     return imageUrl;
   }, []);
 
-  // Memoize images with optimized URLs
+  // Get images array
   const images = useMemo(() => {
-    if (!fullTourData) return [];
-    if (fullTourData.images?.length > 0) {
-      return fullTourData.images.map(img => {
-        const url = typeof img === 'string' ? img : img.url || img;
-        return getOptimizedImageUrl(url, 'large');
-      });
+    const rawImages = fullTourData?.images || [];
+    if (rawImages.length > 0) {
+      return rawImages.map(img => {
+        if (typeof img === 'string') return getOptimizedImageUrl(img);
+        return getOptimizedImageUrl(img.url || img.src || img);
+      }).filter(Boolean);
     }
-    if (fullTourData.image) return [getOptimizedImageUrl(fullTourData.image, 'large')];
+    if (fullTourData?.image) return [getOptimizedImageUrl(fullTourData.image)];
     return [];
   }, [fullTourData, getOptimizedImageUrl]);
 
-  // Thumbnail images (smaller size for strip)
-  const thumbnailImages = useMemo(() => {
-    if (!fullTourData) return [];
-    if (fullTourData.images?.length > 0) {
-      return fullTourData.images.map(img => {
-        const url = typeof img === 'string' ? img : img.url || img;
-        return getOptimizedImageUrl(url, 'thumb');
-      });
-    }
-    if (fullTourData.image) return [getOptimizedImageUrl(fullTourData.image, 'thumb')];
-    return [];
-  }, [fullTourData, getOptimizedImageUrl]);
-
-  // Memoize tour flags
-  const tourFlags = useMemo(() => fullTourData?.flags || [], [fullTourData?.flags]);
-
-  // Detect if tour is multi-day
-  const isMultiDay = useMemo(() => {
-    // Check duration string for multi-day indicators
-    const duration = fullTourData?.duration?.toLowerCase() || '';
-    if (duration.includes('day') && !duration.includes('1 day') && !duration.includes('full day') && !duration.includes('half day')) {
-      const dayMatch = duration.match(/(\d+)\s*day/);
-      if (dayMatch && parseInt(dayMatch[1]) > 1) return true;
-    }
-    // Check tags for multi-day tag (11922)
-    const tourTagIds = fullTourData?.tags || [];
-    if (tourTagIds.includes(11922) || tourTagIds.includes('11922')) return true;
-    // Check name/title
-    const name = fullTourData?.name?.toLowerCase() || '';
-    if (name.includes('multi-day') || name.includes('multiday') || name.match(/\d+\s*day/)) return true;
-    return false;
+  // Tour flags
+  const tourFlags = useMemo(() => {
+    return fullTourData?.flags || [];
   }, [fullTourData]);
 
-  // Get number of days for multi-day tours
-  const tourDays = useMemo(() => {
-    if (!isMultiDay) return 1;
-    const duration = fullTourData?.duration?.toLowerCase() || '';
-    const dayMatch = duration.match(/(\d+)\s*day/);
-    if (dayMatch) return parseInt(dayMatch[1]);
-    // Check name
-    const name = fullTourData?.name?.toLowerCase() || '';
-    const nameMatch = name.match(/(\d+)\s*day/);
-    if (nameMatch) return parseInt(nameMatch[1]);
-    return 2; // Default to 2 days for multi-day
-  }, [fullTourData, isMultiDay]);
-
-  // Pricing calculations - check multiple possible price fields
-  const { isPerGroup, displayPrice, hasDiscount, totalPrice, originalPrice } = useMemo(() => {
-    const perGroup = fullTourData?.pricingType === 'group' || tour?.pricingType === 'group';
-    // Check multiple possible price field names from Viator API
-    // Also fall back to original tour prop if fullTourData doesn't have price
-    const price = fullTourData?.price
-      || fullTourData?.fromPrice
-      || fullTourData?.retailPrice
-      || fullTourData?.pricing?.amount
-      || fullTourData?.pricing?.retail
-      || fullTourData?.pricing?.fromPrice
-      || fullTourData?.priceFrom
-      || tour?.price  // Fallback to original tour prop
-      || tour?.fromPrice
-      || tour?.retailPrice
-      || 0;
-
-    const origPrice = fullTourData?.originalPrice
-      || fullTourData?.pricing?.original
-      || fullTourData?.strikethrough
-      || tour?.originalPrice  // Fallback to original tour prop
-      || null;
-
-    return {
-      isPerGroup: perGroup,
-      displayPrice: price,
-      originalPrice: origPrice,
-      hasDiscount: fullTourData?.hasDiscount || tour?.hasDiscount || tourFlags.includes('SPECIAL_OFFER') || (origPrice && origPrice > price),
-      totalPrice: perGroup ? price : price * selectedTravelers
-    };
-  }, [fullTourData, tour, tourFlags, selectedTravelers]);
-
-  // Navigation handlers
-  const prevImage = useCallback(() => {
-    setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1);
-  }, [images.length]);
-
-  const nextImage = useCallback(() => {
-    setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1);
-  }, [images.length]);
+  // Pricing logic
+  const isPerGroup = fullTourData?.pricingType === 'group' || 
+    fullTourData?.pricingUnit === 'per group';
+  
+  const displayPrice = fullTourData?.price || fullTourData?.fromPrice || 0;
+  const totalPrice = isPerGroup ? displayPrice : displayPrice * selectedTravelers;
+  const hasDiscount = fullTourData?.hasDiscount || 
+    (fullTourData?.originalPrice && fullTourData.originalPrice > displayPrice);
 
   // Toggle section
   const toggleSection = useCallback((section) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   }, []);
 
-  // Handle breadcrumb navigation
-  const handleBreadcrumbNavigate = useCallback((path) => {
-    if (path === 'home' || path === 'tours') {
-      onBack?.();
-    }
-  }, [onBack]);
+  // Cart item count
+  const cartItemCount = useMemo(() => {
+    return (cart?.tours?.length || 0) + (cart?.hotels?.length || 0);
+  }, [cart]);
 
-  // Generate cancellation policy details
-  const cancellationPolicyDetails = useMemo(() => {
-    const policyCode = fullTourData?.cancellationPolicy
-      || fullTourData?.cancellation?.type
-      || fullTourData?.cancellationType
-      || '';
+  // Cart total
+  const cartTotal = useMemo(() => {
+    let total = 0;
+    cart?.tours?.forEach(t => {
+      const price = t.price || 0;
+      total += t.pricingType === 'group' ? price : price * selectedTravelers;
+    });
+    cart?.hotels?.forEach(hotel => {
+      total += hotel.price || 0;
+    });
+    return total;
+  }, [cart, selectedTravelers]);
 
-    // Map policy codes to detailed descriptions
-    const policyMap = {
-      'STANDARD': {
-        title: 'Standard Cancellation Policy',
-        description: 'For a full refund, cancel at least 24 hours before the scheduled departure time.',
-        details: [
-          'Full refund if canceled 24+ hours in advance',
-          'No refund if canceled within 24 hours of the experience',
-          'Changes are not accepted less than 24 hours before the experience'
-        ],
-        isFree: true
-      },
-      'MODERATE': {
-        title: 'Moderate Cancellation Policy',
-        description: 'For a full refund, cancel at least 4 days before the scheduled departure time.',
-        details: [
-          'Full refund if canceled 4+ days in advance',
-          '50% refund if canceled 2-4 days in advance',
-          'No refund if canceled within 48 hours of the experience'
-        ],
-        isFree: false
-      },
-      'STRICT': {
-        title: 'Strict Cancellation Policy',
-        description: 'For a full refund, cancel at least 7 days before the scheduled departure time.',
-        details: [
-          'Full refund if canceled 7+ days in advance',
-          '50% refund if canceled 3-7 days in advance',
-          'No refund if canceled within 72 hours of the experience'
-        ],
-        isFree: false
-      },
-      'CUSTOM': {
-        title: 'Custom Cancellation Policy',
-        description: fullTourData?.cancellationDetails || 'This experience has specific cancellation terms. Please review before booking.',
-        details: fullTourData?.cancellationTerms || [
-          'Cancellation terms vary for this experience',
-          'Please check the booking confirmation for specific details',
-          'Contact support if you have questions about cancellation'
-        ],
-        isFree: false
+  // Reviews
+  const reviews = useMemo(() => {
+    return fullTourData?.reviews || [];
+  }, [fullTourData]);
+
+  // Itinerary items
+  const itineraryItems = useMemo(() => {
+    const raw = fullTourData?.itinerary || fullTourData?.itineraryItems || [];
+    if (!raw.length) return [];
+    
+    return raw.map((item, idx) => {
+      if (typeof item === 'string') {
+        return { title: `Stop ${idx + 1}`, description: item };
       }
-    };
-
-    // Determine which policy to use
-    if (tourFlags.includes('FREE_CANCELLATION')) {
       return {
-        title: 'Free Cancellation',
-        description: 'For a full refund, cancel at least 24 hours before the scheduled departure time.',
-        details: [
-          'Full refund if canceled 24+ hours in advance',
-          'No refund if canceled within 24 hours of the experience',
-          'Cut-off times are based on the experience\'s local time'
-        ],
-        isFree: true
+        title: item.title || item.name || item.stopName || `Stop ${idx + 1}`,
+        description: item.description || item.details || item.text || '',
+        duration: item.duration,
+        admissionIncluded: item.admissionIncluded
       };
-    }
+    });
+  }, [fullTourData]);
 
-    const upperPolicy = policyCode.toUpperCase();
-    if (policyMap[upperPolicy]) {
-      return policyMap[upperPolicy];
-    }
+  // What's included/excluded
+  const inclusions = useMemo(() => {
+    return fullTourData?.inclusions || fullTourData?.included || [];
+  }, [fullTourData]);
 
-    // If we have a custom string policy
-    if (typeof policyCode === 'string' && policyCode.length > 10) {
-      return {
-        title: 'Cancellation Policy',
-        description: policyCode,
-        details: [],
-        isFree: policyCode.toLowerCase().includes('free') || policyCode.toLowerCase().includes('24 hour')
-      };
-    }
-
-    // Default policy
-    return {
-      title: 'Cancellation Policy',
-      description: 'Cancellation terms apply. Please check booking details for specific terms.',
-      details: [
-        'Cancellation policies vary by experience',
-        'Review the booking confirmation for exact terms',
-        'Contact support for cancellation assistance'
-      ],
-      isFree: false
-    };
-  }, [fullTourData, tourFlags]);
-
-  if (!fullTourData) return null;
+  const exclusions = useMemo(() => {
+    return fullTourData?.exclusions || fullTourData?.excluded || [];
+  }, [fullTourData]);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ================================================================== */}
       {/* HEADER */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back to results</span>
-            </button>
-
+      {/* ================================================================== */}
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-                <Share2 className="w-5 h-5" />
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span className="hidden sm:inline font-medium">Back</span>
               </button>
-              <button className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-full">
-                <Heart className="w-5 h-5" />
-              </button>
+              <div className="hidden sm:flex items-center gap-2">
+                <Plane className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-gray-900">Viaggio</span>
+              </div>
             </div>
-          </div>
 
-          {/* Breadcrumb */}
-          <Breadcrumb
-            destination={searchParams?.destination}
-            onNavigate={handleBreadcrumbNavigate}
-          />
+            {/* Cart Button */}
+            <button
+              onClick={() => setCartSidebarOpen(true)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+            >
+              <ShoppingBag className="w-5 h-5 text-gray-600" />
+              <span className="hidden sm:inline text-sm font-medium text-gray-700">My Trip</span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
+      {/* ================================================================== */}
+      {/* MAIN CONTENT */}
+      {/* ================================================================== */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Breadcrumb */}
+        <Breadcrumb
+          destination={searchParams?.destination || fullTourData?.destination}
+          onNavigate={(path) => path === 'home' && onBack?.()}
+        />
+
+        <div className="grid lg:grid-cols-3 gap-8 mt-4">
+          {/* ============================================================ */}
           {/* LEFT COLUMN - Main Content */}
+          {/* ============================================================ */}
           <div className="lg:col-span-2 space-y-6">
-
-            {/* TITLE & RATING */}
-            <div>
-              {/* Source badge */}
-              <div className="mb-2">
-                <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
-                  Viator
-                </span>
-              </div>
-
-              {/* Reserve Now & Pay Later badge - clickable for more info */}
-              {tourFlags.includes('FREE_CANCELLATION') && (
-                <button
-                  onClick={() => setShowPayLaterInfo(true)}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded mb-3 hover:bg-red-700 transition-colors"
-                >
-                  Reserve Now & Pay Later
-                  <Info className="w-3 h-3" />
-                </button>
-              )}
-
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
-                {fullTourData.name}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                {fullTourData.rating && fullTourData.rating !== 'New' && (
-                  <div className="flex items-center gap-1">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star
-                          key={star}
-                          className={`w-4 h-4 ${
-                            star <= Math.floor(fullTourData.rating)
-                              ? 'text-emerald-500 fill-emerald-500'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="font-semibold text-gray-900 ml-1">
-                      {fullTourData.rating}
-                    </span>
-                    <span className="text-gray-500">
-                      ({fullTourData.reviewCount?.toLocaleString() || 0} reviews)
-                    </span>
-                  </div>
-                )}
-
-                {fullTourData.location && (
-                  <div className="flex items-center gap-1 text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{fullTourData.location}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* IMAGE GALLERY */}
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-              {/* Main Image - using object-contain for better quality */}
-              <div className="relative bg-gray-900 flex items-center justify-center" style={{ minHeight: '400px', maxHeight: '500px' }}>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {/* Main Image */}
+              <div className="relative aspect-[16/9] bg-gray-100">
                 {images.length > 0 ? (
                   <img
                     src={images[currentImageIndex]}
-                    alt={fullTourData.name}
-                    className="max-w-full max-h-[500px] w-auto h-auto object-contain"
-                    loading="eager"
+                    alt={fullTourData?.name}
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100" style={{ height: '400px' }}>
-                    <MapPin className="w-16 h-16 text-blue-300" />
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Camera className="w-12 h-12 text-gray-300" />
                   </div>
                 )}
 
-                {/* Navigation arrows */}
+                {/* Navigation Arrows */}
                 {images.length > 1 && (
                   <>
                     <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg"
+                      onClick={() => setCurrentImageIndex(i => i === 0 ? images.length - 1 : i - 1)}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                     >
-                      <ChevronLeft className="w-6 h-6" />
+                      <ChevronLeft className="w-6 h-6 text-gray-700" />
                     </button>
                     <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg"
+                      onClick={() => setCurrentImageIndex(i => i === images.length - 1 ? 0 : i + 1)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                     >
-                      <ChevronRight className="w-6 h-6" />
+                      <ChevronRight className="w-6 h-6 text-gray-700" />
                     </button>
                   </>
                 )}
 
-                {/* Image counter */}
-                {images.length > 1 && (
-                  <div className="absolute bottom-4 left-4 px-3 py-1 bg-black/60 text-white text-sm rounded-full">
-                    {currentImageIndex + 1} / {images.length}
-                  </div>
-                )}
-
-                {/* See all photos button */}
+                {/* View All Photos Button */}
                 {images.length > 1 && (
                   <button
                     onClick={() => setShowAllPhotos(true)}
-                    className="absolute bottom-4 right-4 px-4 py-2 bg-white text-gray-900 text-sm font-medium rounded-lg shadow-lg hover:bg-gray-50 flex items-center gap-2"
+                    className="absolute bottom-4 right-4 px-3 py-2 bg-white/90 rounded-lg text-sm font-medium text-gray-700 hover:bg-white transition-colors flex items-center gap-2"
                   >
                     <Camera className="w-4 h-4" />
-                    See all {images.length} photos
+                    {images.length} photos
                   </button>
                 )}
+
+                {/* Source Badge */}
+                <div className="absolute top-4 left-4">
+                  {fullTourData?.source === 'hotelbeds' ? (
+                    <span className="px-3 py-1 bg-[#FF6B00] text-white text-sm font-medium rounded-full">
+                      Hotelbeds
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-[#16A34A] text-white text-sm font-medium rounded-full">
+                      Viator
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* Thumbnail strip - using smaller optimized images */}
-              {thumbnailImages.length > 1 && (
-                <div className="flex gap-2 p-3 overflow-x-auto bg-gray-50">
-                  {thumbnailImages.slice(0, 8).map((img, idx) => (
+              {/* Thumbnail Strip */}
+              {images.length > 1 && (
+                <div className="flex gap-2 p-4 overflow-x-auto">
+                  {images.slice(0, 8).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden transition-all ${
+                      className={`w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 transition-all ${
                         idx === currentImageIndex
                           ? 'ring-2 ring-blue-500'
                           : 'opacity-70 hover:opacity-100'
@@ -643,10 +450,65 @@ export default function ProductDisplayPage({
               )}
             </div>
 
+            {/* TITLE & RATING */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                {fullTourData?.name}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                {fullTourData?.rating && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    <span className="font-semibold">{fullTourData.rating.toFixed(1)}</span>
+                    {fullTourData.reviewCount && (
+                      <span className="text-gray-500">
+                        ({fullTourData.reviewCount.toLocaleString()} reviews)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {fullTourData?.duration && (
+                  <div className="flex items-center gap-1 text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>{fullTourData.duration}</span>
+                  </div>
+                )}
+
+                {fullTourData?.destination && (
+                  <div className="flex items-center gap-1 text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{fullTourData.destination}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Feature Badges */}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {tourFlags.includes('FREE_CANCELLATION') && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full">
+                    <Check className="w-4 h-4" />
+                    Free cancellation
+                  </span>
+                )}
+                {tourFlags.includes('SKIP_THE_LINE') && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+                    ⚡ Skip the line
+                  </span>
+                )}
+                {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm rounded-full">
+                    🔥 Likely to sell out
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* KEY INFO BAR */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex flex-wrap gap-6">
-                {fullTourData.duration && (
+                {fullTourData?.duration && (
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-gray-400" />
                     <div>
@@ -664,7 +526,7 @@ export default function ProductDisplayPage({
                   </div>
                 </div>
 
-                {fullTourData.languages?.length > 0 && (
+                {fullTourData?.languages?.length > 0 && (
                   <div className="flex items-center gap-2">
                     <Globe className="w-5 h-5 text-gray-400" />
                     <div>
@@ -704,644 +566,205 @@ export default function ProductDisplayPage({
               </button>
 
               {expandedSections.overview && (
-                <div className="p-6 space-y-4">
-                  {fullTourData.description && (
-                    <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                      {fullTourData.description}
-                    </p>
-                  )}
-
-                  {/* Highlights */}
-                  {fullTourData.highlights?.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="font-semibold text-gray-900 mb-3">Highlights</h3>
-                      <ul className="space-y-2">
-                        {fullTourData.highlights.map((highlight, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-gray-600">
-                            <Check className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                            <span>{highlight}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                <div className="px-6 py-4">
+                  <p className="text-gray-600 whitespace-pre-line">
+                    {fullTourData?.description || fullTourData?.shortDescription || 'No description available.'}
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* WHAT'S INCLUDED SECTION */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <button
-                onClick={() => toggleSection('included')}
-                className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
-              >
-                <h2 className="text-lg font-semibold text-gray-900">What's Included</h2>
-                {expandedSections.included ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
+            {/* WHAT'S INCLUDED */}
+            {(inclusions.length > 0 || exclusions.length > 0) && (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <button
+                  onClick={() => toggleSection('included')}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
+                >
+                  <h2 className="text-lg font-semibold text-gray-900">What's Included</h2>
+                  {expandedSections.included ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
 
-              {expandedSections.included && (
-                <div className="p-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Inclusions */}
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                        <Check className="w-5 h-5 text-emerald-500" />
-                        Included
-                      </h3>
-                      <ul className="space-y-2">
-                        {(fullTourData.inclusions || [
-                          'Professional guide',
-                          'All entrance fees',
-                          'Mobile ticket'
-                        ]).map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
-                            <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Exclusions */}
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                        <X className="w-5 h-5 text-red-500" />
-                        Not Included
-                      </h3>
-                      <ul className="space-y-2">
-                        {(fullTourData.exclusions || [
-                          'Food and drinks',
-                          'Gratuities',
-                          'Hotel pickup and drop-off'
-                        ]).map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
-                            <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ITINERARY SECTION */}
-              {(fullTourData.itinerary?.length > 0 || fullTourData.pointsOfInterest?.length > 0) && (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                  <button
-                    onClick={() => toggleSection('itinerary')}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900">What to Expect</h2>
-                    {expandedSections.itinerary ? (
-                      <ChevronUp className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    )}
-                  </button>
-              
-                  {expandedSections.itinerary && (
-                    <div className="p-6">
-                      {/* Render itinerary items */}
-                      {fullTourData.itinerary?.length > 0 ? (
-                        <div className="space-y-1">
-                          {fullTourData.itinerary.map((stop, idx) => {
-                            // The backend now provides properly resolved names
-                            const locationName = stop.name || `Stop ${idx + 1}`;
-                            const description = stop.description || '';
-                            const duration = stop.duration;
-                            const isPassBy = stop.passByWithoutStopping || stop.isPassBy;
-                            const admissionIncluded = stop.admissionIncluded;
-                            const address = stop.address;
-                            const isUnstructured = stop.isUnstructured;
-                            const dayNumber = stop.dayNumber;
-                            const routeName = stop.routeName;
-                            const isStop = stop.isStop;
-                            const isPOI = stop.isPOI;
-              
-                            // Handle unstructured itinerary (free-form text)
-                            if (isUnstructured) {
-                              return (
-                                <div key={idx} className="bg-gray-50 rounded-lg p-4">
-                                  <p className="text-gray-700 whitespace-pre-line">{description}</p>
-                                </div>
-                              );
-                            }
-              
-                            return (
-                              <div key={idx} className="flex gap-4 pb-6 last:pb-0">
-                                {/* Timeline indicator */}
-                                <div className="flex flex-col items-center">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                                    isPassBy 
-                                      ? 'bg-gray-100 text-gray-500' 
-                                      : isPOI 
-                                        ? 'bg-purple-100 text-purple-600'
-                                        : isStop 
-                                          ? 'bg-orange-100 text-orange-600'
-                                          : 'bg-blue-100 text-blue-600'
-                                  }`}>
-                                    {idx + 1}
-                                  </div>
-                                  {idx < (fullTourData.itinerary?.length || 0) - 1 && (
-                                    <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
-                                  )}
-                                </div>
-              
-                                {/* Content */}
-                                <div className="flex-1 pb-4">
-                                  {/* Day number for multi-day tours */}
-                                  {dayNumber && (
-                                    <span className="inline-block mb-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
-                                      Day {dayNumber}
-                                    </span>
-                                  )}
-              
-                                  {/* Route name for hop-on-hop-off */}
-                                  {routeName && (
-                                    <span className="inline-block mb-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                                      {routeName}
-                                    </span>
-                                  )}
-              
-                                  {/* Location name */}
-                                  <h4 className="font-medium text-gray-900">{locationName}</h4>
-              
-                                  {/* Badges row */}
-                                  <div className="flex flex-wrap gap-2 mt-1">
-                                    {isPassBy && (
-                                      <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-                                        <Eye className="w-3 h-3 mr-1" />
-                                        Pass by
-                                      </span>
-                                    )}
-                                    {admissionIncluded === 'YES' && (
-                                      <span className="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                                        <Ticket className="w-3 h-3 mr-1" />
-                                        Admission included
-                                      </span>
-                                    )}
-                                    {admissionIncluded === 'NO' && (
-                                      <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
-                                        <Ticket className="w-3 h-3 mr-1" />
-                                        Admission not included
-                                      </span>
-                                    )}
-                                    {isStop && (
-                                      <span className="inline-flex items-center px-2 py-0.5 bg-orange-100 text-orange-600 text-xs rounded-full">
-                                        Bus stop
-                                      </span>
-                                    )}
-                                    {isPOI && (
-                                      <span className="inline-flex items-center px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
-                                        Point of interest
-                                      </span>
-                                    )}
-                                  </div>
-              
-                                  {/* Description */}
-                                  {description && description !== 'Visit' && !isUnstructured && (
-                                    <p className="text-gray-600 text-sm mt-2">{description}</p>
-                                  )}
-              
-                                  {/* Address if available */}
-                                  {address && (
-                                    <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
-                                      <MapPin className="w-3 h-3" />
-                                      {[address.street, address.administrativeArea, address.country]
-                                        .filter(Boolean)
-                                        .join(', ')}
-                                    </p>
-                                  )}
-              
-                                  {/* Duration */}
-                                  {duration && (
-                                    <p className="text-gray-500 text-xs mt-2 flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      {typeof duration === 'number' ? `${duration} min` : duration}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                {expandedSections.included && (
+                  <div className="px-6 py-4">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {inclusions.length > 0 && (
+                        <div>
+                          <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <Check className="w-5 h-5 text-green-500" />
+                            Included
+                          </h3>
+                          <ul className="space-y-2">
+                            {inclusions.map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                                <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                <span>{typeof item === 'string' ? item : item.description || item.name}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      ) : fullTourData.pointsOfInterest?.length > 0 ? (
-                        /* Fallback: Points of Interest only */
-                        <div className="space-y-3">
-                          {fullTourData.pointsOfInterest.map((poi, idx) => {
-                            const poiName = typeof poi === 'string' ? poi : (poi.name || poi.location || poi);
-                            return (
-                              <div key={idx} className="flex items-start gap-3">
-                                <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                <span className="text-gray-700">{poiName}</span>
-                              </div>
-                            );
-                          })}
+                      )}
+
+                      {exclusions.length > 0 && (
+                        <div>
+                          <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <X className="w-5 h-5 text-red-500" />
+                            Not Included
+                          </h3>
+                          <ul className="space-y-2">
+                            {exclusions.map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                                <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                <span>{typeof item === 'string' ? item : item.description || item.name}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      ) : (
-                        <p className="text-gray-500 italic">Itinerary details not available for this tour.</p>
                       )}
                     </div>
-                  )}
-                </div>
-              )}
-
-            {/* MEETING AND PICKUP SECTION */}
-            {(fullTourData.meetingPoint || fullTourData.logistics?.start || fullTourData.logistics?.travelerPickup ||
-              fullTourData.departurePoint || fullTourData.pickupDetails || fullTourData.startingLocations?.length > 0) && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-blue-500" />
-                  Meeting and Pickup
-                </h2>
-
-                <div className="space-y-4">
-                  {/* Meeting Point */}
-                  {(fullTourData.meetingPoint || fullTourData.logistics?.start) && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">Meeting Point</h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {(() => {
-                            const meeting = fullTourData.meetingPoint || fullTourData.logistics?.start;
-                            if (typeof meeting === 'string') return meeting;
-                            return meeting?.description || meeting?.name || meeting?.address ||
-                                   meeting?.location?.name || meeting?.location?.address ||
-                                   JSON.stringify(meeting);
-                          })()}
-                        </p>
-                        {(fullTourData.meetingPointInstructions || fullTourData.logistics?.start?.additionalInfo) && (
-                          <p className="text-gray-500 text-xs mt-2 italic">
-                            {fullTourData.meetingPointInstructions || fullTourData.logistics?.start?.additionalInfo}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pickup Information */}
-                  {(fullTourData.logistics?.travelerPickup || fullTourData.pickupDetails) && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                        <Users className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">Pickup</h3>
-                        {(() => {
-                          const pickup = fullTourData.logistics?.travelerPickup || fullTourData.pickupDetails;
-                          if (typeof pickup === 'string') {
-                            return <p className="text-gray-600 text-sm mt-1">{pickup}</p>;
-                          }
-                          return (
-                            <>
-                              {pickup?.pickupOptionType && (
-                                <p className="text-gray-600 text-sm mt-1">
-                                  {pickup.pickupOptionType === 'PICKUP_EVERYONE' && 'Pickup included for all travelers'}
-                                  {pickup.pickupOptionType === 'PICKUP_AND_MEET_AT_START_POINT' && 'Pickup available or meet at start point'}
-                                  {pickup.pickupOptionType === 'MEET_AT_START_POINT' && 'Meet at the start point (no pickup)'}
-                                  {!['PICKUP_EVERYONE', 'PICKUP_AND_MEET_AT_START_POINT', 'MEET_AT_START_POINT'].includes(pickup.pickupOptionType) && pickup.pickupOptionType}
-                                </p>
-                              )}
-                              {pickup?.description && (
-                                <p className="text-gray-600 text-sm mt-1">{pickup.description}</p>
-                              )}
-                              {pickup?.additionalInfo && (
-                                <p className="text-gray-500 text-xs mt-2 italic">{pickup.additionalInfo}</p>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Departure Point */}
-                  {fullTourData.departurePoint && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                        <Plane className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">Departure Point</h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {typeof fullTourData.departurePoint === 'string'
-                            ? fullTourData.departurePoint
-                            : fullTourData.departurePoint?.name || fullTourData.departurePoint?.address || ''}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Starting Locations */}
-                  {fullTourData.startingLocations?.length > 0 && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-4 h-4 text-orange-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">Starting Locations</h3>
-                        <ul className="mt-1 space-y-1">
-                          {fullTourData.startingLocations.map((loc, idx) => (
-                            <li key={idx} className="text-gray-600 text-sm">
-                              {typeof loc === 'string' ? loc : loc.name || loc.address || ''}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* End Point / Return Details */}
-                  {(fullTourData.endPoint || fullTourData.logistics?.end || fullTourData.returnDetails) && (
-                    <div className="flex items-start gap-3 pt-3 border-t border-gray-100">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">End Point</h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {(() => {
-                            const end = fullTourData.endPoint || fullTourData.logistics?.end || fullTourData.returnDetails;
-                            if (typeof end === 'string') return end;
-                            return end?.description || end?.name || end?.address || 'Returns to original departure point';
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ADDITIONAL INFO SECTION */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <button
-                onClick={() => toggleSection('additional')}
-                className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
-              >
-                <h2 className="text-lg font-semibold text-gray-900">Additional Information</h2>
-                {expandedSections.additional ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
-
-              {expandedSections.additional && (
-                <div className="p-6 space-y-4">
-                  {/* Departure & Return */}
-                  {(fullTourData.departurePoint || fullTourData.meetingPoint) && (
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                        <Navigation className="w-4 h-4 text-gray-400" />
-                        Departure & Return
-                      </h3>
-                      <p className="text-gray-600 text-sm">
-                        {fullTourData.departurePoint || fullTourData.meetingPoint}
-                      </p>
-                    </div>
+            {/* ITINERARY */}
+            {itineraryItems.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <button
+                  onClick={() => toggleSection('itinerary')}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
+                >
+                  <h2 className="text-lg font-semibold text-gray-900">Itinerary</h2>
+                  {expandedSections.itinerary ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
                   )}
+                </button>
 
-                  {/* What to Expect */}
-                  {fullTourData.whatToExpect && (
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">What to Expect</h3>
-                      <p className="text-gray-600 text-sm">{fullTourData.whatToExpect}</p>
+                {expandedSections.itinerary && (
+                  <div className="px-6 py-4">
+                    <div className="space-y-4">
+                      {itineraryItems.map((item, idx) => (
+                        <div key={idx} className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                              {idx + 1}
+                            </div>
+                            {idx < itineraryItems.length - 1 && (
+                              <div className="w-0.5 flex-1 bg-blue-100 mt-2" />
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <h3 className="font-medium text-gray-900">{item.title}</h3>
+                            {item.duration && (
+                              <p className="text-xs text-gray-500 mt-1">{item.duration}</p>
+                            )}
+                            {item.description && (
+                              <p className="text-gray-600 text-sm mt-2">{item.description}</p>
+                            )}
+                            {item.admissionIncluded && (
+                              <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                                <Ticket className="w-3 h-3" />
+                                Admission included
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
-
-                  {/* Accessibility */}
-                  {fullTourData.accessibility && (
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Accessibility</h3>
-                      <p className="text-gray-600 text-sm">{fullTourData.accessibility}</p>
-                    </div>
-                  )}
-
-                  {/* Additional notes - parsed as bullet points */}
-                  {fullTourData.additionalInfo && (
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Additional Notes</h3>
-                      <ul className="space-y-2">
-                        {(() => {
-                          const info = fullTourData.additionalInfo;
-
-                          // Handle array format (Viator API sometimes returns array)
-                          if (Array.isArray(info)) {
-                            return info.map((item, idx) => {
-                              // Each item might be a string or an object with description
-                              const text = typeof item === 'string'
-                                ? item
-                                : item.description || item.text || item.value || JSON.stringify(item);
-                              return (
-                                <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
-                                  <span>{text}</span>
-                                </li>
-                              );
-                            });
-                          }
-
-                          // Handle string format - parse into bullet points
-                          if (typeof info === 'string') {
-                            const bulletPoints = info
-                              .replace(/\.([A-Z])/g, '.|$1') // Add separator before capital after period
-                              .replace(/([a-z])([A-Z])/g, '$1|$2') // Add separator between camelCase words
-                              .split('|')
-                              .map(s => s.trim())
-                              .filter(s => s.length > 3);
-
-                            return bulletPoints.map((point, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
-                                <span>{point}</span>
-                              </li>
-                            ));
-                          }
-
-                          // Handle object format
-                          if (typeof info === 'object') {
-                            const text = info.description || info.text || JSON.stringify(info);
-                            return (
-                              <li className="flex items-start gap-2 text-gray-600 text-sm">
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0 mt-2" />
-                                <span>{text}</span>
-                              </li>
-                            );
-                          }
-
-                          return null;
-                        })()}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* CANCELLATION POLICY */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Shield className={`w-5 h-5 ${cancellationPolicyDetails.isFree ? 'text-emerald-500' : 'text-gray-400'}`} />
-                  {cancellationPolicyDetails.title}
-                </h2>
-                {cancellationPolicyDetails.details.length > 0 && (
-                  <button
-                    onClick={() => setShowCancellationDetails(!showCancellationDetails)}
-                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                  >
-                    {showCancellationDetails ? 'Hide' : 'View'} details
-                    {showCancellationDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
+                  </div>
                 )}
               </div>
+            )}
 
-              <p className="text-gray-600">
-                {cancellationPolicyDetails.description}
-              </p>
-
-              {/* Detailed policy points */}
-              {showCancellationDetails && cancellationPolicyDetails.details.length > 0 && (
-                <ul className="mt-4 space-y-2 border-t border-gray-100 pt-4">
-                  {cancellationPolicyDetails.details.map((detail, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                      <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${cancellationPolicyDetails.isFree ? 'text-emerald-500' : 'text-gray-400'}`} />
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {cancellationPolicyDetails.isFree && (
-                <div className="mt-3 flex items-center gap-2 text-emerald-600 font-medium">
-                  <Check className="w-5 h-5" />
-                  Free cancellation available
-                </div>
-              )}
-            </div>
-
-            {/* REVIEWS SECTION */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <button
-                onClick={() => toggleSection('reviews')}
-                className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-gray-400" />
-                  Reviews
-                  {fullTourData.reviewCount && (
-                    <span className="text-gray-500 font-normal text-sm">
-                      ({fullTourData.reviewCount.toLocaleString()})
-                    </span>
+            {/* REVIEWS */}
+            {reviews.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <button
+                  onClick={() => toggleSection('reviews')}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left border-b border-gray-100"
+                >
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Reviews ({fullTourData?.reviewCount || reviews.length})
+                  </h2>
+                  {expandedSections.reviews ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
                   )}
-                </h2>
-                {expandedSections.reviews ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                </button>
+
+                {expandedSections.reviews && (
+                  <div className="px-6 py-4">
+                    {/* Rating Summary */}
+                    <div className="flex items-start gap-8 mb-6 pb-6 border-b border-gray-100">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold text-gray-900">
+                          {fullTourData?.rating?.toFixed(1) || '4.5'}
+                        </div>
+                        <div className="flex items-center gap-0.5 justify-center mt-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${i < Math.round(fullTourData?.rating || 4.5) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {fullTourData?.reviewCount || reviews.length} reviews
+                        </p>
+                      </div>
+
+                      <div className="flex-1">
+                        <RatingBreakdown
+                          reviews={fullTourData?.reviews}
+                          totalReviews={fullTourData?.reviewCount}
+                          averageRating={fullTourData?.rating}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Review List */}
+                    <div className="space-y-4">
+                      {reviews.slice(0, visibleReviewCount).map((review, idx) => (
+                        <ReviewCard key={idx} review={review} />
+                      ))}
+                    </div>
+
+                    {reviews.length > visibleReviewCount && (
+                      <button
+                        onClick={() => setVisibleReviewCount(prev => prev + 10)}
+                        className="w-full mt-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Show more reviews
+                      </button>
+                    )}
+                  </div>
                 )}
-              </button>
-
-              {expandedSections.reviews && (
-                <div className="p-6">
-                  {/* Overall Rating */}
-                  <div className="flex flex-col md:flex-row gap-8 mb-6 pb-6 border-b border-gray-100">
-                    <div className="text-center md:text-left">
-                      <div className="text-5xl font-bold text-gray-900">
-                        {fullTourData.rating || '4.5'}
-                      </div>
-                      <div className="flex justify-center md:justify-start mt-1">
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <Star
-                            key={star}
-                            className={`w-5 h-5 ${
-                              star <= Math.floor(fullTourData.rating || 4.5)
-                                ? 'text-emerald-500 fill-emerald-500'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Based on {fullTourData.reviewCount?.toLocaleString() || 0} reviews
-                      </p>
-                    </div>
-
-                    <div className="flex-1">
-                      <RatingBreakdown
-                        reviews={fullTourData.reviews}
-                        totalReviews={fullTourData.reviewCount}
-                        averageRating={fullTourData.rating}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Review List */}
-                  <div className="space-y-1">
-                    {(fullTourData.reviews?.items || [
-                      {
-                        author: 'Sarah M.',
-                        rating: 5,
-                        title: 'Amazing experience!',
-                        text: 'This tour exceeded all my expectations. Our guide was incredibly knowledgeable and made the history come alive. Highly recommend!',
-                        date: 'December 2024'
-                      },
-                      {
-                        author: 'John D.',
-                        rating: 4,
-                        title: 'Great tour, minor issues',
-                        text: 'Overall a fantastic experience. The skip-the-line access was worth it. Only minor complaint was the pace was a bit fast at times.',
-                        date: 'November 2024'
-                      },
-                      {
-                        author: 'Emma L.',
-                        rating: 5,
-                        title: 'Perfect day out',
-                        text: 'Booking was easy, the tour was well organized, and we saw everything we wanted. The guide spoke excellent English and was very friendly.',
-                        date: 'November 2024'
-                      }
-                    ]).slice(0, 5).map((review, idx) => (
-                      <ReviewCard key={idx} review={review} />
-                    ))}
-                  </div>
-
-                  {fullTourData.reviewCount > 5 && (
-                    <button
-                      onClick={() => setShowAllReviews(true)}
-                      className="w-full mt-4 py-3 text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      See all {fullTourData.reviewCount?.toLocaleString()} reviews
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* RIGHT COLUMN - Booking Card (Sticky) */}
+          {/* ============================================================ */}
+          {/* RIGHT COLUMN - Booking Panel */}
+          {/* ============================================================ */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
+            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
               {/* Price */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-500">from</span>
-                  {hasDiscount && originalPrice && (
+                  {hasDiscount && fullTourData?.originalPrice && (
                     <span className="text-gray-400 line-through text-lg">
-                      {formatCurrency(originalPrice)}
+                      {formatCurrency(fullTourData.originalPrice)}
                     </span>
                   )}
-                  <span className={`text-3xl font-bold ${hasDiscount ? 'text-orange-500' : 'text-gray-900'}`}>
-                    {displayPrice > 0 ? formatCurrency(displayPrice) : 'Check availability'}
+                  <span className={`text-3xl font-bold ${hasDiscount ? 'text-orange-600' : 'text-gray-900'}`}>
+                    {formatCurrency(displayPrice)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-500">
@@ -1349,67 +772,17 @@ export default function ProductDisplayPage({
                 </p>
               </div>
 
-              {/* Lowest price guarantee */}
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 pb-4 border-b border-gray-100">
-                <Shield className="w-4 h-4 text-emerald-500" />
-                <span>Lowest price guarantee</span>
-              </div>
-
-              {/* Date Selection - Start Date */}
+              {/* Travelers Selector */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  {isMultiDay ? 'Start Date' : 'Select Date'}
-                </label>
-                <input
-                  type="date"
-                  value={selectedStartDate}
-                  onChange={(e) => {
-                    setSelectedStartDate(e.target.value);
-                    // Auto-set end date for multi-day tours
-                    if (isMultiDay && e.target.value) {
-                      const startDate = new Date(e.target.value);
-                      startDate.setDate(startDate.getDate() + tourDays - 1);
-                      setSelectedEndDate(startDate.toISOString().split('T')[0]);
-                    }
-                  }}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* End Date - Only for multi-day tours */}
-              {isMultiDay && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    End Date
-                    <span className="text-xs text-gray-500 ml-1">({tourDays} days)</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={selectedEndDate}
-                    onChange={(e) => setSelectedEndDate(e.target.value)}
-                    min={selectedStartDate || new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              )}
-
-              {/* Travelers Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Users className="w-4 h-4 inline mr-1" />
-                  Number of Travelers
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Travelers</label>
                 <select
                   value={selectedTravelers}
                   onChange={(e) => setSelectedTravelers(parseInt(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                    <option key={num} value={num}>
-                      {num} {num === 1 ? 'traveler' : 'travelers'}
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <option key={n} value={n}>
+                      {n} {n === 1 ? 'traveler' : 'travelers'}
                     </option>
                   ))}
                 </select>
@@ -1427,7 +800,7 @@ export default function ProductDisplayPage({
                 </div>
               )}
 
-              {/* Reserve Now & Pay Later - clickable for more info */}
+              {/* Reserve Now & Pay Later */}
               {tourFlags.includes('FREE_CANCELLATION') && (
                 <button
                   onClick={() => setShowPayLaterInfo(true)}
@@ -1467,7 +840,7 @@ export default function ProductDisplayPage({
                 </button>
 
                 <a
-                  href={fullTourData.bookingLink || fullTourData.link}
+                  href={fullTourData?.bookingLink || fullTourData?.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
@@ -1487,6 +860,116 @@ export default function ProductDisplayPage({
           </div>
         </div>
       </main>
+
+      {/* ================================================================== */}
+      {/* FLOATING CART PANEL - WITH CLICKABLE ITEMS */}
+      {/* ================================================================== */}
+      {cartSidebarOpen && (
+        <div className="fixed inset-0 z-50">
+          <div 
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setCartSidebarOpen(false)}
+          />
+          
+          <div className="absolute right-4 top-4 bottom-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-in-right">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4" />
+                My Trip ({cartItemCount})
+              </h2>
+              <button
+                onClick={() => setCartSidebarOpen(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-3">
+              {cartItemCount === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p className="font-medium">Your trip is empty</p>
+                  <p className="text-xs mt-1">Add tours to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {cart.tours.map(cartTour => {
+                    const isGroupPricing = cartTour.pricingType === 'group';
+                    const itemTotal = isGroupPricing ? cartTour.price : (cartTour.price * selectedTravelers);
+                    const isCurrentTour = cartTour.id === tour.id || cartTour.productCode === tour.productCode;
+                    
+                    return (
+                      <div key={cartTour.id} className={`flex gap-2.5 p-2.5 rounded-xl group ${isCurrentTour ? 'bg-blue-50 ring-2 ring-blue-200' : 'bg-gray-50'}`}>
+                        <div 
+                          className={`flex gap-2.5 flex-1 min-w-0 ${isCurrentTour ? 'cursor-default' : 'cursor-pointer'}`}
+                          onClick={() => {
+                            if (!isCurrentTour) {
+                              setCartSidebarOpen(false);
+                              onOpenProductPage?.(cartTour);
+                            }
+                          }}
+                        >
+                          {cartTour.image && (
+                            <img 
+                              src={cartTour.image} 
+                              alt="" 
+                              className={`w-16 h-16 object-cover rounded-lg flex-shrink-0 transition-all ${!isCurrentTour ? 'group-hover:ring-2 group-hover:ring-blue-400' : ''}`}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium line-clamp-2 leading-tight transition-colors ${isCurrentTour ? 'text-blue-700' : 'text-gray-900 group-hover:text-blue-600'}`}>
+                              {cartTour.name}
+                              {isCurrentTour && <span className="text-xs text-blue-500 ml-1">(viewing)</span>}
+                            </p>
+                            <div className="mt-1">
+                              <span className="text-sm text-green-600 font-semibold">
+                                {formatCurrency(itemTotal)}
+                              </span>
+                              {!isGroupPricing && selectedTravelers > 1 && (
+                                <span className="text-xs text-gray-500 ml-1">
+                                  ({formatCurrency(cartTour.price)} × {selectedTravelers})
+                                </span>
+                              )}
+                              {isGroupPricing && (
+                                <span className="text-xs text-gray-500 ml-1">per group</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {removeFromCart && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromCart('tour', cartTour.id);
+                            }}
+                            className="text-gray-400 hover:text-red-500 flex-shrink-0 p-1"
+                            aria-label="Remove from cart"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            {cartItemCount > 0 && (
+              <div className="border-t border-gray-100 p-3 bg-white">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Total</span>
+                    <span className="text-xs text-gray-400 ml-1">for {selectedTravelers} guest{selectedTravelers > 1 ? 's' : ''}</span>
+                  </div>
+                  <span className="text-lg font-bold text-gray-900">{formatCurrency(cartTotal)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ALL PHOTOS MODAL */}
       {showAllPhotos && images.length > 0 && (
@@ -1527,226 +1010,64 @@ export default function ProductDisplayPage({
         </div>
       )}
 
-      {/* ALL REVIEWS MODAL */}
-      {showAllReviews && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            setShowAllReviews(false);
-            setVisibleReviewCount(10); // Reset when closing
-          }}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">All Reviews</h3>
-                <p className="text-sm text-gray-500">{fullTourData.reviewCount?.toLocaleString() || 0} total reviews</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAllReviews(false);
-                  setVisibleReviewCount(10);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Rating Summary */}
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl font-bold text-gray-900">{fullTourData.rating || '4.5'}</div>
-                <div>
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star
-                        key={star}
-                        className={`w-5 h-5 ${
-                          star <= Math.floor(fullTourData.rating || 4.5)
-                            ? 'text-emerald-500 fill-emerald-500'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600">Based on {fullTourData.reviewCount?.toLocaleString() || 0} reviews</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Scrollable Reviews List */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {(() => {
-                // Generate sample reviews based on the reviewCount
-                const sampleReviews = fullTourData.reviews?.items || [];
-                const mockReviews = [
-                  { author: 'Sarah M.', rating: 5, title: 'Amazing experience!', text: 'This tour exceeded all my expectations. Our guide was incredibly knowledgeable and made the history come alive. Highly recommend!', date: 'December 2024' },
-                  { author: 'John D.', rating: 4, title: 'Great tour, minor issues', text: 'Overall a fantastic experience. The skip-the-line access was worth it. Only minor complaint was the pace was a bit fast at times.', date: 'November 2024' },
-                  { author: 'Emma L.', rating: 5, title: 'Perfect day out', text: 'Booking was easy, the tour was well organized, and we saw everything we wanted. The guide spoke excellent English and was very friendly.', date: 'November 2024' },
-                  { author: 'Michael R.', rating: 5, title: 'Unforgettable!', text: 'Worth every penny. The small group size meant we could ask plenty of questions and really connect with our guide.', date: 'October 2024' },
-                  { author: 'Lisa K.', rating: 4, title: 'Really enjoyed it', text: 'Great way to see the highlights without the hassle of planning. Would have liked a bit more free time at certain stops.', date: 'October 2024' },
-                  { author: 'David W.', rating: 5, title: 'Exceeded expectations', text: 'Our guide Marco was phenomenal! So passionate and knowledgeable. Made the experience truly memorable.', date: 'September 2024' },
-                  { author: 'Jennifer P.', rating: 5, title: 'Must-do activity', text: 'If you only do one tour, make it this one. Absolutely fantastic from start to finish.', date: 'September 2024' },
-                  { author: 'Robert H.', rating: 4, title: 'Very informative', text: 'Learned so much about the history and culture. The walking was manageable even for older travelers.', date: 'August 2024' },
-                  { author: 'Maria G.', rating: 5, title: 'Wonderful day', text: 'Everything was perfectly organized. Our guide knew so much about the local history and culture. Would definitely book again!', date: 'August 2024' },
-                  { author: 'Thomas B.', rating: 5, title: 'Best tour ever', text: 'We have done many tours over the years and this one stands out. Professional, informative, and so much fun!', date: 'July 2024' },
-                  { author: 'Sophie C.', rating: 4, title: 'Great value', text: 'For the price, you get an incredible amount of value. Well worth every penny spent.', date: 'July 2024' },
-                  { author: 'James W.', rating: 5, title: 'Highly recommend', text: 'An absolute must-do if you are visiting. The guide made the experience unforgettable with their stories.', date: 'June 2024' },
-                  { author: 'Anna P.', rating: 5, title: 'Perfect for families', text: 'Took our kids and they loved it too! The guide was great at engaging everyone regardless of age.', date: 'June 2024' },
-                  { author: 'Chris M.', rating: 4, title: 'Solid experience', text: 'Good tour overall. Some waiting time but the content and guide made up for it.', date: 'May 2024' },
-                  { author: 'Rachel T.', rating: 5, title: 'Exceeded expectations', text: 'Booked this last minute and so glad we did. One of the highlights of our trip!', date: 'May 2024' },
-                  { author: 'Daniel K.', rating: 5, title: 'Outstanding', text: 'The attention to detail and care from our guide was exceptional. Truly a memorable experience.', date: 'April 2024' },
-                  { author: 'Helen R.', rating: 4, title: 'Very enjoyable', text: 'Nice pace, great information, friendly guide. Would recommend to friends visiting the area.', date: 'April 2024' },
-                  { author: 'Peter S.', rating: 5, title: 'Five stars!', text: 'Cannot say enough good things about this tour. From booking to finish, everything was smooth and enjoyable.', date: 'March 2024' },
-                  { author: 'Laura M.', rating: 5, title: 'Loved every minute', text: 'Such a fun and informative tour. The guide had great energy and made it entertaining throughout.', date: 'March 2024' },
-                  { author: 'Kevin L.', rating: 4, title: 'Good tour', text: 'Well organized and informative. A few small hiccups but nothing major. Would do it again.', date: 'February 2024' }
-                ];
-
-                // Use API reviews if available, otherwise use mock reviews
-                const allReviews = sampleReviews.length > 0 ? sampleReviews : mockReviews;
-                const reviewsToShow = allReviews.slice(0, visibleReviewCount);
-                const hasMoreReviews = visibleReviewCount < (fullTourData.reviewCount || allReviews.length);
-
-                return (
-                  <>
-                    <div className="space-y-1">
-                      {reviewsToShow.map((review, idx) => (
-                        <ReviewCard key={idx} review={review} />
-                      ))}
-                    </div>
-
-                    {/* Load More button */}
-                    {hasMoreReviews && (
-                      <button
-                        onClick={() => setVisibleReviewCount(prev => prev + 10)}
-                        className="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                        Load more reviews
-                        <span className="text-sm text-gray-500">
-                          (showing {Math.min(visibleReviewCount, allReviews.length)} of {fullTourData.reviewCount?.toLocaleString() || allReviews.length})
-                        </span>
-                      </button>
-                    )}
-
-                    {/* All reviews loaded message */}
-                    {!hasMoreReviews && reviewsToShow.length > 10 && (
-                      <p className="text-center text-sm text-gray-500 mt-4 py-2">
-                        You've seen all available reviews
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center">
-                Reviews are from verified travelers who booked through Viator
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* PAY LATER INFO MODAL */}
       {showPayLaterInfo && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
           onClick={() => setShowPayLaterInfo(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-md"
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">Reserve Now & Pay Later</h3>
-                <button
-                  onClick={() => setShowPayLaterInfo(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Book Today, Pay Later</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Secure your spot now without paying upfront. Your card won't be charged until closer to your experience date.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Stay Flexible</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Plans change? With free cancellation, you can cancel up to 24 hours before your experience for a full refund.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                  <Check className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Guaranteed Spot</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Your reservation is confirmed immediately. No risk of selling out while you wait.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-2">How it works:</h4>
-                <ol className="text-sm text-gray-600 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">1</span>
-                    <span>Reserve your experience with no upfront payment</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">2</span>
-                    <span>Receive confirmation and details via email</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">3</span>
-                    <span>Payment is charged 24-48 hours before your experience</span>
-                  </li>
-                </ol>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Reserve Now & Pay Later</h3>
               <button
                 onClick={() => setShowPayLaterInfo(false)}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                className="p-1 hover:bg-gray-100 rounded-full"
               >
-                Got it
+                <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
+            <div className="space-y-3 text-gray-600">
+              <p>
+                Secure your spot today without paying upfront. You'll only be charged closer to your experience date.
+              </p>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span>No payment required today</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span>Free cancellation up to 24 hours before</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span>Guaranteed availability once reserved</span>
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={() => setShowPayLaterInfo(false)}
+              className="w-full mt-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes slide-in-right {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.25s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
