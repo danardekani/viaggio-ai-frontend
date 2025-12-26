@@ -126,6 +126,7 @@ export default function LandingPage({
   const hotelDestinationInputRef = useRef(null);
   const hotelSuggestionsRef = useRef(null);
   const justSelectedHotelRef = useRef(false);
+  const carouselRef = useRef(null);
 
   // Cart sidebar state
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
@@ -387,6 +388,20 @@ export default function LandingPage({
         : {})
     });
   }, [destination, selectedDestinationId, travelers, startDate, endDate, onSearch]);
+
+  const scrollCarousel = useCallback((direction) => {
+    if (!carouselRef.current) return;
+    
+    const container = carouselRef.current;
+    const cardWidth = container.querySelector('div[data-card]')?.offsetWidth || 280;
+    const gap = 16;
+    const scrollAmount = (cardWidth + gap) * 2; // Scroll 2 cards at a time
+    
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  }, []);
 
   const handleHotelsSearch = useCallback((e) => {
     e?.preventDefault();
@@ -1213,40 +1228,62 @@ export default function LandingPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {FEATURED_DESTINATIONS.map((dest) => (
-            <div
-              key={dest.name}
-              onClick={() => handleFeaturedDealClick(dest)}
-              onMouseEnter={() => handleDestinationHover(dest.name)}
-              onMouseLeave={handleDestinationHoverEnd}
-              className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer"
-            >
-              <div className="aspect-[4/3] overflow-hidden">
-                <img
-                  src={dest.image}
-                  alt={dest.name}
-                  loading="lazy"
-                  width={400}
-                  height={300}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-              <div className="p-2.5 sm:p-4">
-                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{dest.name}</h3>
-                <p className="text-xs sm:text-sm text-orange-600 font-medium">{dest.deal}</p>
-              </div>
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
-                <span className="text-white font-medium flex items-center gap-1 text-sm sm:text-base">
-                  View Deals <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-4 sm:mt-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Experiences</h2>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => scrollCarousel('left')}
+                className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+              </button>
+              <button 
+                onClick={() => scrollCarousel('right')}
+                className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+              </button>
             </div>
-          ))}
+          </div>
+        
+          <div 
+            ref={carouselRef}
+            className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide pb-2"
+          >
+            {FEATURED_DESTINATIONS.map((dest) => (
+              <div
+                key={dest.name}
+                data-card
+                onClick={() => handleFeaturedDealClick(dest)}
+                onMouseEnter={() => handleDestinationHover(dest.name)}
+                onMouseLeave={handleDestinationHoverEnd}
+                className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer flex-shrink-0 snap-start"
+                style={{ width: 'calc((100% - 64px) / 5)', minWidth: '200px' }}
+              >
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={dest.image}
+                    alt={dest.name}
+                    loading="lazy"
+                    width={400}
+                    height={300}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-2.5 sm:p-4">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{dest.name}</h3>
+                  <p className="text-xs sm:text-sm text-orange-600 font-medium">{dest.deal}</p>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                  <span className="text-white font-medium flex items-center gap-1 text-sm sm:text-base">
+                    View Deals <ChevronRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-
       {/* ================================================================== */}
       {/* VIA CHAT - Reusable Component */}
       {/* ================================================================== */}
