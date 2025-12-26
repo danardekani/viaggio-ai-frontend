@@ -24,7 +24,28 @@ import { prewarmDestination } from '../utils/searchCache';
 // CONSTANTS
 // ============================================================================
 
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=80';
+const HERO_IMAGES = [
+  {
+    url: 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=80',
+    location: 'Maldives'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=1920&q=80',
+    location: 'Banff, Canada'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=1920&q=80',
+    location: 'Amalfi Coast, Italy'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=1920&q=80',
+    location: 'Bali, Indonesia'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80',
+    location: 'Swiss Alps'
+  }
+];
 
 const FEATURED_DESTINATIONS = [
   { 
@@ -101,6 +122,7 @@ export default function LandingPage({
   backendUrl
 }) {
   const [activeTab, setActiveTab] = useState('tours');
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
   const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -155,6 +177,15 @@ export default function LandingPage({
       prewarmDestination(backendUrl, destName);
     }, 200);
   }, [backendUrl]);
+
+  // Hero carousel auto-rotation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHeroIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 6000); // Change every 6 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleDestinationHoverEnd = useCallback(() => {
     if (hoverTimeoutRef.current) {
@@ -539,14 +570,19 @@ export default function LandingPage({
       {/* ================================================================== */}
       {/* HERO SECTION */}
       {/* ================================================================== */}
-      <div className="relative h-[70vh] min-h-[550px]">
-        {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${HERO_IMAGE})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
-        </div>
+      <div className="relative h-[70vh] min-h-[550px] overflow-hidden">
+        {/* Background Images - Carousel */}
+        {HERO_IMAGES.map((hero, index) => (
+          <div
+            key={hero.location}
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${
+              index === currentHeroIndex ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ backgroundImage: `url(${hero.url})` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
+          </div>
+        ))}
 
         {/* Top Navigation */}
         <nav className="relative z-10 flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
@@ -1155,9 +1191,28 @@ export default function LandingPage({
           </div>
         </div>
 
-        {/* Photo Credit */}
-        <div className="absolute bottom-4 right-4 text-white/60 text-xs">
-          📍 Maldives
+        {/* Photo Credit & Navigation Dots */}
+        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-4">
+          {/* Navigation Dots */}
+          <div className="flex gap-2">
+            {HERO_IMAGES.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentHeroIndex(index)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === currentHeroIndex 
+                    ? 'bg-white w-6' 
+                    : 'bg-white/50 hover:bg-white/70'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+          
+          {/* Location Credit */}
+          <div className="text-white/80 text-xs font-medium backdrop-blur-sm bg-black/20 px-3 py-1.5 rounded-full">
+            📍 {HERO_IMAGES[currentHeroIndex].location}
+          </div>
         </div>
       </div>
 
