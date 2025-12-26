@@ -58,12 +58,6 @@ const FEATURED_DESTINATIONS = [
     image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&q=80'
   },
   { 
-    name: 'New York', 
-    country: 'USA', 
-    deal: 'Broadway & more deals', 
-    image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&q=80'
-  },
-  { 
     name: 'London', 
     country: 'United Kingdom', 
     deal: 'Royal palaces & more', 
@@ -84,7 +78,7 @@ const FEATURED_DESTINATIONS = [
   { 
     name: 'Santorini', 
     country: 'Greece', 
-    deal: 'Stunning Island Views', 
+    deal: 'Stunning island views', 
     image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=400&q=80'
   },
 ];
@@ -153,11 +147,9 @@ export default function LandingPage({
 
   // Prefetch on hover - start loading after 200ms hover
   const handleDestinationHover = useCallback((destName) => {
-    // Clear any existing timeout
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    // Start prefetch after 200ms hover
     hoverTimeoutRef.current = setTimeout(() => {
       console.log(`🎯 Hover prefetch triggered for "${destName}"`);
       prewarmDestination(backendUrl, destName);
@@ -188,12 +180,10 @@ export default function LandingPage({
   }, []);
 
   // ============================================================================
-  // DESTINATION AUTOCOMPLETE - With AbortController for cleanup
+  // DESTINATION AUTOCOMPLETE
   // ============================================================================
 
-  // Debounced autocomplete with AbortController
   useEffect(() => {
-    // Skip if a suggestion was just selected
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
       return;
@@ -247,7 +237,6 @@ export default function LandingPage({
   // HOTEL DESTINATION AUTOCOMPLETE
   // ============================================================================
 
-  // Click outside to close hotel suggestions
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -263,9 +252,7 @@ export default function LandingPage({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Debounced hotel autocomplete with AbortController
   useEffect(() => {
-    // Skip if a suggestion was just selected
     if (justSelectedHotelRef.current) {
       justSelectedHotelRef.current = false;
       return;
@@ -350,15 +337,13 @@ export default function LandingPage({
   }, [showSuggestions, suggestions, selectedIndex, handleSelectSuggestion]);
 
   // ============================================================================
-  // SEARCH HANDLERS - Memoized with useCallback
+  // SEARCH HANDLERS
   // ============================================================================
 
-  // FIXED: Single handleToursSearch with proper date validation
   const handleToursSearch = useCallback((e) => {
     e?.preventDefault();
     if (!destination.trim()) return;
 
-    // Validate dates if provided
     let validStartDate = startDate;
     let validEndDate = endDate;
 
@@ -366,7 +351,7 @@ export default function LandingPage({
       const start = new Date(startDate);
       const end = new Date(endDate);
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset time for comparison
+      today.setHours(0, 0, 0, 0);
       const maxDate = new Date();
       maxDate.setFullYear(maxDate.getFullYear() + 1);
 
@@ -382,7 +367,6 @@ export default function LandingPage({
       destination: destination.trim(),
       destinationId: selectedDestinationId,
       travelers,
-      // Only include dates if both are valid
       ...(validStartDate && validEndDate 
         ? { startDate: validStartDate, endDate: validEndDate } 
         : {})
@@ -395,7 +379,7 @@ export default function LandingPage({
     const container = carouselRef.current;
     const cardWidth = container.querySelector('div[data-card]')?.offsetWidth || 280;
     const gap = 16;
-    const scrollAmount = (cardWidth + gap) * 2; // Scroll 2 cards at a time
+    const scrollAmount = (cardWidth + gap) * 2;
     
     container.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
@@ -458,7 +442,6 @@ export default function LandingPage({
   };
 
   const processImageFile = async (file) => {
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
@@ -468,7 +451,6 @@ export default function LandingPage({
     setUploadedImage(file);
     setIdentifiedLocation(null);
     
-    // Auto-identify after upload
     await identifyLocation(file);
   };
 
@@ -476,7 +458,6 @@ export default function LandingPage({
     setIdentifyingLocation(true);
     
     try {
-      // Convert file to base64
       const base64 = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
@@ -504,7 +485,6 @@ export default function LandingPage({
 
   const handleSearchIdentifiedLocation = () => {
     if (identifiedLocation?.destination) {
-      // destination can be an object with fullName/name or a string
       const destName = typeof identifiedLocation.destination === 'object'
         ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
         : identifiedLocation.destination;
@@ -519,7 +499,6 @@ export default function LandingPage({
 
   const handleSearchIdentifiedLocationHotels = () => {
     if (identifiedLocation?.destination) {
-      // destination can be an object with fullName/name or a string
       const destName = typeof identifiedLocation.destination === 'object'
         ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
         : identifiedLocation.destination;
@@ -543,7 +522,7 @@ export default function LandingPage({
   };
 
   // ============================================================================
-  // COMPUTED VALUES - Memoized
+  // COMPUTED VALUES
   // ============================================================================
 
   const tripItemCount = useMemo(() =>
@@ -571,13 +550,11 @@ export default function LandingPage({
 
         {/* Top Navigation */}
         <nav className="relative z-10 flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
-          {/* Logo */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
           </div>
 
-          {/* My Trip Button */}
           <button
             onClick={() => setCartSidebarOpen(true)}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all flex-shrink-0"
@@ -594,7 +571,6 @@ export default function LandingPage({
 
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2 sm:pt-4 px-3 sm:px-4">
-          {/* Tagline */}
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white text-center mb-1 sm:mb-2 drop-shadow-lg">
             Discover Your Next Adventure
           </h1>
@@ -605,7 +581,7 @@ export default function LandingPage({
           {/* Search Panel with Integrated Tabs */}
           <div className="w-full max-w-3xl">
             <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl">
-              {/* Integrated Tab Navigation */}
+              {/* Tab Navigation */}
               <div className="flex items-center justify-center gap-1 px-2 pt-3 pb-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab('tours')}
@@ -655,7 +631,7 @@ export default function LandingPage({
                 </button>
               </div>
 
-              {/* Tab Content Container with Transitions */}
+              {/* Tab Content */}
               <div className="relative p-1.5 sm:p-2">
                 {/* Tours Search Tab */}
                 <div className={`transition-all duration-300 ease-in-out ${
@@ -664,131 +640,123 @@ export default function LandingPage({
                     : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
                 }`}>
                   {activeTab === 'tours' && (
-                <form onSubmit={handleToursSearch} className="flex flex-col sm:flex-row items-stretch">
-                  {/* Destination */}
-                  <div className="flex-1 relative" ref={destinationInputRef}>
-                    <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-                      <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">Where</p>
-                        <input 
-                          type="text"
-                          placeholder="Search destination"
-                          value={destination}
-                          onChange={(e) => {
-                            setDestination(e.target.value);
-                            setSelectedDestinationId(null);
-                          }}
-                          onKeyDown={handleDestinationKeyDown}
-                          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
-                          autoComplete="off"
-                        />
+                    <form onSubmit={handleToursSearch} className="flex flex-col sm:flex-row items-stretch">
+                      <div className="flex-1 relative" ref={destinationInputRef}>
+                        <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                          <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-500 font-medium">Where</p>
+                            <input 
+                              type="text"
+                              placeholder="Search destination"
+                              value={destination}
+                              onChange={(e) => {
+                                setDestination(e.target.value);
+                                setSelectedDestinationId(null);
+                              }}
+                              onKeyDown={handleDestinationKeyDown}
+                              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                              className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                              autoComplete="off"
+                            />
+                          </div>
+                          {loadingSuggestions && (
+                            <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                          )}
+                        </div>
+
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div
+                            ref={suggestionsRef}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                          >
+                            {suggestions.map((suggestion, index) => {
+                              const displayName = typeof suggestion?.displayName === 'string'
+                                ? suggestion.displayName
+                                : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
+                              const parentName = suggestion?.parentName || null;
+
+                              return (
+                                <button
+                                  key={suggestion?.destinationId || index}
+                                  type="button"
+                                  onClick={() => handleSelectSuggestion(suggestion)}
+                                  className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                                    index === selectedIndex ? 'bg-blue-50' : ''
+                                  } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                                    index === suggestions.length - 1 ? 'rounded-b-xl' : ''
+                                  }`}
+                                >
+                                  <MapPin className="w-4 h-4 text-gray-400" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                                    {parentName && (
+                                      <p className="text-xs text-gray-500">{parentName}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      {loadingSuggestions && (
-                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                      )}
-                    </div>
-
-                    {/* Autocomplete Dropdown */}
-                    {showSuggestions && suggestions.length > 0 && (
-                      <div
-                        ref={suggestionsRef}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
-                      >
-                        {suggestions.map((suggestion, index) => {
-                          // Safely extract display values (handle edge cases)
-                          const displayName = typeof suggestion?.displayName === 'string'
-                            ? suggestion.displayName
-                            : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
-                          const parentName = suggestion?.parentName || null;
-
-                          return (
-                            <button
-                              key={suggestion?.destinationId || index}
-                              type="button"
-                              onClick={() => handleSelectSuggestion(suggestion)}
-                              className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-                                index === selectedIndex ? 'bg-blue-50' : ''
-                              } ${index === 0 ? 'rounded-t-xl' : ''} ${
-                                index === suggestions.length - 1 ? 'rounded-b-xl' : ''
-                              }`}
+                      
+                      <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                        <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium">Dates (optional)</p>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                            />
+                            <span className="text-gray-400 text-sm">-</span>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              min={startDate || new Date().toISOString().split('T')[0]}
+                              className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Travelers</p>
+                          <div className="relative">
+                            <select
+                              value={travelers}
+                              onChange={(e) => setTravelers(parseInt(e.target.value))}
+                              className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-6 cursor-pointer"
                             >
-                              <MapPin className="w-4 h-4 text-gray-400" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {displayName}
-                                </p>
-                                {parentName && (
-                                  <p className="text-xs text-gray-500">{parentName}</p>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
+                              {[1,2,3,4,5,6,7,8].map(n => (
+                                <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  
-                  {/* Dates */}
-                  <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-                    <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Dates (optional)</p>
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          min={new Date().toISOString().split('T')[0]}
-                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
-                        />
-                        <span className="text-gray-400 text-sm">-</span>
-                        <input
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          min={startDate || new Date().toISOString().split('T')[0]}
-                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Travelers */}
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Travelers</p>
-                      <div className="relative">
-                        <select
-                          value={travelers}
-                          onChange={(e) => setTravelers(parseInt(e.target.value))}
-                          className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-6 cursor-pointer"
-                        >
-                          {[1,2,3,4,5,6,7,8].map(n => (
-                            <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Search Button */}
-                  <button
-                    type="submit"
-                    disabled={!destination.trim() || isLoading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
-                    title={!destination.trim() ? 'Please enter a destination' : ''}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Search className="w-5 h-5" />
-                    )}
-                  </button>
-                </form>
+                      
+                      <button
+                        type="submit"
+                        disabled={!destination.trim() || isLoading}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                        title={!destination.trim() ? 'Please enter a destination' : ''}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Search className="w-5 h-5" />
+                        )}
+                      </button>
+                    </form>
                   )}
                 </div>
 
@@ -799,147 +767,141 @@ export default function LandingPage({
                     : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
                 }`}>
                   {activeTab === 'hotels' && (
-                <form onSubmit={handleHotelsSearch} className="flex flex-col sm:flex-row items-stretch">
-                  {/* Destination */}
-                  <div className="flex-1 relative" ref={hotelDestinationInputRef}>
-                    <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-                      <Hotel className="w-5 h-5 text-purple-500 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">Destination</p>
-                        <input
-                          type="text"
-                          placeholder="City or hotel name"
-                          value={hotelDestination}
-                          onChange={(e) => {
-                            setHotelDestination(e.target.value);
-                            setSelectedHotelDestinationCode(null);
-                          }}
-                          onKeyDown={handleHotelDestinationKeyDown}
-                          onFocus={() => hotelSuggestions.length > 0 && setShowHotelSuggestions(true)}
-                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
-                          autoComplete="off"
-                        />
-                      </div>
-                      {loadingHotelSuggestions && (
-                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                      )}
-                    </div>
+                    <form onSubmit={handleHotelsSearch} className="flex flex-col sm:flex-row items-stretch">
+                      <div className="flex-1 relative" ref={hotelDestinationInputRef}>
+                        <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                          <Hotel className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-500 font-medium">Destination</p>
+                            <input
+                              type="text"
+                              placeholder="City or hotel name"
+                              value={hotelDestination}
+                              onChange={(e) => {
+                                setHotelDestination(e.target.value);
+                                setSelectedHotelDestinationCode(null);
+                              }}
+                              onKeyDown={handleHotelDestinationKeyDown}
+                              onFocus={() => hotelSuggestions.length > 0 && setShowHotelSuggestions(true)}
+                              className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                              autoComplete="off"
+                            />
+                          </div>
+                          {loadingHotelSuggestions && (
+                            <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                          )}
+                        </div>
 
-                    {/* Autocomplete Dropdown */}
-                    {showHotelSuggestions && hotelSuggestions.length > 0 && (
-                      <div
-                        ref={hotelSuggestionsRef}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                        {showHotelSuggestions && hotelSuggestions.length > 0 && (
+                          <div
+                            ref={hotelSuggestionsRef}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                          >
+                            {hotelSuggestions.map((suggestion, index) => {
+                              const locationSubtitle = suggestion.parentName
+                                || suggestion.countryName
+                                || (suggestion.countryCode ? suggestion.countryCode : null);
+
+                              return (
+                                <button
+                                  key={suggestion?.code || index}
+                                  type="button"
+                                  onClick={() => handleSelectHotelSuggestion(suggestion)}
+                                  className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                                    index === hotelSelectedIndex ? 'bg-purple-50' : ''
+                                  } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                                    index === hotelSuggestions.length - 1 ? 'rounded-b-xl' : ''
+                                  }`}
+                                >
+                                  <MapPin className="w-4 h-4 text-purple-400" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {suggestion.displayName || suggestion.name}
+                                    </p>
+                                    {locationSubtitle && (
+                                      <p className="text-xs text-gray-500">{locationSubtitle}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
+                        <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-medium">Check-in / Check-out</p>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="date"
+                              value={hotelCheckIn}
+                              onChange={(e) => setHotelCheckIn(e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                            />
+                            <span className="text-gray-400 text-sm">-</span>
+                            <input
+                              type="date"
+                              value={hotelCheckOut}
+                              onChange={(e) => setHotelCheckOut(e.target.value)}
+                              min={hotelCheckIn || new Date().toISOString().split('T')[0]}
+                              className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <div className="flex gap-3">
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium">Guests</p>
+                            <div className="relative">
+                              <select
+                                value={hotelGuests}
+                                onChange={(e) => setHotelGuests(parseInt(e.target.value))}
+                                className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-5 cursor-pointer text-sm"
+                              >
+                                {[1,2,3,4,5,6].map(n => (
+                                  <option key={n} value={n}>{n}</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium">Rooms</p>
+                            <div className="relative">
+                              <select
+                                value={hotelRooms}
+                                onChange={(e) => setHotelRooms(parseInt(e.target.value))}
+                                className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-5 cursor-pointer text-sm"
+                              >
+                                {[1,2,3,4].map(n => (
+                                  <option key={n} value={n}>{n}</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={!hotelDestination.trim() || !hotelCheckIn || !hotelCheckOut || isLoading}
+                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
+                        title={!hotelCheckIn || !hotelCheckOut ? 'Please select check-in and check-out dates' : ''}
                       >
-                        {hotelSuggestions.map((suggestion, index) => {
-                          // Format location subtitle - prefer parentName, fallback to countryName or countryCode
-                          const locationSubtitle = suggestion.parentName
-                            || suggestion.countryName
-                            || (suggestion.countryCode ? suggestion.countryCode : null);
-
-                          return (
-                            <button
-                              key={suggestion?.code || index}
-                              type="button"
-                              onClick={() => handleSelectHotelSuggestion(suggestion)}
-                              className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-                                index === hotelSelectedIndex ? 'bg-purple-50' : ''
-                              } ${index === 0 ? 'rounded-t-xl' : ''} ${
-                                index === hotelSuggestions.length - 1 ? 'rounded-b-xl' : ''
-                              }`}
-                            >
-                              <MapPin className="w-4 h-4 text-purple-400" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {suggestion.displayName || suggestion.name}
-                                </p>
-                                {locationSubtitle && (
-                                  <p className="text-xs text-gray-500">{locationSubtitle}</p>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Dates */}
-                  <div className="flex items-center gap-3 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-                    <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Check-in / Check-out</p>
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="date"
-                          value={hotelCheckIn}
-                          onChange={(e) => setHotelCheckIn(e.target.value)}
-                          min={new Date().toISOString().split('T')[0]}
-                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
-                        />
-                        <span className="text-gray-400 text-sm">-</span>
-                        <input
-                          type="date"
-                          value={hotelCheckOut}
-                          onChange={(e) => setHotelCheckOut(e.target.value)}
-                          min={hotelCheckIn || new Date().toISOString().split('T')[0]}
-                          className="text-gray-900 focus:outline-none bg-transparent text-sm w-[110px]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Guests & Rooms */}
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <Users className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div className="flex gap-3">
-                      <div>
-                        <p className="text-xs text-gray-500 font-medium">Guests</p>
-                        <div className="relative">
-                          <select
-                            value={hotelGuests}
-                            onChange={(e) => setHotelGuests(parseInt(e.target.value))}
-                            className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-5 cursor-pointer text-sm"
-                          >
-                            {[1,2,3,4,5,6].map(n => (
-                              <option key={n} value={n}>{n}</option>
-                            ))}
-                          </select>
-                          <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 font-medium">Rooms</p>
-                        <div className="relative">
-                          <select
-                            value={hotelRooms}
-                            onChange={(e) => setHotelRooms(parseInt(e.target.value))}
-                            className="text-gray-900 focus:outline-none bg-transparent appearance-none pr-5 cursor-pointer text-sm"
-                          >
-                            {[1,2,3,4].map(n => (
-                              <option key={n} value={n}>{n}</option>
-                            ))}
-                          </select>
-                          <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Search Button */}
-                  <button
-                    type="submit"
-                    disabled={!hotelDestination.trim() || !hotelCheckIn || !hotelCheckOut || isLoading}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-4 rounded-xl transition-colors m-1 flex items-center justify-center"
-                    title={!hotelCheckIn || !hotelCheckOut ? 'Please select check-in and check-out dates' : ''}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Search className="w-5 h-5" />
-                    )}
-                  </button>
-                </form>
+                        {isLoading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Search className="w-5 h-5" />
+                        )}
+                      </button>
+                    </form>
                   )}
                 </div>
 
@@ -950,142 +912,135 @@ export default function LandingPage({
                     : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
                 }`}>
                   {activeTab === 'whereis' && (
-                <div className="p-4">
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  
-                  {!imagePreview ? (
-                    /* Upload Zone */
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                        isDragging 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center gap-3">
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
-                          isDragging ? 'bg-blue-100' : 'bg-gray-100'
-                        }`}>
-                          <Camera className={`w-8 h-8 ${isDragging ? 'text-blue-600' : 'text-gray-400'}`} />
-                        </div>
-                        <div>
-                          <p className="text-gray-900 font-medium">
-                            {isDragging ? 'Drop your image here!' : 'Upload a photo to identify the location'}
-                          </p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Drag & drop or click to browse
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Image Preview & Results */
-                    <div className="flex flex-col sm:flex-row gap-4 items-center">
-                      {/* Image Preview */}
-                      <div className="relative w-32 h-32 rounded-xl overflow-hidden flex-shrink-0">
-                        <img 
-                          src={imagePreview} 
-                          alt="Uploaded" 
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={resetWhereIsThis}
-                          className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-                        >
-                          <X className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
+                    <div className="p-4">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
                       
-                      {/* Status / Results */}
-                      <div className="flex-1 text-center sm:text-left">
-                        {identifyingLocation ? (
-                          <div className="flex items-center gap-3 justify-center sm:justify-start">
-                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      {!imagePreview ? (
+                        <div
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                            isDragging 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-3">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
+                              isDragging ? 'bg-blue-100' : 'bg-gray-100'
+                            }`}>
+                              <Camera className={`w-8 h-8 ${isDragging ? 'text-blue-600' : 'text-gray-400'}`} />
+                            </div>
                             <div>
-                              <p className="text-gray-900 font-medium">Identifying location...</p>
-                              <p className="text-sm text-gray-500">Analyzing your image</p>
+                              <p className="text-gray-900 font-medium">
+                                {isDragging ? 'Drop your image here!' : 'Upload a photo to identify the location'}
+                              </p>
+                              <p className="text-sm text-gray-500 mt-1">
+                                Drag & drop or click to browse
+                              </p>
                             </div>
                           </div>
-                        ) : identifiedLocation?.error ? (
-                          <div>
-                            <p className="text-gray-900 font-medium">Couldn't identify location</p>
-                            <p className="text-sm text-gray-500">{identifiedLocation.message || 'Unable to recognize this location'}</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row gap-4 items-center">
+                          <div className="relative w-32 h-32 rounded-xl overflow-hidden flex-shrink-0">
+                            <img 
+                              src={imagePreview} 
+                              alt="Uploaded" 
+                              className="w-full h-full object-cover"
+                            />
                             <button
                               onClick={resetWhereIsThis}
-                              className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                              className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
                             >
-                              Try another image
+                              <X className="w-4 h-4 text-white" />
                             </button>
                           </div>
-                        ) : identifiedLocation?.destination ? (
-                          <div>
-                            <p className="text-sm text-gray-500">We found it!</p>
-                            <p className="text-xl font-bold text-gray-900">
-                              {typeof identifiedLocation.destination === 'object' 
-                                ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
-                                : identifiedLocation.destination}
-                            </p>
-                            {identifiedLocation.landmark && (
-                              <p className="text-sm text-gray-600">📍 {identifiedLocation.landmark}</p>
-                            )}
-                            {identifiedLocation.confidence && (
-                              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
-                                identifiedLocation.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                                identifiedLocation.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {identifiedLocation.confidence} confidence
-                              </span>
-                            )}
+                          
+                          <div className="flex-1 text-center sm:text-left">
+                            {identifyingLocation ? (
+                              <div className="flex items-center gap-3 justify-center sm:justify-start">
+                                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                <div>
+                                  <p className="text-gray-900 font-medium">Identifying location...</p>
+                                  <p className="text-sm text-gray-500">Analyzing your image</p>
+                                </div>
+                              </div>
+                            ) : identifiedLocation?.error ? (
+                              <div>
+                                <p className="text-gray-900 font-medium">Couldn't identify location</p>
+                                <p className="text-sm text-gray-500">{identifiedLocation.message || 'Unable to recognize this location'}</p>
+                                <button
+                                  onClick={resetWhereIsThis}
+                                  className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                  Try another image
+                                </button>
+                              </div>
+                            ) : identifiedLocation?.destination ? (
+                              <div>
+                                <p className="text-sm text-gray-500">We found it!</p>
+                                <p className="text-xl font-bold text-gray-900">
+                                  {typeof identifiedLocation.destination === 'object' 
+                                    ? (identifiedLocation.destination.fullName || identifiedLocation.destination.name)
+                                    : identifiedLocation.destination}
+                                </p>
+                                {identifiedLocation.landmark && (
+                                  <p className="text-sm text-gray-600">📍 {identifiedLocation.landmark}</p>
+                                )}
+                                {identifiedLocation.confidence && (
+                                  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                                    identifiedLocation.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                                    identifiedLocation.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {identifiedLocation.confidence} confidence
+                                  </span>
+                                )}
+                              </div>
+                            ) : identifiedLocation ? (
+                              <div>
+                                <p className="text-gray-900 font-medium">Location not recognized</p>
+                                <p className="text-sm text-gray-500">We couldn't identify a specific destination in this image. Try a photo of a famous landmark or tourist attraction.</p>
+                                <button
+                                  onClick={resetWhereIsThis}
+                                  className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                  Try another image
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
-                        ) : identifiedLocation ? (
-                          // Fallback: API returned something but no destination
-                          <div>
-                            <p className="text-gray-900 font-medium">Location not recognized</p>
-                            <p className="text-sm text-gray-500">We couldn't identify a specific destination in this image. Try a photo of a famous landmark or tourist attraction.</p>
-                            <button
-                              onClick={resetWhereIsThis}
-                              className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              Try another image
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      {identifiedLocation?.destination && !identifiedLocation.error && (
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <button
-                            onClick={handleSearchIdentifiedLocation}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 whitespace-nowrap"
-                          >
-                            <MapPin className="w-4 h-4" />
-                            Find Tours
-                          </button>
-                          <button
-                            onClick={handleSearchIdentifiedLocationHotels}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 whitespace-nowrap"
-                          >
-                            <Hotel className="w-4 h-4" />
-                            Find Hotels
-                          </button>
+                          
+                          {identifiedLocation?.destination && !identifiedLocation.error && (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                onClick={handleSearchIdentifiedLocation}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+                              >
+                                <MapPin className="w-4 h-4" />
+                                Find Tours
+                              </button>
+                              <button
+                                onClick={handleSearchIdentifiedLocationHotels}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+                              >
+                                <Hotel className="w-4 h-4" />
+                                Find Hotels
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
                   )}
                 </div>
 
@@ -1096,109 +1051,103 @@ export default function LandingPage({
                     : 'opacity-0 absolute inset-0 pointer-events-none translate-y-2'
                 }`}>
                   {activeTab === 'deals' && (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex-1 relative" ref={destinationInputRef}>
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <Tag className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">Find Deals In</p>
-                        <input 
-                          type="text"
-                          placeholder="Enter a city to find deals..."
-                          value={destination}
-                          onChange={(e) => {
-                            setDestination(e.target.value);
-                            setSelectedDestinationId(null);
-                          }}
-                          onKeyDown={(e) => {
-                            // Handle autocomplete navigation
-                            if (showSuggestions && suggestions.length > 0) {
-                              if (e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
-                                return;
-                              } else if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                setSelectedIndex(prev => Math.max(prev - 1, -1));
-                                return;
-                              } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                                e.preventDefault();
-                                handleSelectSuggestion(suggestions[selectedIndex]);
-                                return;
-                              } else if (e.key === 'Escape') {
-                                setShowSuggestions(false);
-                                return;
-                              }
-                            }
-                            // Handle search on Enter
-                            if (e.key === 'Enter' && destination.trim()) {
-                              handleDealsSearch(destination.trim());
-                            }
-                          }}
-                          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                          className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
-                          autoComplete="off"
-                        />
-                      </div>
-                      {loadingSuggestions && (
-                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                      )}
-                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="flex-1 relative" ref={destinationInputRef}>
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <Tag className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-500 font-medium">Find Deals In</p>
+                            <input 
+                              type="text"
+                              placeholder="Enter a city to find deals..."
+                              value={destination}
+                              onChange={(e) => {
+                                setDestination(e.target.value);
+                                setSelectedDestinationId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (showSuggestions && suggestions.length > 0) {
+                                  if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+                                    return;
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    setSelectedIndex(prev => Math.max(prev - 1, -1));
+                                    return;
+                                  } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                                    e.preventDefault();
+                                    handleSelectSuggestion(suggestions[selectedIndex]);
+                                    return;
+                                  } else if (e.key === 'Escape') {
+                                    setShowSuggestions(false);
+                                    return;
+                                  }
+                                }
+                                if (e.key === 'Enter' && destination.trim()) {
+                                  handleDealsSearch(destination.trim());
+                                }
+                              }}
+                              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                              className="w-full text-gray-900 placeholder-gray-400 focus:outline-none"
+                              autoComplete="off"
+                            />
+                          </div>
+                          {loadingSuggestions && (
+                            <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                          )}
+                        </div>
 
-                    {/* Autocomplete Dropdown */}
-                    {showSuggestions && suggestions.length > 0 && (
-                      <div
-                        ref={suggestionsRef}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div
+                            ref={suggestionsRef}
+                            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+                          >
+                            {suggestions.map((suggestion, index) => {
+                              const displayName = typeof suggestion?.displayName === 'string'
+                                ? suggestion.displayName
+                                : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
+                              const parentName = suggestion?.parentName || null;
+
+                              return (
+                                <button
+                                  key={suggestion?.destinationId || index}
+                                  type="button"
+                                  onClick={() => handleSelectSuggestion(suggestion)}
+                                  className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                                    index === selectedIndex ? 'bg-orange-50' : ''
+                                  } ${index === 0 ? 'rounded-t-xl' : ''} ${
+                                    index === suggestions.length - 1 ? 'rounded-b-xl' : ''
+                                  }`}
+                                >
+                                  <MapPin className="w-4 h-4 text-orange-400" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                                    {parentName && (
+                                      <p className="text-xs text-gray-500">{parentName}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => destination.trim() && handleDealsSearch(destination.trim())}
+                        disabled={!destination.trim() || isLoading}
+                        className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-300 text-white px-6 py-4 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 m-1"
                       >
-                        {suggestions.map((suggestion, index) => {
-                          // Safely extract display values (handle edge cases)
-                          const displayName = typeof suggestion?.displayName === 'string'
-                            ? suggestion.displayName
-                            : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
-                          const parentName = suggestion?.parentName || null;
-
-                          return (
-                            <button
-                              key={suggestion?.destinationId || index}
-                              type="button"
-                              onClick={() => handleSelectSuggestion(suggestion)}
-                              className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-                                index === selectedIndex ? 'bg-orange-50' : ''
-                              } ${index === 0 ? 'rounded-t-xl' : ''} ${
-                                index === suggestions.length - 1 ? 'rounded-b-xl' : ''
-                              }`}
-                            >
-                              <MapPin className="w-4 h-4 text-orange-400" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {displayName}
-                                </p>
-                                {parentName && (
-                                  <p className="text-xs text-gray-500">{parentName}</p>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => destination.trim() && handleDealsSearch(destination.trim())}
-                    disabled={!destination.trim() || isLoading}
-                    className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-300 text-white px-6 py-4 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 m-1"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5" />
-                        Find Deals
-                      </>
-                    )}
-                  </button>
-                </div>
+                        {isLoading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5" />
+                            Find Deals
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1213,79 +1162,69 @@ export default function LandingPage({
       </div>
 
       {/* ================================================================== */}
-      {/* FEATURED DESTINATIONS */}
+      {/* FEATURED EXPERIENCES - Carousel */}
       {/* ================================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-4 sm:mt-8">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Experiences</h2>
           <div className="flex gap-2">
-            <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => scrollCarousel('left')}
+              className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              aria-label="Scroll left"
+            >
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
-            <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => scrollCarousel('right')}
+              className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              aria-label="Scroll right"
+            >
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-4 sm:mt-8">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Experiences</h2>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => scrollCarousel('left')}
-                className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-              </button>
-              <button 
-                onClick={() => scrollCarousel('right')}
-                className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-              >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-              </button>
-            </div>
-          </div>
-        
-          <div 
-            ref={carouselRef}
-            className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide pb-2"
-          >
-            {FEATURED_DESTINATIONS.map((dest) => (
-              <div
-                key={dest.name}
-                data-card
-                onClick={() => handleFeaturedDealClick(dest)}
-                onMouseEnter={() => handleDestinationHover(dest.name)}
-                onMouseLeave={handleDestinationHoverEnd}
-                className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer flex-shrink-0 snap-start"
-                style={{ width: 'calc((100% - 64px) / 5)', minWidth: '200px' }}
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={dest.image}
-                    alt={dest.name}
-                    loading="lazy"
-                    width={400}
-                    height={300}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-2.5 sm:p-4">
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{dest.name}</h3>
-                  <p className="text-xs sm:text-sm text-orange-600 font-medium">{dest.deal}</p>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
-                  <span className="text-white font-medium flex items-center gap-1 text-sm sm:text-base">
-                    View Deals <ChevronRight className="w-4 h-4" />
-                  </span>
-                </div>
+        <div 
+          ref={carouselRef}
+          className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide pb-2"
+        >
+          {FEATURED_DESTINATIONS.map((dest, index) => (
+            <div
+              key={`${dest.name}-${index}`}
+              data-card
+              onClick={() => handleFeaturedDealClick(dest)}
+              onMouseEnter={() => handleDestinationHover(dest.name)}
+              onMouseLeave={handleDestinationHoverEnd}
+              className="group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer flex-shrink-0 snap-start"
+              style={{ width: 'calc((100% - 64px) / 5)', minWidth: '200px' }}
+            >
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src={dest.image}
+                  alt={dest.name}
+                  loading="lazy"
+                  width={400}
+                  height={300}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
               </div>
-            ))}
-          </div>
+              <div className="p-2.5 sm:p-4">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{dest.name}</h3>
+                <p className="text-xs sm:text-sm text-orange-600 font-medium">{dest.deal}</p>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                <span className="text-white font-medium flex items-center gap-1 text-sm sm:text-base">
+                  View Deals <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
+
       {/* ================================================================== */}
-      {/* VIA CHAT - Reusable Component */}
+      {/* VIA CHAT */}
       {/* ================================================================== */}
       <ViaChat
         backendUrl={backendUrl}
@@ -1298,15 +1237,12 @@ export default function LandingPage({
       {/* ================================================================== */}
       {cartSidebarOpen && (
         <div className="fixed inset-0 z-50">
-          {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/30"
             onClick={() => setCartSidebarOpen(false)}
           />
           
-          {/* Floating Panel */}
           <div className="absolute right-4 top-4 bottom-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl flex flex-col animate-slide-in-right overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4" />
@@ -1320,7 +1256,6 @@ export default function LandingPage({
               </button>
             </div>
             
-            {/* Cart Content */}
             <div className="flex-1 overflow-y-auto p-3">
               {tripItemCount === 0 ? (
                 <div className="text-center py-8 text-gray-500">
@@ -1369,7 +1304,6 @@ export default function LandingPage({
               )}
             </div>
             
-            {/* Footer with Total and Checkout */}
             {tripItemCount > 0 && (
               <div className="border-t border-gray-100 p-3 bg-white">
                 <div className="flex justify-between items-center mb-3">
