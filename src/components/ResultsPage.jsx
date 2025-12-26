@@ -100,65 +100,63 @@ const TourCard = memo(function TourCard({
                     onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
                     className={`w-2 h-2 rounded-full transition-all ${
                       idx === currentImageIndex
-                        ? 'bg-white w-4'
+                        ? 'bg-white scale-110'
                         : 'bg-white/60 hover:bg-white/80'
                     }`}
                   />
                 ))}
-                {images.length > 5 && (
-                  <span className="text-white text-xs ml-1">+{images.length - 5}</span>
-                )}
               </div>
             )}
-            {/* Navigation arrows - visible on hover */}
+            {/* Arrow navigation (show on hover) */}
             {images.length > 1 && (
               <>
                 <button
                   onClick={handlePrevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-white"
                 >
-                  <ChevronLeft className="w-4 h-4 text-gray-700" />
+                  <ChevronLeft className="w-5 h-5 text-gray-700" />
                 </button>
                 <button
                   onClick={handleNextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-white"
                 >
-                  <ChevronRight className="w-4 h-4 text-gray-700" />
+                  <ChevronRight className="w-5 h-5 text-gray-700" />
                 </button>
               </>
             )}
           </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-            <MapPin className="w-12 h-12 text-blue-300" />
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <MapPin className="w-8 h-8 text-gray-300" />
           </div>
         )}
-        {/* Badges on image */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-          {hasDiscount && (
-            <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
-              <Tag className="w-3 h-3" />
-              DEAL
-            </span>
-          )}
-          {tourFlags.includes('LIKELY_TO_SELL_OUT') && (
-            <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
-              🔥 Popular
-            </span>
-          )}
-        </div>
-        {/* Rating badge on image */}
-        {tour.rating && tour.rating !== 'New' && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm">
+
+        {/* Rating badge (top left) */}
+        {tour.rating && (
+          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
             <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-            <span className="font-semibold text-gray-900 text-sm">{tour.rating}</span>
+            <span className="text-sm font-semibold text-gray-900">{tour.rating.toFixed(1)}</span>
           </div>
         )}
+
+        {/* Discount badge (top right) */}
+        {hasDiscount && (
+          <div className="absolute top-3 right-3 bg-orange-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+            SALE
+          </div>
+        )}
+
         {/* Source badge */}
         <div className="absolute bottom-3 left-3">
-          <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
-            Viator
-          </span>
+          {tour.source === 'hotelbeds' ? (
+            <span className="px-2 py-0.5 bg-[#FF6B00] text-white text-xs font-medium rounded">
+              Hotelbeds
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 bg-[#16A34A] text-white text-xs font-medium rounded">
+              Viator
+            </span>
+          )}
         </div>
       </div>
 
@@ -276,16 +274,14 @@ export default function ResultsPage({
     minRating: '',
     minDuration: '',
     maxDuration: '',
-    timeOfDay: [], // morning, afternoon, evening, night
+    timeOfDay: [],
     freeCancel: false,
     skipLine: false,
     privateTour: false,
     likelyToSellOut: false,
     specialOffer: searchParams?.prefilter === 'SPECIAL_OFFER' || searchParams?.flags?.includes('SPECIAL_OFFER') || false,
-    // New Viator-compliant filters
     kidFriendly: false,
     multiDay: false,
-    // Category filters using Viator tag IDs
     categories: []
   });
 
@@ -297,32 +293,15 @@ export default function ResultsPage({
     { key: 'night', label: 'Night', emoji: '🌙', hours: [21, 6] }
   ];
 
-  // Viator-compliant category tags (approved for front-end display)
-  // These use actual Viator tag IDs for proper filtering
-  const viatorCategories = [
-    { key: 'sightseeing', label: 'Tours & Sightseeing', emoji: '🏛️', tagIds: [21913, 21725], keywords: ['tour', 'sightseeing', 'cruise'] },
-    { key: 'food', label: 'Food & Drink', emoji: '🍴', tagIds: [11910, 11965], keywords: ['food', 'drink', 'culinary', 'wine', 'dining', 'tasting'] },
-    { key: 'outdoor', label: 'Outdoor Activities', emoji: '🏞️', tagIds: [11926], keywords: ['outdoor', 'hiking', 'nature', 'adventure'] },
-    { key: 'art', label: 'Art & Culture', emoji: '🎨', tagIds: [21911], keywords: ['art', 'culture', 'museum', 'gallery', 'history'] },
-    { key: 'water', label: 'Water Sports', emoji: '🌊', tagIds: [11917], keywords: ['water', 'boat', 'cruise', 'kayak', 'snorkel', 'diving'] },
-    { key: 'walking', label: 'Walking & Bike Tours', emoji: '🚶', tagIds: [11918, 13018], keywords: ['walking', 'bike', 'bicycle', 'cycling'] },
-    { key: 'daytrip', label: 'Day Trips', emoji: '🚌', tagIds: [11915], keywords: ['day trip', 'excursion', 'full day'] },
-    { key: 'classes', label: 'Classes & Workshops', emoji: '👨‍🍳', tagIds: [11912], keywords: ['class', 'workshop', 'lesson', 'cooking'] },
-    { key: 'shows', label: 'Shows & Entertainment', emoji: '🎭', tagIds: [21765, 18953], keywords: ['show', 'entertainment', 'performance', 'theater', 'concert'] },
-    { key: 'tickets', label: 'Tickets & Passes', emoji: '🎟️', tagIds: [11919], keywords: ['ticket', 'pass', 'admission', 'entry'] }
+  // Viator-compliant category tags
+  const categoryOptions = [
+    { id: 21483, label: 'Food & Drink', emoji: '🍽️' },
+    { id: 21511, label: 'Walking Tours', emoji: '🚶' },
+    { id: 11926, label: 'Day Trips', emoji: '🌅' },
+    { id: 21480, label: 'Museums', emoji: '🏛️' },
+    { id: 21567, label: 'Photography', emoji: '📸' },
+    { id: 21485, label: 'Adventure', emoji: '🎯' },
   ];
-
-  // Special product feature tags (Viator-compliant)
-  const VIATOR_TAGS = {
-    KID_FRIENDLY: 11819,
-    ADULTS_ONLY: 18884,
-    MULTI_DAY: 11922,
-    SKIP_THE_LINE: 12074,
-    FREE_CANCELLATION: 'FREE_CANCELLATION', // This is a flag, not a tag ID
-    PRIVATE_TOUR: 'PRIVATE_TOUR', // This is a flag
-    SPECIAL_OFFER: 'SPECIAL_OFFER', // This is a flag
-    LIKELY_TO_SELL_OUT: 'LIKELY_TO_SELL_OUT' // This is a flag (use carefully per guidelines)
-  };
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -340,31 +319,165 @@ export default function ResultsPage({
   const [quickViewLoading, setQuickViewLoading] = useState(false);
   const quickViewAbortController = useRef(null);
 
-  // Function to open QuickView with full details - memoized with useCallback
+  // Search form state
+  const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
+  const [selectedDestinationId, setSelectedDestinationId] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
+
+  // Chat State
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: 'assistant',
+      content: `I found ${results.length} tours in ${searchParams?.destination || 'your destination'}! Need help narrowing down your options?`
+    }
+  ]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatMessagesEndRef = useRef(null);
+
+  // ============================================================================
+  // COMPUTED VALUES
+  // ============================================================================
+
+  const cartItemCount = useMemo(() => {
+    return (cart?.tours?.length || 0) + (cart?.hotels?.length || 0);
+  }, [cart]);
+
+  const cartTotal = useMemo(() => {
+    let total = 0;
+    cart?.tours?.forEach(tour => {
+      const price = tour.price || 0;
+      total += tour.pricingType === 'group' ? price : price * travelers;
+    });
+    cart?.hotels?.forEach(hotel => {
+      total += hotel.price || 0;
+    });
+    return total;
+  }, [cart, travelers]);
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return (
+      filters.minPrice !== '' ||
+      filters.maxPrice !== '' ||
+      filters.minRating !== '' ||
+      filters.minDuration !== '' ||
+      filters.maxDuration !== '' ||
+      filters.timeOfDay.length > 0 ||
+      filters.freeCancel ||
+      filters.skipLine ||
+      filters.privateTour ||
+      filters.likelyToSellOut ||
+      filters.specialOffer ||
+      filters.kidFriendly ||
+      filters.multiDay ||
+      filters.categories.length > 0
+    );
+  }, [filters]);
+
+  // Filter and sort results
+  const sortedResults = useMemo(() => {
+    let filtered = [...results];
+
+    // Apply filters
+    if (filters.minPrice) {
+      filtered = filtered.filter(t => t.price >= parseFloat(filters.minPrice));
+    }
+    if (filters.maxPrice) {
+      filtered = filtered.filter(t => t.price <= parseFloat(filters.maxPrice));
+    }
+    if (filters.minRating) {
+      filtered = filtered.filter(t => t.rating >= parseFloat(filters.minRating));
+    }
+    if (filters.freeCancel) {
+      filtered = filtered.filter(t => t.flags?.includes('FREE_CANCELLATION'));
+    }
+    if (filters.skipLine) {
+      filtered = filtered.filter(t => t.flags?.includes('SKIP_THE_LINE'));
+    }
+    if (filters.privateTour) {
+      filtered = filtered.filter(t => t.flags?.includes('PRIVATE_TOUR'));
+    }
+    if (filters.likelyToSellOut) {
+      filtered = filtered.filter(t => t.flags?.includes('LIKELY_TO_SELL_OUT'));
+    }
+    if (filters.specialOffer) {
+      filtered = filtered.filter(t => t.flags?.includes('SPECIAL_OFFER') || t.hasDiscount);
+    }
+    if (filters.kidFriendly) {
+      filtered = filtered.filter(t => t.flags?.includes('KID_FRIENDLY'));
+    }
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter(t => {
+        const tourTags = t.tags || t.tagIds || [];
+        return filters.categories.some(catId => tourTags.includes(catId));
+      });
+    }
+
+    // Sort
+    switch (sortBy) {
+      case 'price-low':
+        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+        break;
+      case 'price-high':
+        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+        break;
+      case 'rating':
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'reviews':
+        filtered.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+        break;
+      default:
+        // Keep original order (popular/relevance)
+        break;
+    }
+
+    return filtered;
+  }, [results, filters, sortBy]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedResults.length / resultsPerPage);
+  const paginatedResults = useMemo(() => {
+    const start = (currentPage - 1) * resultsPerPage;
+    return sortedResults.slice(start, start + resultsPerPage);
+  }, [sortedResults, currentPage, resultsPerPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, sortBy]);
+
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  // Function to open QuickView with full details
   const openQuickView = useCallback(async (tour) => {
-    // Cancel any pending request
     if (quickViewAbortController.current) {
       quickViewAbortController.current.abort();
     }
     quickViewAbortController.current = new AbortController();
 
-    // Show modal immediately with basic info
     setQuickViewTour(tour);
     setQuickViewLoading(true);
 
     try {
-      // Fetch full tour details for more images and info
       const response = await fetch(`${backendUrl}/api/tours/${tour.productCode || tour.id}`, {
         signal: quickViewAbortController.current.signal
       });
       if (response.ok) {
         const data = await response.json();
-        const fullDetails = data.tour || data; // Handle both { tour: {...} } and direct response
-        // Merge full details with existing tour data
+        const fullDetails = data.tour || data;
         setQuickViewTour(prev => ({
           ...prev,
           ...fullDetails,
-          // Keep original price info if full details don't have it
           price: fullDetails.price || prev.price,
           originalPrice: fullDetails.originalPrice || prev.originalPrice,
           hasDiscount: fullDetails.hasDiscount ?? prev.hasDiscount
@@ -374,7 +487,6 @@ export default function ResultsPage({
       if (error.name !== 'AbortError') {
         console.error('Failed to fetch tour details:', error);
       }
-      // Keep showing the basic tour info
     } finally {
       setQuickViewLoading(false);
     }
@@ -388,209 +500,8 @@ export default function ResultsPage({
       }
     };
   }, []);
-  
-  // Chat State
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: 'assistant',
-      content: `I found ${results.length} tours in ${searchParams?.destination || 'your destination'}! Need help narrowing down your options? Just ask!`
-    }
-  ]);
-  const [chatLoading, setChatLoading] = useState(false);
-  
-  // Search bar state
-  const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
-  const [searchStartDate, setSearchStartDate] = useState(searchParams?.startDate || '');
-  const [searchEndDate, setSearchEndDate] = useState(searchParams?.endDate || '');
 
-  // Autocomplete state
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const [selectedDestinationId, setSelectedDestinationId] = useState(null);
-
-  // Refs
-  const chatMessagesRef = useRef(null);
-  const textareaRef = useRef(null);
-  const suggestionsRef = useRef(null);
-  const searchInputRef = useRef(null);
-  // If we have a pre-filled destination from searchParams, treat it as "just selected"
-  // to prevent autocomplete from opening on initial load
-  const justSelectedRef = useRef(!!searchParams?.destination);
-
-  // ============================================================================
-  // FILTERING & SORTING - Memoized for performance
-  // ============================================================================
-
-  // Helper to check if tour matches a Viator category (using tag IDs and keywords)
-  const tourMatchesCategory = useCallback((tour, categoryKey) => {
-    const category = viatorCategories.find(c => c.key === categoryKey);
-    if (!category) return false;
-
-    // Get tour's tag IDs (from API response)
-    const tourTagIds = tour.tags || [];
-
-    // First, check if tour has any of the category's tag IDs
-    const hasMatchingTag = category.tagIds.some(tagId =>
-      tourTagIds.includes(tagId) || tourTagIds.includes(String(tagId))
-    );
-    if (hasMatchingTag) return true;
-
-    // Fallback: check keywords in tour name, description, and categories
-    const searchText = [
-      tour.name || '',
-      tour.description || '',
-      ...(tour.categories || [])
-    ].join(' ').toLowerCase();
-
-    return category.keywords.some(keyword => searchText.includes(keyword.toLowerCase()));
-  }, [viatorCategories]);
-
-  // Helper to check if tour has a specific Viator tag ID
-  const tourHasTag = useCallback((tour, tagId) => {
-    const tourTagIds = tour.tags || [];
-    return tourTagIds.includes(tagId) || tourTagIds.includes(String(tagId));
-  }, []);
-
-  // Memoize filtered results to avoid recalculating on every render
-  const filteredResults = useMemo(() => {
-    return results.filter(tour => {
-      // Price filter
-      if (filters.minPrice && tour.price < parseFloat(filters.minPrice)) return false;
-      if (filters.maxPrice && tour.price > parseFloat(filters.maxPrice)) return false;
-
-      // Rating filter
-      if (filters.minRating && tour.rating < parseFloat(filters.minRating)) return false;
-
-      // Duration filter (assuming duration is in hours or "X hours" format)
-      const durationHours = parseDuration(tour.duration);
-      if (filters.minDuration && durationHours < parseFloat(filters.minDuration)) return false;
-      if (filters.maxDuration && durationHours > parseFloat(filters.maxDuration)) return false;
-
-      // Flag-based filters
-      const tourFlags = tour.flags || [];
-      if (filters.freeCancel && !tourFlags.includes('FREE_CANCELLATION')) return false;
-      if (filters.skipLine && !tourFlags.includes('SKIP_THE_LINE')) return false;
-      if (filters.privateTour && !tourFlags.includes('PRIVATE_TOUR')) return false;
-      if (filters.likelyToSellOut && !tourFlags.includes('LIKELY_TO_SELL_OUT')) return false;
-      if (filters.specialOffer && !tourFlags.includes('SPECIAL_OFFER')) return false;
-
-      // Tag-based filters (Viator compliant)
-      if (filters.kidFriendly) {
-        // Check for kid-friendly tag or keywords
-        const hasKidTag = tourHasTag(tour, VIATOR_TAGS.KID_FRIENDLY);
-        const tourText = ((tour.name || '') + ' ' + (tour.description || '')).toLowerCase();
-        const hasKidKeyword = tourText.includes('kid') || tourText.includes('child') || tourText.includes('family') || tourText.includes('families');
-        if (!hasKidTag && !hasKidKeyword) return false;
-      }
-
-      if (filters.multiDay) {
-        // Check for multi-day tag or duration
-        const hasMultiDayTag = tourHasTag(tour, VIATOR_TAGS.MULTI_DAY);
-        const tourText = ((tour.name || '') + ' ' + (tour.duration || '')).toLowerCase();
-        const isMultiDay = tourText.includes('multi-day') || tourText.includes('multiday') ||
-                          tourText.includes('days') || durationHours >= 24;
-        if (!hasMultiDayTag && !isMultiDay) return false;
-      }
-
-      // Time of day filter - filter by tour start time or keywords in name/description
-      if (filters.timeOfDay.length > 0) {
-        const tourText = (tour.name || '').toLowerCase() + ' ' + (tour.description || '').toLowerCase();
-        const matchesTimeOfDay = filters.timeOfDay.some(time => {
-          // Check for explicit time keywords in tour name/description
-          if (time === 'morning' && (tourText.includes('morning') || tourText.includes('sunrise') || tourText.includes('breakfast'))) return true;
-          if (time === 'afternoon' && (tourText.includes('afternoon') || tourText.includes('lunch'))) return true;
-          if (time === 'evening' && (tourText.includes('evening') || tourText.includes('sunset') || tourText.includes('dinner'))) return true;
-          if (time === 'night' && (tourText.includes('night') || tourText.includes('after dark') || tourText.includes('nocturnal') || tourText.includes('stargazing'))) return true;
-          // If tour has startTime, check it
-          if (tour.startTime) {
-            const hour = parseInt(tour.startTime.split(':')[0]);
-            if (time === 'morning' && hour >= 6 && hour < 12) return true;
-            if (time === 'afternoon' && hour >= 12 && hour < 17) return true;
-            if (time === 'evening' && hour >= 17 && hour < 21) return true;
-            if (time === 'night' && (hour >= 21 || hour < 6)) return true;
-          }
-          return false;
-        });
-        if (!matchesTimeOfDay) return false;
-      }
-
-      // Category filters - tour must match at least one selected category
-      if (filters.categories.length > 0) {
-        const matchesAnyCategory = filters.categories.some(categoryKey =>
-          tourMatchesCategory(tour, categoryKey)
-        );
-        if (!matchesAnyCategory) return false;
-      }
-
-      return true;
-    });
-  }, [results, filters, tourMatchesCategory, tourHasTag]);
-
-  // Memoize sorted results to avoid re-sorting on every render
-  const sortedResults = useMemo(() => {
-    return [...filteredResults].sort((a, b) => {
-      switch (sortBy) {
-        case 'price_low':
-          return (a.price || 0) - (b.price || 0);
-        case 'price_high':
-          return (b.price || 0) - (a.price || 0);
-        case 'rating':
-          return (b.rating || 0) - (a.rating || 0);
-        case 'reviews':
-          return (b.reviewCount || 0) - (a.reviewCount || 0);
-        case 'duration_short':
-          return parseDuration(a.duration) - parseDuration(b.duration);
-        case 'duration_long':
-          return parseDuration(b.duration) - parseDuration(a.duration);
-        default: // 'popular'
-          return (b.reviewCount || 0) - (a.reviewCount || 0);
-      }
-    });
-  }, [filteredResults, sortBy]);
-
-  // Memoize pagination
-  const totalPages = useMemo(() =>
-    Math.ceil(sortedResults.length / resultsPerPage),
-    [sortedResults.length, resultsPerPage]
-  );
-
-  const paginatedResults = useMemo(() =>
-    sortedResults.slice(
-      (currentPage - 1) * resultsPerPage,
-      currentPage * resultsPerPage
-    ),
-    [sortedResults, currentPage, resultsPerPage]
-  );
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, sortBy]);
-
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
-
-  function parseDuration(duration) {
-    if (!duration) return 0;
-    if (typeof duration === 'number') return duration;
-    
-    const str = duration.toString().toLowerCase();
-    const hours = str.match(/(\d+)\s*h/);
-    const minutes = str.match(/(\d+)\s*m/);
-    
-    let total = 0;
-    if (hours) total += parseInt(hours[1]);
-    if (minutes) total += parseInt(minutes[1]) / 60;
-    
-    return total || parseFloat(str) || 0;
-  }
-
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({
       minPrice: '',
       maxPrice: '',
@@ -607,243 +518,114 @@ export default function ResultsPage({
       multiDay: false,
       categories: []
     });
-  };
-
-  // Toggle category filter (Viator-compliant)
-  const toggleCategory = (categoryKey) => {
-    setFilters(f => ({
-      ...f,
-      categories: f.categories.includes(categoryKey)
-        ? f.categories.filter(c => c !== categoryKey)
-        : [...f.categories, categoryKey]
-    }));
-  };
-
-  // Toggle time of day filter
-  const toggleTimeOfDay = (timeKey) => {
-    setFilters(f => ({
-      ...f,
-      timeOfDay: f.timeOfDay.includes(timeKey)
-        ? f.timeOfDay.filter(t => t !== timeKey)
-        : [...f.timeOfDay, timeKey]
-    }));
-  };
-
-  const hasActiveFilters = Object.entries(filters).some(([key, v]) => {
-    if (key === 'categories' || key === 'timeOfDay') return v.length > 0;
-    return v !== '' && v !== false;
-  });
-
-  // ============================================================================
-  // SEARCH HANDLER - Memoized with useCallback
-  // ============================================================================
+  }, []);
 
   const handleSearch = useCallback((e) => {
     e?.preventDefault();
-    if (!searchDestination.trim()) return;
+    if (searchDestination.trim()) {
+      onNewSearch({
+        type: 'tours',
+        destination: searchDestination,
+        destinationId: selectedDestinationId,
+        travelers
+      });
+    }
+  }, [searchDestination, selectedDestinationId, travelers, onNewSearch]);
 
-    setShowSuggestions(false);
-    onNewSearch({
-      type: 'tours',
-      destination: searchDestination.trim(),
-      destinationId: selectedDestinationId,
-      travelers: travelers,
-      startDate: searchStartDate || undefined,
-      endDate: searchEndDate || undefined,
-      sortBy
-    });
-  }, [searchDestination, selectedDestinationId, travelers, searchStartDate, searchEndDate, sortBy, onNewSearch]);
-
-  // ============================================================================
-  // AUTOCOMPLETE - Debounced with AbortController
-  // ============================================================================
-
-  // Click outside to close suggestions
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(e.target)
-      ) {
+  const handleSearchKeyDown = useCallback((e) => {
+    if (showSuggestions && suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(i => Math.min(i + 1, suggestions.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        const suggestion = suggestions[selectedIndex];
+        setSearchDestination(suggestion.displayName || suggestion.name);
+        setSelectedDestinationId(suggestion.destinationId);
         setShowSuggestions(false);
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Debounced autocomplete with AbortController
-  useEffect(() => {
-    // Skip if a suggestion was just selected
-    if (justSelectedRef.current) {
-      justSelectedRef.current = false;
-      return;
     }
+  }, [showSuggestions, suggestions, selectedIndex]);
 
+  // Fetch destination suggestions
+  useEffect(() => {
     if (!searchDestination || searchDestination.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
-    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoadingSuggestions(true);
       try {
         const response = await fetch(
-          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(searchDestination)}`,
-          { signal: controller.signal }
+          `${backendUrl}/api/destinations/autocomplete?query=${encodeURIComponent(searchDestination)}`
         );
         if (response.ok) {
           const data = await response.json();
-          setSuggestions(data.suggestions || []);
+          setSuggestions(data.destinations || []);
           setShowSuggestions(true);
-          setSelectedSuggestionIndex(-1);
+          setSelectedIndex(-1);
         }
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Autocomplete error:', error);
-        }
+        console.error('Autocomplete error:', error);
       } finally {
-        if (!controller.signal.aborted) {
-          setLoadingSuggestions(false);
-        }
+        setLoadingSuggestions(false);
       }
     }, 300);
 
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
+    return () => clearTimeout(timer);
   }, [searchDestination, backendUrl]);
 
-  const handleSelectSuggestion = useCallback((suggestion) => {
-    justSelectedRef.current = true;
-    setSearchDestination(suggestion.displayName || suggestion.name);
-    setSelectedDestinationId(suggestion.destinationId);
-    setShowSuggestions(false);
-    setSuggestions([]);
-  }, []);
-
-  const handleSearchKeyDown = useCallback((e) => {
-    if (!showSuggestions || suggestions.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedSuggestionIndex(prev => Math.min(prev + 1, suggestions.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedSuggestionIndex(prev => Math.max(prev - 1, -1));
-    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
-      e.preventDefault();
-      handleSelectSuggestion(suggestions[selectedSuggestionIndex]);
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-    }
-  }, [showSuggestions, suggestions, selectedSuggestionIndex, handleSelectSuggestion]);
-
-  // ============================================================================
-  // CHAT HANDLERS - Memoized with useCallback
-  // ============================================================================
-
+  // Chat handlers
   const handleChatSend = useCallback(async () => {
     if (!chatInput.trim() || chatLoading) return;
 
-    const userMessage = { role: 'user', content: chatInput };
-    setChatMessages(prev => [...prev, userMessage]);
+    const userMessage = chatInput.trim();
     setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setChatLoading(true);
 
     try {
-      const response = await fetch(`${backendUrl}/api/agent/chat`, {
+      const response = await fetch(`${backendUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...chatMessages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content
-          })),
+          message: userMessage,
           context: {
             destination: searchParams?.destination,
-            currentResults: results.length
+            resultCount: results.length,
+            travelers
           }
         })
       });
 
-      if (!response.ok) throw new Error('Chat failed');
-
-      const data = await response.json();
-
-      // Extract tours from various possible response formats
-      const tours = data.tours || data.results || data.data?.tours || [];
-
-      // Debug logging
-      console.log('Chat API Response:', data);
-      console.log('Extracted tours:', tours);
-      console.log('Tours count:', tours.length);
-
-      // Store message along with any tours found
-      setChatMessages(prev => {
-        const newMessages = [...prev, {
+      if (response.ok) {
+        const data = await response.json();
+        setChatMessages(prev => [...prev, {
           role: 'assistant',
-          content: data.message || "I'm not sure how to help with that. Could you try rephrasing?",
-          tours: tours,  // Store tours for display
-          searchDestination: data.searchDestination || data.destination || null  // For "View more" navigation
-        }];
-        console.log('Updated chat messages:', newMessages);
-        return newMessages;
-      });
+          content: data.message || data.response || "I'm here to help!",
+          tours: data.tours
+        }]);
+      }
     } catch (error) {
       console.error('Chat error:', error);
       setChatMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Sorry, I'm having trouble connecting. Please try again."
+        content: "Sorry, I had trouble processing that. Please try again."
       }]);
     } finally {
       setChatLoading(false);
     }
-  }, [chatInput, chatLoading, chatMessages, backendUrl, searchParams?.destination, results.length]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
-    }
-  }, [chatInput]);
+  }, [chatInput, chatLoading, backendUrl, searchParams, results.length, travelers]);
 
   // Scroll chat to bottom
   useEffect(() => {
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-    }
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
-
-  // ============================================================================
-  // CART HELPERS - Memoized calculations
-  // ============================================================================
-
-  const cartItemCount = useMemo(() =>
-    cart.tours.length + cart.hotels.length + cart.flights.length,
-    [cart.tours.length, cart.hotels.length, cart.flights.length]
-  );
-
-  // Calculate cart total with proper pricing (per-person × travelers, or per-group as-is)
-  const cartTotal = useMemo(() =>
-    cart.tours.reduce((sum, t) => {
-      const price = t.price || 0;
-      // Per-group pricing doesn't multiply by travelers
-      if (t.pricingType === 'group') {
-        return sum + price;
-      }
-      // Per-person pricing multiplies by travelers
-      return sum + (price * travelers);
-    }, 0),
-    [cart.tours, travelers]
-  );
 
   // ============================================================================
   // RENDER
@@ -852,112 +634,41 @@ export default function ResultsPage({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ================================================================== */}
-      {/* TOP SEARCH BAR */}
+      {/* HEADER */}
       {/* ================================================================== */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Logo / Back */}
             <button
               onClick={onBackToHome}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 text-gray-700 hover:text-blue-600 transition-colors flex-shrink-0"
             >
-              <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-              <span className="font-bold text-gray-900 hidden sm:inline">Viaggio</span>
+              <ChevronLeft className="w-5 h-5" />
+              <Plane className="w-5 h-5 hidden sm:block" />
+              <span className="font-semibold hidden md:inline">Viaggio</span>
             </button>
 
-            {/* Mobile: Simplified Search Button */}
-            <button
-              onClick={() => setShowMobileSearch(true)}
-              className="sm:hidden flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 text-left"
-            >
-              <Search className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 truncate">{searchDestination || 'Search...'}</span>
-              <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{travelers} guest{travelers > 1 ? 's' : ''}</span>
-            </button>
-
-            {/* Desktop: Full Search Form with Autocomplete */}
-            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 items-center gap-2 bg-gray-100 rounded-full px-4 py-2 relative">
+            {/* Search Form */}
+            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 max-w-xl">
               <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <div className="flex-1 relative min-w-0">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchDestination}
-                  onChange={(e) => {
-                    setSearchDestination(e.target.value);
-                    setSelectedDestinationId(null);
-                  }}
-                  onKeyDown={handleSearchKeyDown}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  placeholder="Where to?"
-                  className="w-full bg-transparent focus:outline-none text-sm"
-                  autoComplete="off"
-                />
-                {/* Autocomplete Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div
-                    ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 max-h-64 overflow-y-auto"
-                    style={{ minWidth: '280px' }}
-                  >
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        key={suggestion.destinationId || index}
-                        type="button"
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                          index === selectedSuggestionIndex
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'hover:bg-gray-50'
-                        } ${index === 0 ? 'rounded-t-xl' : ''} ${
-                          index === suggestions.length - 1 ? 'rounded-b-xl' : ''
-                        }`}
-                      >
-                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {suggestion.displayName || suggestion.name}
-                          </p>
-                          {suggestion.parentName && (
-                            <p className="text-xs text-gray-500">{suggestion.parentName}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {loadingSuggestions && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                  </div>
-                )}
-              </div>
-              <span className="text-gray-300 hidden md:block">|</span>
-              <div className="hidden md:flex items-center gap-1">
-                <input
-                  type="date"
-                  value={searchStartDate}
-                  onChange={(e) => setSearchStartDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-[105px]"
-                  title="Start date"
-                />
-                <span className="text-gray-400">-</span>
-                <input
-                  type="date"
-                  value={searchEndDate}
-                  onChange={(e) => setSearchEndDate(e.target.value)}
-                  min={searchStartDate || new Date().toISOString().split('T')[0]}
-                  className="bg-transparent focus:outline-none text-sm text-gray-600 w-[105px]"
-                  title="End date"
-                />
-              </div>
-              <span className="text-gray-300 hidden md:block">|</span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchDestination}
+                onChange={(e) => {
+                  setSearchDestination(e.target.value);
+                  setSelectedDestinationId(null);
+                }}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Where to?"
+                className="flex-1 bg-transparent border-none outline-none text-sm min-w-0"
+              />
               <select
                 value={travelers}
                 onChange={(e) => setTravelers(parseInt(e.target.value))}
-                className="bg-transparent focus:outline-none text-sm text-gray-600 cursor-pointer"
+                className="bg-transparent border-none outline-none text-sm text-gray-600 cursor-pointer"
               >
                 {[1,2,3,4,5,6,7,8].map(n => (
                   <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>
@@ -985,6 +696,39 @@ export default function ResultsPage({
             </button>
           </div>
         </div>
+
+        {/* Suggestions Dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div
+            ref={suggestionsRef}
+            className="absolute left-1/2 -translate-x-1/2 w-full max-w-xl bg-white rounded-xl shadow-lg border border-gray-200 mt-1 overflow-hidden z-50"
+          >
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={suggestion.destinationId || index}
+                type="button"
+                onClick={() => {
+                  setSearchDestination(suggestion.displayName || suggestion.name);
+                  setSelectedDestinationId(suggestion.destinationId);
+                  setShowSuggestions(false);
+                }}
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                  index === selectedIndex ? 'bg-blue-50' : ''
+                }`}
+              >
+                <MapPin className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {suggestion.displayName || suggestion.name}
+                  </p>
+                  {suggestion.parentName && (
+                    <p className="text-xs text-gray-500">{suggestion.parentName}</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* ================================================================== */}
@@ -1023,154 +767,107 @@ export default function ResultsPage({
                   placeholder="Min"
                   value={filters.minPrice}
                   onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-gray-400 flex-shrink-0">-</span>
+                <span className="text-gray-400">-</span>
                 <input
                   type="number"
                   placeholder="Max"
                   value={filters.maxPrice}
                   onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
-            {/* Duration */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Duration (hours)</h3>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minDuration}
-                  onChange={(e) => setFilters(f => ({ ...f, minDuration: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-gray-400 flex-shrink-0">-</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxDuration}
-                  onChange={(e) => setFilters(f => ({ ...f, maxDuration: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Time of Day */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Time of day</h3>
-              <div className="flex flex-wrap gap-2">
-                {timeOfDayOptions.map(time => (
-                  <button
-                    key={time.key}
-                    onClick={() => toggleTimeOfDay(time.key)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
-                      filters.timeOfDay.includes(time.key)
-                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
-                    }`}
-                  >
-                    <span>{time.emoji}</span>
-                    <span>{time.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Rating */}
+            {/* Rating Filter */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Minimum rating</h3>
-              <div className="flex flex-wrap gap-2">
-                {[3, 3.5, 4, 4.5].map(rating => (
+              <div className="flex gap-2">
+                {[3, 3.5, 4, 4.5].map((rating) => (
                   <button
                     key={rating}
-                    onClick={() => setFilters(f => ({ 
-                      ...f, 
-                      minRating: f.minRating === rating.toString() ? '' : rating.toString() 
-                    }))}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
+                    onClick={() => setFilters(f => ({ ...f, minRating: f.minRating === rating.toString() ? '' : rating.toString() }))}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
                       filters.minRating === rating.toString()
                         ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
                     }`}
                   >
-                    <Star className="w-3 h-3 fill-current" />
+                    <Star className="w-3.5 h-3.5 fill-current" />
                     {rating}+
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Specials / Tour Features (Viator-compliant) */}
+            {/* Feature Filters */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Specials</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Features</h3>
               <div className="space-y-2">
-                {[
-                  { key: 'freeCancel', label: 'Free cancellation', icon: '✓' },
-                  { key: 'skipLine', label: 'Skip the line', icon: '⚡' },
-                  { key: 'privateTour', label: 'Private tour', icon: '👤' },
-                  { key: 'specialOffer', label: 'Deals & discounts', icon: '🏷️' },
-                  { key: 'likelyToSellOut', label: 'Likely to sell out', icon: '🔥' }
-                ].map(feature => (
-                  <label
-                    key={feature.key}
-                    className="flex items-center gap-2 cursor-pointer group"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={filters[feature.key]}
-                      onChange={(e) => setFilters(f => ({ ...f, [feature.key]: e.target.checked }))}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                      {feature.icon} {feature.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Target Audience (Viator-compliant tags) */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Good for</h3>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer group">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.freeCancel}
+                    onChange={(e) => setFilters(f => ({ ...f, freeCancel: e.target.checked }))}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">Free cancellation</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.skipLine}
+                    onChange={(e) => setFilters(f => ({ ...f, skipLine: e.target.checked }))}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">Skip the line</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.privateTour}
+                    onChange={(e) => setFilters(f => ({ ...f, privateTour: e.target.checked }))}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">Private tour</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.specialOffer}
+                    onChange={(e) => setFilters(f => ({ ...f, specialOffer: e.target.checked }))}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">Special offers</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filters.kidFriendly}
                     onChange={(e) => setFilters(f => ({ ...f, kidFriendly: e.target.checked }))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                    👨‍👩‍👧 Kid-friendly
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={filters.multiDay}
-                    onChange={(e) => setFilters(f => ({ ...f, multiDay: e.target.checked }))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                    🗓️ Multi-day tours
-                  </span>
+                  <span className="text-sm text-gray-600">Kid-friendly</span>
                 </label>
               </div>
             </div>
 
-            {/* Categories (Viator-compliant tag IDs) */}
+            {/* Categories */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
               <div className="flex flex-wrap gap-2">
-                {viatorCategories.map(category => (
+                {categoryOptions.map((category) => (
                   <button
-                    key={category.key}
-                    onClick={() => toggleCategory(category.key)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
-                      filters.categories.includes(category.key)
+                    key={category.id}
+                    onClick={() => setFilters(f => ({
+                      ...f,
+                      categories: f.categories.includes(category.id)
+                        ? f.categories.filter(id => id !== category.id)
+                        : [...f.categories, category.id]
+                    }))}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      filters.categories.includes(category.id)
                         ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
                     }`}
@@ -1216,7 +913,6 @@ export default function ResultsPage({
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500">
                   {sortedResults.length} {sortedResults.length === 1 ? 'tour' : 'tours'} available
-                  {hasActiveFilters && ` (filtered from ${results.length})`}
                 </p>
               </div>
 
@@ -1224,13 +920,13 @@ export default function ResultsPage({
                 {/* Mobile Filter Button */}
                 <button
                   onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
+                  className="lg:hidden flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
-                  <span className="hidden xs:inline">Filters</span>
+                  Filters
                   {hasActiveFilters && (
                     <span className="bg-blue-600 text-white text-xs px-1.5 rounded-full">
-                      {Object.values(filters).filter(v => v !== '' && v !== false).length}
+                      {Object.values(filters).filter(v => v === true || (Array.isArray(v) && v.length > 0) || (typeof v === 'string' && v !== '')).length}
                     </span>
                   )}
                 </button>
@@ -1240,41 +936,33 @@ export default function ResultsPage({
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white border border-gray-200 rounded-lg px-3 sm:px-4 py-2 pr-8 sm:pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="popular">Most Popular</option>
                     <option value="rating">Highest Rated</option>
                     <option value="reviews">Most Reviews</option>
-                    <option value="price_low">Price: Low to High</option>
-                    <option value="price_high">Price: High to Low</option>
-                    <option value="duration_short">Duration: Short to Long</option>
-                    <option value="duration_long">Duration: Long to Short</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
               </div>
             </div>
 
-            {/* Loading State - Skeleton Cards */}
+            {/* Loading State */}
             {isLoading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm animate-pulse">
-                    {/* Image skeleton */}
-                    <div className="aspect-[4/3] bg-gray-200" />
-                    {/* Content skeleton */}
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse">
+                    <div className="h-48 bg-gray-200" />
                     <div className="p-4 space-y-3">
-                      {/* Title */}
                       <div className="h-4 bg-gray-200 rounded w-3/4" />
                       <div className="h-4 bg-gray-200 rounded w-1/2" />
-                      {/* Rating */}
                       <div className="flex items-center gap-2">
                         <div className="h-4 w-16 bg-gray-200 rounded" />
                         <div className="h-4 w-20 bg-gray-200 rounded" />
                       </div>
-                      {/* Duration */}
                       <div className="h-4 w-24 bg-gray-200 rounded" />
-                      {/* Price */}
                       <div className="flex justify-between items-center pt-2">
                         <div className="h-6 w-20 bg-gray-200 rounded" />
                         <div className="h-8 w-24 bg-gray-200 rounded" />
@@ -1308,7 +996,7 @@ export default function ResultsPage({
               </div>
             )}
 
-            {/* Results Grid - 3 columns on desktop, 2 on tablet, 1 on mobile */}
+            {/* Results Grid */}
             {!isLoading && paginatedResults.length > 0 && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -1379,12 +1067,10 @@ export default function ResultsPage({
             )}
           </div>
         </main>
-
-        {/* Note: Cart is now a floating panel, not an inline sidebar */}
       </div>
 
       {/* ================================================================== */}
-      {/* FLOATING CART PANEL */}
+      {/* FLOATING CART PANEL - WITH CLICKABLE ITEMS */}
       {/* ================================================================== */}
       {cartSidebarOpen && (
         <div className="fixed inset-0 z-50">
@@ -1420,6 +1106,7 @@ export default function ResultsPage({
                 </div>
               ) : (
                 <div className="space-y-2">
+                  {/* CLICKABLE CART ITEMS */}
                   {cart.tours.map(tour => {
                     const isGroupPricing = tour.pricingType === 'group';
                     const itemTotal = isGroupPricing ? tour.price : (tour.price * travelers);
@@ -1469,6 +1156,9 @@ export default function ResultsPage({
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
             
             {/* Footer with Total and Checkout */}
             {cartItemCount > 0 && (
@@ -1492,146 +1182,25 @@ export default function ResultsPage({
         </div>
       )}
 
-      {/* Animation Styles */}
-      <style>{`
-        @keyframes slide-in-right {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.25s ease-out;
-        }
-        @keyframes slide-down {
-          from { transform: translateY(-100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-slide-down {
-          animation: slide-down 0.25s ease-out;
-        }
-      `}</style>
-
-      {/* ================================================================== */}
-      {/* MOBILE SEARCH MODAL */}
-      {/* ================================================================== */}
-      {showMobileSearch && (
-        <div className="fixed inset-0 z-50 sm:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileSearch(false)} />
-          <div className="absolute inset-x-0 top-0 bg-white shadow-xl rounded-b-2xl p-4 animate-slide-down">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Search Tours</h2>
-              <button onClick={() => setShowMobileSearch(false)}>
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-            <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }} className="space-y-3">
-              <div className="relative">
-                <label className="text-xs text-gray-500 font-medium">Destination</label>
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1 relative">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchDestination}
-                    onChange={(e) => {
-                      setSearchDestination(e.target.value);
-                      setSelectedDestinationId(null);
-                    }}
-                    onKeyDown={handleSearchKeyDown}
-                    placeholder="Where to?"
-                    className="flex-1 bg-transparent focus:outline-none text-sm"
-                    autoFocus
-                    autoComplete="off"
-                  />
-                  {loadingSuggestions && (
-                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                  )}
-                </div>
-                {/* Mobile Autocomplete Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 max-h-48 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        key={suggestion.destinationId || index}
-                        type="button"
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                          index === selectedSuggestionIndex
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {suggestion.displayName || suggestion.name}
-                          </p>
-                          {suggestion.parentName && (
-                            <p className="text-xs text-gray-500">{suggestion.parentName}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 font-medium">Dates</label>
-                <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2.5 mt-1">
-                  <input
-                    type="date"
-                    value={searchStartDate}
-                    onChange={(e) => setSearchStartDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="flex-1 bg-transparent text-sm focus:outline-none"
-                  />
-                  <span className="text-gray-400">-</span>
-                  <input
-                    type="date"
-                    value={searchEndDate}
-                    onChange={(e) => setSearchEndDate(e.target.value)}
-                    min={searchStartDate || new Date().toISOString().split('T')[0]}
-                    className="flex-1 bg-transparent text-sm focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 font-medium">Guests</label>
-                <select
-                  value={travelers}
-                  onChange={(e) => setTravelers(parseInt(e.target.value))}
-                  className="w-full bg-gray-100 rounded-lg px-3 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[1,2,3,4,5,6,7,8].map(n => (
-                    <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors"
-              >
-                Search
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* ================================================================== */}
       {/* MOBILE FILTERS MODAL */}
       {/* ================================================================== */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileFilters(false)} />
-          <div className="absolute inset-y-0 left-0 w-[85vw] max-w-sm bg-white shadow-xl flex flex-col">
+          <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl flex flex-col animate-slide-in-left">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-              <h2 className="font-semibold text-gray-900">Filters</h2>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filters
+              </h2>
               <button onClick={() => setShowMobileFilters(false)}>
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
             
-            {/* Scrollable Filter Content */}
+            {/* Filter Content */}
             <div className="flex-1 overflow-y-auto p-4">
               {/* Price Range */}
               <div className="mb-6">
@@ -1642,73 +1211,68 @@ export default function ResultsPage({
                     placeholder="Min"
                     value={filters.minPrice}
                     onChange={(e) => setFilters(f => ({ ...f, minPrice: e.target.value }))}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   />
-                  <span className="text-gray-400 flex-shrink-0">-</span>
+                  <span className="text-gray-400">-</span>
                   <input
                     type="number"
                     placeholder="Max"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   />
                 </div>
               </div>
-              
-              {/* Tour features - ALL filters */}
+
+              {/* Feature Filters */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Tour features</h3>
-                <div className="space-y-3">
-                  {[
-                    { key: 'freeCancel', label: 'Free cancellation', icon: '✓' },
-                    { key: 'skipLine', label: 'Skip the line', icon: '⚡' },
-                    { key: 'privateTour', label: 'Private tour', icon: '👤' },
-                    { key: 'likelyToSellOut', label: 'Likely to sell out', icon: '🔥' },
-                    { key: 'specialOffer', label: 'Special offer', icon: '🏷️' }
-                  ].map(feature => (
-                    <label key={feature.key} className="flex items-center gap-3 py-1">
-                      <input
-                        type="checkbox"
-                        checked={filters[feature.key]}
-                        onChange={(e) => setFilters(f => ({ ...f, [feature.key]: e.target.checked }))}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 flex-shrink-0"
-                      />
-                      <span className="text-sm text-gray-700">{feature.icon} {feature.label}</span>
-                    </label>
-                  ))}
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Features</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.freeCancel}
+                      onChange={(e) => setFilters(f => ({ ...f, freeCancel: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">Free cancellation</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.skipLine}
+                      onChange={(e) => setFilters(f => ({ ...f, skipLine: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">Skip the line</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.specialOffer}
+                      onChange={(e) => setFilters(f => ({ ...f, specialOffer: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">Special offers</span>
+                  </label>
                 </div>
               </div>
 
-              {/* Rating Filter */}
+              {/* Categories */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Rating</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
                 <div className="flex flex-wrap gap-2">
-                  {['', '3', '4', '4.5'].map(rating => (
+                  {categoryOptions.map((activity) => (
                     <button
-                      key={rating}
-                      onClick={() => setFilters(f => ({ ...f, minRating: f.minRating === rating ? '' : rating }))}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        filters.minRating === rating
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {rating === '' ? 'Any' : `${rating}+ ★`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Activity Types */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Activity type</h3>
-                <div className="flex flex-wrap gap-2">
-                  {activityTypes.map(activity => (
-                    <button
-                      key={activity.key}
-                      onClick={() => toggleActivity(activity.key)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
-                        filters.activities.includes(activity.key)
+                      key={activity.id}
+                      onClick={() => setFilters(f => ({
+                        ...f,
+                        categories: f.categories.includes(activity.id)
+                          ? f.categories.filter(id => id !== activity.id)
+                          : [...f.categories, activity.id]
+                      }))}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                        filters.categories.includes(activity.id)
                           ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
                       }`}
@@ -1764,33 +1328,28 @@ export default function ResultsPage({
         <div className="fixed inset-4 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-96 sm:h-[500px] sm:max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
           {/* Chat Header */}
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                <span className="text-lg">✨</span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <MessageCircle className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-white">Via</p>
-                <p className="text-xs text-white/80">AI Travel Assistant</p>
+                <p className="text-white font-medium text-sm">Via</p>
+                <p className="text-white/70 text-xs">Travel Assistant</p>
               </div>
             </div>
             <button
               onClick={() => setChatOpen(false)}
-              className="text-white/80 hover:text-white transition-colors p-1"
+              className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
 
-          {/* Chat Messages */}
-          <div ref={chatMessagesRef} className="flex-1 p-4 overflow-y-auto space-y-3">
-            {chatMessages.map((msg, index) => {
-              // Debug: log each message being rendered
-              if (msg.role === 'assistant') {
-                console.log(`Rendering message ${index}:`, { content: msg.content?.substring(0, 50), tours: msg.tours, toursLength: msg.tours?.length });
-              }
-              return (
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {chatMessages.map((msg, idx) => (
               <div
-                key={index}
+                key={idx}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`max-w-[85%] ${
@@ -1798,7 +1357,6 @@ export default function ResultsPage({
                     ? 'bg-blue-600 text-white rounded-2xl rounded-br-none p-3'
                     : 'space-y-2'
                 }`}>
-                  {/* Text message */}
                   {msg.role === 'user' ? (
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   ) : (
@@ -1807,13 +1365,6 @@ export default function ResultsPage({
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
 
-                      {/* DEBUG: Show tour count - remove after debugging */}
-                      {msg.tours !== undefined && (
-                        <div className="text-xs text-red-500 bg-red-50 p-1 rounded">
-                          DEBUG: tours={msg.tours?.length || 0}
-                        </div>
-                      )}
-
                       {/* Tour cards if available */}
                       {msg.tours && msg.tours.length > 0 && (
                         <div className="space-y-2 mt-2">
@@ -1821,96 +1372,38 @@ export default function ResultsPage({
                             <div 
                               key={tour.productCode || tourIndex}
                               className="bg-white border border-gray-200 rounded-xl p-2.5 hover:shadow-md transition-shadow cursor-pointer"
-                              onClick={() => setQuickViewTour(tour)}
+                              onClick={() => openQuickView(tour)}
                             >
                               <div className="flex gap-2.5">
-                                {/* Tour image */}
                                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                                   {(tour.image || tour.images?.[0]?.url || tour.images?.[0]) ? (
                                     <img
                                       src={tour.image || tour.images?.[0]?.url || tour.images?.[0]}
-                                      alt={tour.name}
+                                      alt=""
                                       className="w-full h-full object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                      <MapPin className="w-6 h-6" />
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <MapPin className="w-6 h-6 text-gray-300" />
                                     </div>
                                   )}
                                 </div>
-                                
-                                {/* Tour info */}
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="text-xs font-medium text-gray-900 line-clamp-2 leading-tight">
-                                    {tour.name}
-                                  </h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    {tour.rating && (
-                                      <div className="flex items-center gap-0.5">
-                                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                        <span className="text-xs text-gray-600">{tour.rating}</span>
-                                      </div>
-                                    )}
-                                    {tour.price && (
-                                      <span className="text-xs font-semibold text-blue-600">
-                                        ${tour.price}
-                                      </span>
-                                    )}
-                                  </div>
+                                  <p className="text-sm font-medium text-gray-900 line-clamp-2">{tour.name}</p>
+                                  <p className="text-sm text-green-600 font-semibold mt-1">
+                                    {formatCurrency(tour.price)}
+                                  </p>
                                 </div>
                               </div>
                             </div>
                           ))}
-                          
-                          {/* View more button */}
-                          {msg.tours.length > 5 && (
-                            <button
-                              onClick={() => {
-                                // Close chat and show all results
-                                setChatOpen(false);
-                                // If we have a destination from the search, trigger a new search
-                                if (msg.searchDestination || searchParams?.destination) {
-                                  onNewSearch({
-                                    type: 'tours',
-                                    destination: msg.searchDestination || searchParams?.destination,
-                                    travelers: travelers
-                                  });
-                                }
-                              }}
-                              className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-1"
-                            >
-                              View all {msg.tours.length} results
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                          )}
-                          
-                          {/* View more even if 5 or fewer but tours exist */}
-                          {msg.tours.length > 0 && msg.tours.length <= 5 && (
-                            <button
-                              onClick={() => {
-                                setChatOpen(false);
-                                if (msg.searchDestination || searchParams?.destination) {
-                                  onNewSearch({
-                                    type: 'tours',
-                                    destination: msg.searchDestination || searchParams?.destination,
-                                    travelers: travelers
-                                  });
-                                }
-                              }}
-                              className="w-full py-2 px-3 bg-gray-50 hover:bg-gray-100 text-gray-600 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-1"
-                            >
-                              Search for more in this area
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                          )}
                         </div>
                       )}
                     </>
                   )}
                 </div>
               </div>
-            );
-            })}
+            ))}
             {chatLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-2xl rounded-tl-none p-3">
@@ -1918,13 +1411,13 @@ export default function ResultsPage({
                 </div>
               </div>
             )}
+            <div ref={chatMessagesEndRef} />
           </div>
 
           {/* Chat Input */}
           <div className="p-4 border-t border-gray-100 flex-shrink-0">
             <div className="flex gap-2 items-end">
               <textarea
-                ref={textareaRef}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -1971,6 +1464,31 @@ export default function ResultsPage({
           onViewFullDetails={onOpenProductPage}
         />
       )}
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes slide-in-right {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.25s ease-out;
+        }
+        @keyframes slide-in-left {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-left {
+          animation: slide-in-left 0.25s ease-out;
+        }
+        @keyframes slide-down {
+          from { transform: translateY(-100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-down {
+          animation: slide-down 0.25s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
