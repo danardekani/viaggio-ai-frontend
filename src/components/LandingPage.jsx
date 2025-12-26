@@ -114,6 +114,7 @@ export default function LandingPage({
   onOpenWhereIsThis,
   onOpenChat,
   onOpenTripBuilder,
+  onOpenProductPage,
   cart = { tours: [], hotels: [], flights: [] },
   removeFromCart,
   formatCurrency = (amount) => `$${(amount || 0).toFixed(2)}`,
@@ -1324,30 +1325,47 @@ export default function LandingPage({
                     const isGroupPricing = tour.pricingType === 'group';
                     const itemTotal = isGroupPricing ? tour.price : (tour.price * travelers);
                     return (
-                      <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl">
-                        {tour.image && (
-                          <img src={tour.image} alt="" loading="lazy" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{tour.name}</p>
-                          <div className="mt-1">
-                            <span className="text-sm text-green-600 font-semibold">
-                              {formatCurrency(itemTotal)}
-                            </span>
-                            {!isGroupPricing && travelers > 1 && (
-                              <span className="text-xs text-gray-500 ml-1">
-                                ({formatCurrency(tour.price)} × {travelers})
+                      <div key={tour.id} className="flex gap-2.5 p-2.5 bg-gray-50 rounded-xl group">
+                        <div 
+                          className="flex gap-2.5 flex-1 min-w-0 cursor-pointer"
+                          onClick={() => {
+                            setCartSidebarOpen(false);
+                            onOpenProductPage?.(tour);
+                          }}
+                        >
+                          {tour.image && (
+                            <img 
+                              src={tour.image} 
+                              alt="" 
+                              loading="lazy" 
+                              className="w-16 h-16 object-cover rounded-lg flex-shrink-0 group-hover:ring-2 group-hover:ring-blue-400 transition-all" 
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">{tour.name}</p>
+                            <div className="mt-1">
+                              <span className="text-sm text-green-600 font-semibold">
+                                {formatCurrency(itemTotal)}
                               </span>
-                            )}
-                            {isGroupPricing && (
-                              <span className="text-xs text-gray-500 ml-1">per group</span>
-                            )}
+                              {!isGroupPricing && travelers > 1 && (
+                                <span className="text-xs text-gray-500 ml-1">
+                                  ({formatCurrency(tour.price)} × {travelers})
+                                </span>
+                              )}
+                              {isGroupPricing && (
+                                <span className="text-xs text-gray-500 ml-1">per group</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {removeFromCart && (
                           <button
-                            onClick={() => removeFromCart('tour', tour.id)}
-                            className="text-gray-400 hover:text-red-500 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromCart('tour', tour.id);
+                            }}
+                            className="text-gray-400 hover:text-red-500 flex-shrink-0 p-1"
+                            aria-label="Remove from cart"
                           >
                             <X className="w-4 h-4" />
                           </button>
