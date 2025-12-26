@@ -460,7 +460,7 @@ export default function ProductDisplayPage({
                 {fullTourData?.rating && (
                   <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                    <span className="font-semibold">{fullTourData.rating.toFixed(1)}</span>
+                    <span className="font-semibold">{parseFloat(fullTourData.rating).toFixed(1)}</span>
                     {fullTourData.reviewCount && (
                       <span className="text-gray-500">
                         ({fullTourData.reviewCount.toLocaleString()} reviews)
@@ -705,13 +705,13 @@ export default function ProductDisplayPage({
                     <div className="flex items-start gap-8 mb-6 pb-6 border-b border-gray-100">
                       <div className="text-center">
                         <div className="text-4xl font-bold text-gray-900">
-                          {fullTourData?.rating?.toFixed(1) || '4.5'}
+                          {fullTourData?.rating ? parseFloat(fullTourData.rating).toFixed(1) : '4.5'}
                         </div>
                         <div className="flex items-center gap-0.5 justify-center mt-1">
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${i < Math.round(fullTourData?.rating || 4.5) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
+                              className={`w-4 h-4 ${i < Math.round(parseFloat(fullTourData?.rating) || 4.5) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                             />
                           ))}
                         </div>
