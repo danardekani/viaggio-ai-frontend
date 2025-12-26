@@ -733,7 +733,7 @@ export default function LandingPage({
         ))}
 
         {/* Top Navigation */}
-        <nav className="relative z-10 flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
+        <nav className={`relative flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 ${showDestinationsMenu ? 'z-50' : 'z-10'}`}>
           <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -797,8 +797,8 @@ export default function LandingPage({
 
                     {/* Cities Grid Panel with Images */}
                     {activeRegion && (
-                      <div className="w-[580px] p-5 bg-gray-50/50">
-                        <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+                      <div className="w-[720px] p-5 bg-gray-50/50">
+                        <div className="grid grid-cols-3 gap-x-6 gap-y-3">
                           {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
                             <button
                               key={idx}
@@ -817,10 +817,10 @@ export default function LandingPage({
                               </div>
                               {/* Text */}
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-blue-700 group-hover:text-blue-800 truncate">
+                                <p className="text-sm font-bold text-blue-700 group-hover:text-blue-800">
                                   {city.name} Tours
                                 </p>
-                                <p className="text-xs text-gray-500 font-medium truncate">
+                                <p className="text-xs text-gray-500 font-medium">
                                   Destination in {city.country}
                                 </p>
                               </div>
