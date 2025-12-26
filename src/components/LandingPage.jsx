@@ -269,8 +269,6 @@ export default function LandingPage({
   // Top Destinations mega menu state
   const [showDestinationsMenu, setShowDestinationsMenu] = useState(false);
   const [activeRegion, setActiveRegion] = useState(null);
-  const destinationsMenuRef = useRef(null);
-  const menuTimeoutRef = useRef(null);
   
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -495,44 +493,6 @@ export default function LandingPage({
   // ============================================================================
   // TOP DESTINATIONS MEGA MENU HANDLERS
   // ============================================================================
-
-  // Handle click outside to close menu
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      // Only close if clicking outside the entire menu container
-      if (
-        showDestinationsMenu &&
-        destinationsMenuRef.current && 
-        !destinationsMenuRef.current.contains(e.target)
-      ) {
-        setShowDestinationsMenu(false);
-        setActiveRegion(null);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showDestinationsMenu]);
-
-  // Handle mouse enter on the destinations button
-  const handleDestinationsMouseEnter = useCallback(() => {
-    if (menuTimeoutRef.current) {
-      clearTimeout(menuTimeoutRef.current);
-    }
-    setShowDestinationsMenu(true);
-  }, []);
-
-  // Handle mouse leave from the entire menu area
-  const handleDestinationsMouseLeave = useCallback(() => {
-    menuTimeoutRef.current = setTimeout(() => {
-      setShowDestinationsMenu(false);
-      setActiveRegion(null);
-    }, 150);
-  }, []);
-
-  // Handle region hover - show cities panel
-  const handleRegionHover = useCallback((region) => {
-    setActiveRegion(region);
-  }, []);
 
   // Handle city hover - prewarm cache
   const handleCityHover = useCallback((city) => {
@@ -781,15 +741,12 @@ export default function LandingPage({
             </div>
 
             {/* Top Destinations Dropdown - Click to open/close */}
-            <div 
-              ref={destinationsMenuRef}
-              className="relative hidden sm:block"
-            >
+            <div className="relative hidden sm:block">
               <button
                 onClick={() => {
                   setShowDestinationsMenu(!showDestinationsMenu);
                   if (!showDestinationsMenu) {
-                    setActiveRegion('North America'); // Default to first region
+                    setActiveRegion('North America');
                   }
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
@@ -798,80 +755,82 @@ export default function LandingPage({
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showDestinationsMenu ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Mega Menu Dropdown - z-50 to appear above everything */}
+              {/* Mega Menu Dropdown */}
               {showDestinationsMenu && (
-                <div 
-                  className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50"
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  {/* Regions List */}
-                  <div className="w-60 bg-white border-r border-gray-100">
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                        Top Destinations
-                      </h3>
-                    </div>
-                    <div className="py-2">
-                      {REGION_LIST.map((region) => (
-                        <button
-                          key={region}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveRegion(region);
-                          }}
-                          onMouseEnter={() => setActiveRegion(region)}
-                          className={`w-full px-5 py-3 text-left text-[15px] transition-colors flex items-center justify-between ${
-                            activeRegion === region
-                              ? 'text-blue-600 font-bold bg-blue-50/50'
-                              : 'text-gray-700 hover:text-gray-900 font-semibold hover:bg-gray-50'
-                          }`}
-                        >
-                          <span>{region}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Cities Grid Panel with Images */}
-                  {activeRegion && (
-                    <div className="w-[580px] p-5 bg-gray-50/50">
-                      <div className="grid grid-cols-3 gap-x-4 gap-y-3">
-                        {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
+                <>
+                  {/* Invisible overlay to catch outside clicks */}
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => {
+                      setShowDestinationsMenu(false);
+                      setActiveRegion(null);
+                    }}
+                  />
+                  
+                  {/* The actual dropdown menu */}
+                  <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50">
+                    {/* Regions List */}
+                    <div className="w-60 bg-white border-r border-gray-100">
+                      <div className="px-5 py-4 border-b border-gray-100">
+                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                          Top Destinations
+                        </h3>
+                      </div>
+                      <div className="py-2">
+                        {REGION_LIST.map((region) => (
                           <button
-                            key={idx}
-                            onMouseEnter={() => handleCityHover(city)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCityClick(city);
-                            }}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group text-left"
+                            key={region}
+                            onClick={() => setActiveRegion(region)}
+                            onMouseEnter={() => setActiveRegion(region)}
+                            className={`w-full px-5 py-3 text-left text-[15px] transition-colors flex items-center justify-between ${
+                              activeRegion === region
+                                ? 'text-blue-600 font-bold bg-blue-50/50'
+                                : 'text-gray-700 hover:text-gray-900 font-semibold hover:bg-gray-50'
+                            }`}
                           >
-                            {/* Circular Image */}
-                            <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-blue-200 transition-all">
-                              <img
-                                src={city.image}
-                                alt={city.name}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                            {/* Text */}
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-bold text-blue-700 group-hover:text-blue-800 truncate">
-                                {city.name} Tours
-                              </p>
-                              <p className="text-xs text-gray-500 font-medium truncate">
-                                Destination in {city.country}
-                              </p>
-                            </div>
+                            <span>{region}</span>
                           </button>
                         ))}
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Cities Grid Panel with Images */}
+                    {activeRegion && (
+                      <div className="w-[580px] p-5 bg-gray-50/50">
+                        <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+                          {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
+                            <button
+                              key={idx}
+                              onMouseEnter={() => handleCityHover(city)}
+                              onClick={() => handleCityClick(city)}
+                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group text-left"
+                            >
+                              {/* Circular Image */}
+                              <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-blue-200 transition-all">
+                                <img
+                                  src={city.image}
+                                  alt={city.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                              {/* Text */}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-blue-700 group-hover:text-blue-800 truncate">
+                                  {city.name} Tours
+                                </p>
+                                <p className="text-xs text-gray-500 font-medium truncate">
+                                  Destination in {city.country}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
