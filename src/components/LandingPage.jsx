@@ -779,10 +779,12 @@ export default function LandingPage({
             <div 
               ref={destinationsMenuRef}
               className="relative hidden sm:block"
-              onMouseEnter={handleDestinationsMouseEnter}
-              onMouseLeave={handleDestinationsMouseLeave}
             >
               <button
+                onMouseEnter={() => {
+                  if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
+                  setShowDestinationsMenu(true);
+                }}
                 onClick={() => setShowDestinationsMenu(!showDestinationsMenu)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
               >
@@ -792,11 +794,22 @@ export default function LandingPage({
 
               {/* Mega Menu Dropdown */}
               {showDestinationsMenu && (
-                <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in">
+                <div 
+                  className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in"
+                  onMouseEnter={() => {
+                    if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
+                  }}
+                  onMouseLeave={() => {
+                    menuTimeoutRef.current = setTimeout(() => {
+                      setShowDestinationsMenu(false);
+                      setActiveRegion(null);
+                    }, 300);
+                  }}
+                >
                   {/* Regions List */}
                   <div className="w-60 bg-white border-r border-gray-100">
                     <div className="px-5 py-4 border-b border-gray-100">
-                      <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                      <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500"></span>
                         Top Destinations
                       </h3>
@@ -807,10 +820,10 @@ export default function LandingPage({
                           key={region}
                           onMouseEnter={() => handleRegionHover(region)}
                           onClick={() => handleRegionHover(region)}
-                          className={`w-full px-5 py-3 text-left text-sm transition-colors flex items-center justify-between ${
+                          className={`w-full px-5 py-3 text-left text-[15px] transition-colors flex items-center justify-between ${
                             activeRegion === region
-                              ? 'text-blue-600 font-semibold bg-blue-50/50'
-                              : 'text-gray-600 hover:text-gray-900 font-medium'
+                              ? 'text-blue-600 font-bold bg-blue-50/50'
+                              : 'text-gray-700 hover:text-gray-900 font-semibold'
                           }`}
                         >
                           <span>{region}</span>
@@ -841,10 +854,10 @@ export default function LandingPage({
                             </div>
                             {/* Text */}
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-blue-700 group-hover:text-blue-800 truncate">
+                              <p className="text-sm font-bold text-blue-700 group-hover:text-blue-800 truncate">
                                 {city.name} Tours
                               </p>
-                              <p className="text-xs text-gray-500 truncate">
+                              <p className="text-xs text-gray-500 font-medium truncate">
                                 Destination in {city.country}
                               </p>
                             </div>
