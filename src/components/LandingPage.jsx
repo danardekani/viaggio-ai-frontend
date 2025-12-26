@@ -499,14 +499,19 @@ export default function LandingPage({
   // Handle click outside to close menu
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (destinationsMenuRef.current && !destinationsMenuRef.current.contains(e.target)) {
+      // Only close if clicking outside the entire menu container
+      if (
+        showDestinationsMenu &&
+        destinationsMenuRef.current && 
+        !destinationsMenuRef.current.contains(e.target)
+      ) {
         setShowDestinationsMenu(false);
         setActiveRegion(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showDestinationsMenu]);
 
   // Handle mouse enter on the destinations button
   const handleDestinationsMouseEnter = useCallback(() => {
@@ -793,9 +798,13 @@ export default function LandingPage({
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showDestinationsMenu ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Mega Menu Dropdown */}
+              {/* Mega Menu Dropdown - z-50 to appear above everything */}
               {showDestinationsMenu && (
-                <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in">
+                <div 
+                  className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
                   {/* Regions List */}
                   <div className="w-60 bg-white border-r border-gray-100">
                     <div className="px-5 py-4 border-b border-gray-100">
@@ -808,6 +817,10 @@ export default function LandingPage({
                       {REGION_LIST.map((region) => (
                         <button
                           key={region}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveRegion(region);
+                          }}
                           onMouseEnter={() => setActiveRegion(region)}
                           className={`w-full px-5 py-3 text-left text-[15px] transition-colors flex items-center justify-between ${
                             activeRegion === region
@@ -829,7 +842,10 @@ export default function LandingPage({
                           <button
                             key={idx}
                             onMouseEnter={() => handleCityHover(city)}
-                            onClick={() => handleCityClick(city)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCityClick(city);
+                            }}
                             className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group text-left"
                           >
                             {/* Circular Image */}
