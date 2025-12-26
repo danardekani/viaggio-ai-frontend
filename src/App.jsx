@@ -855,6 +855,10 @@ export default function App() {
           travelers={conversationContext.travelers || 2}
           backendUrl={BACKEND_URL}
           searchParams={currentSearchParams}
+          cart={cart}                              
+          removeFromCart={removeFromCart}          
+          onOpenProductPage={(tour) => {
+            setSelectedProductTour(tour);
         />
       </Suspense>
     );
