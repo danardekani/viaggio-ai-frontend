@@ -135,7 +135,7 @@ const TourCard = memo(function TourCard({
         {tour.rating && (
           <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
             <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-            <span className="text-sm font-semibold text-gray-900">{tour.rating.toFixed(1)}</span>
+            <span className="text-sm font-semibold text-gray-900">{parseFloat(tour.rating).toFixed(1)}</span>
           </div>
         )}
 
