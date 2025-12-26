@@ -110,106 +110,106 @@ const FEATURED_DESTINATIONS = [
 
 const TOP_DESTINATIONS_DATA = {
   'North America': [
-    { name: 'New York', country: 'USA' },
-    { name: 'Los Angeles', country: 'USA' },
-    { name: 'Miami', country: 'USA' },
-    { name: 'Las Vegas', country: 'USA' },
-    { name: 'San Francisco', country: 'USA' },
-    { name: 'Chicago', country: 'USA' },
-    { name: 'New Orleans', country: 'USA' },
-    { name: 'Toronto', country: 'Canada' },
-    { name: 'Vancouver', country: 'Canada' },
-    { name: 'Montreal', country: 'Canada' },
-    { name: 'Cancun', country: 'Mexico' },
-    { name: 'Mexico City', country: 'Mexico' },
-    { name: 'Honolulu', country: 'USA' },
-    { name: 'Orlando', country: 'USA' },
-    { name: 'Washington DC', country: 'USA' },
+    { name: 'New York', country: 'USA', image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=100&q=80' },
+    { name: 'Los Angeles', country: 'USA', image: 'https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=100&q=80' },
+    { name: 'Miami', country: 'USA', image: 'https://images.unsplash.com/photo-1506966953602-c20cc11f75e3?w=100&q=80' },
+    { name: 'Las Vegas', country: 'USA', image: 'https://images.unsplash.com/photo-1605833556294-ea5c7a74f57d?w=100&q=80' },
+    { name: 'San Francisco', country: 'USA', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&q=80' },
+    { name: 'Chicago', country: 'USA', image: 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=100&q=80' },
+    { name: 'New Orleans', country: 'USA', image: 'https://images.unsplash.com/photo-1568402102990-bc541580b59f?w=100&q=80' },
+    { name: 'Toronto', country: 'Canada', image: 'https://images.unsplash.com/photo-1517090504531-3bac891708fd?w=100&q=80' },
+    { name: 'Vancouver', country: 'Canada', image: 'https://images.unsplash.com/photo-1559511260-66a68e71a585?w=100&q=80' },
+    { name: 'Montreal', country: 'Canada', image: 'https://images.unsplash.com/photo-1519178614-68673b201f36?w=100&q=80' },
+    { name: 'Cancun', country: 'Mexico', image: 'https://images.unsplash.com/photo-1510097467424-192d713fd8b2?w=100&q=80' },
+    { name: 'Mexico City', country: 'Mexico', image: 'https://images.unsplash.com/photo-1518659526054-e8afba18192b?w=100&q=80' },
+    { name: 'Honolulu', country: 'USA', image: 'https://images.unsplash.com/photo-1507876466758-bc54f384809c?w=100&q=80' },
+    { name: 'Orlando', country: 'USA', image: 'https://images.unsplash.com/photo-1575089776834-8be34fb5602f?w=100&q=80' },
+    { name: 'Washington DC', country: 'USA', image: 'https://images.unsplash.com/photo-1617581629397-a72507c3de9e?w=100&q=80' },
   ],
   'Europe': [
-    { name: 'Paris', country: 'France' },
-    { name: 'London', country: 'UK' },
-    { name: 'Rome', country: 'Italy' },
-    { name: 'Barcelona', country: 'Spain' },
-    { name: 'Amsterdam', country: 'Netherlands' },
-    { name: 'Prague', country: 'Czech Republic' },
-    { name: 'Lisbon', country: 'Portugal' },
-    { name: 'Vienna', country: 'Austria' },
-    { name: 'Berlin', country: 'Germany' },
-    { name: 'Athens', country: 'Greece' },
-    { name: 'Dublin', country: 'Ireland' },
-    { name: 'Florence', country: 'Italy' },
-    { name: 'Venice', country: 'Italy' },
-    { name: 'Santorini', country: 'Greece' },
-    { name: 'Edinburgh', country: 'Scotland' },
+    { name: 'Paris', country: 'France', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=100&q=80' },
+    { name: 'London', country: 'UK', image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=100&q=80' },
+    { name: 'Rome', country: 'Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&q=80' },
+    { name: 'Barcelona', country: 'Spain', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&q=80' },
+    { name: 'Amsterdam', country: 'Netherlands', image: 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=100&q=80' },
+    { name: 'Prague', country: 'Czech Republic', image: 'https://images.unsplash.com/photo-1541849546-216549ae216d?w=100&q=80' },
+    { name: 'Lisbon', country: 'Portugal', image: 'https://images.unsplash.com/photo-1585208798174-6cedd86e019a?w=100&q=80' },
+    { name: 'Vienna', country: 'Austria', image: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=100&q=80' },
+    { name: 'Berlin', country: 'Germany', image: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?w=100&q=80' },
+    { name: 'Athens', country: 'Greece', image: 'https://images.unsplash.com/photo-1555993539-1732b0258235?w=100&q=80' },
+    { name: 'Dublin', country: 'Ireland', image: 'https://images.unsplash.com/photo-1549918864-48ac978761a4?w=100&q=80' },
+    { name: 'Florence', country: 'Italy', image: 'https://images.unsplash.com/photo-1543429257-3eb0b65d9c58?w=100&q=80' },
+    { name: 'Venice', country: 'Italy', image: 'https://images.unsplash.com/photo-1514890547357-a9ee288728e0?w=100&q=80' },
+    { name: 'Santorini', country: 'Greece', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&q=80' },
+    { name: 'Edinburgh', country: 'Scotland', image: 'https://images.unsplash.com/photo-1506377585622-bedcbb5f57cd?w=100&q=80' },
   ],
   'Africa': [
-    { name: 'Marrakech', country: 'Morocco' },
-    { name: 'Cape Town', country: 'South Africa' },
-    { name: 'Cairo', country: 'Egypt' },
-    { name: 'Nairobi', country: 'Kenya' },
-    { name: 'Casablanca', country: 'Morocco' },
-    { name: 'Johannesburg', country: 'South Africa' },
-    { name: 'Zanzibar', country: 'Tanzania' },
-    { name: 'Victoria Falls', country: 'Zimbabwe' },
-    { name: 'Luxor', country: 'Egypt' },
-    { name: 'Fes', country: 'Morocco' },
-    { name: 'Kruger Park', country: 'South Africa' },
-    { name: 'Serengeti', country: 'Tanzania' },
-    { name: 'Accra', country: 'Ghana' },
-    { name: 'Dakar', country: 'Senegal' },
-    { name: 'Kigali', country: 'Rwanda' },
+    { name: 'Marrakech', country: 'Morocco', image: 'https://images.unsplash.com/photo-1597212618440-806262de4f6b?w=100&q=80' },
+    { name: 'Cape Town', country: 'South Africa', image: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=100&q=80' },
+    { name: 'Cairo', country: 'Egypt', image: 'https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=100&q=80' },
+    { name: 'Nairobi', country: 'Kenya', image: 'https://images.unsplash.com/photo-1611348586804-61bf6c080437?w=100&q=80' },
+    { name: 'Casablanca', country: 'Morocco', image: 'https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?w=100&q=80' },
+    { name: 'Johannesburg', country: 'South Africa', image: 'https://images.unsplash.com/photo-1577948000111-9c970dfe3743?w=100&q=80' },
+    { name: 'Zanzibar', country: 'Tanzania', image: 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?w=100&q=80' },
+    { name: 'Victoria Falls', country: 'Zimbabwe', image: 'https://images.unsplash.com/photo-1568306899137-e8e7e2f2f32b?w=100&q=80' },
+    { name: 'Luxor', country: 'Egypt', image: 'https://images.unsplash.com/photo-1553913861-c0a9e3d1c8bb?w=100&q=80' },
+    { name: 'Fes', country: 'Morocco', image: 'https://images.unsplash.com/photo-1548017297-3a52f159e65d?w=100&q=80' },
+    { name: 'Kruger Park', country: 'South Africa', image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=100&q=80' },
+    { name: 'Serengeti', country: 'Tanzania', image: 'https://images.unsplash.com/photo-1547970810-dc1eac37d174?w=100&q=80' },
+    { name: 'Accra', country: 'Ghana', image: 'https://images.unsplash.com/photo-1576485375217-d6a95e34d043?w=100&q=80' },
+    { name: 'Dakar', country: 'Senegal', image: 'https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=100&q=80' },
+    { name: 'Kigali', country: 'Rwanda', image: 'https://images.unsplash.com/photo-1621451537084-482c73073a0f?w=100&q=80' },
   ],
   'Central & South America': [
-    { name: 'Rio de Janeiro', country: 'Brazil' },
-    { name: 'Buenos Aires', country: 'Argentina' },
-    { name: 'Lima', country: 'Peru' },
-    { name: 'Cusco', country: 'Peru' },
-    { name: 'Cartagena', country: 'Colombia' },
-    { name: 'Bogota', country: 'Colombia' },
-    { name: 'Santiago', country: 'Chile' },
-    { name: 'Medellin', country: 'Colombia' },
-    { name: 'Sao Paulo', country: 'Brazil' },
-    { name: 'Montevideo', country: 'Uruguay' },
-    { name: 'San Jose', country: 'Costa Rica' },
-    { name: 'Panama City', country: 'Panama' },
-    { name: 'Quito', country: 'Ecuador' },
-    { name: 'Havana', country: 'Cuba' },
-    { name: 'Galapagos', country: 'Ecuador' },
+    { name: 'Rio de Janeiro', country: 'Brazil', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&q=80' },
+    { name: 'Buenos Aires', country: 'Argentina', image: 'https://images.unsplash.com/photo-1589909202802-8f4aadce1849?w=100&q=80' },
+    { name: 'Lima', country: 'Peru', image: 'https://images.unsplash.com/photo-1531968455001-5c5272a41129?w=100&q=80' },
+    { name: 'Cusco', country: 'Peru', image: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=100&q=80' },
+    { name: 'Cartagena', country: 'Colombia', image: 'https://images.unsplash.com/photo-1583531172005-763a424c10df?w=100&q=80' },
+    { name: 'Bogota', country: 'Colombia', image: 'https://images.unsplash.com/photo-1568632234157-ce7aecd03d0d?w=100&q=80' },
+    { name: 'Santiago', country: 'Chile', image: 'https://images.unsplash.com/photo-1551801691-f0bce83f4f7f?w=100&q=80' },
+    { name: 'Medellin', country: 'Colombia', image: 'https://images.unsplash.com/photo-1599413276738-f40aa1f6d3a5?w=100&q=80' },
+    { name: 'Sao Paulo', country: 'Brazil', image: 'https://images.unsplash.com/photo-1543059080-f9b1272213d5?w=100&q=80' },
+    { name: 'Montevideo', country: 'Uruguay', image: 'https://images.unsplash.com/photo-1597867737568-9b43af6f3401?w=100&q=80' },
+    { name: 'San Jose', country: 'Costa Rica', image: 'https://images.unsplash.com/photo-1580236040687-8c66bf79b8dc?w=100&q=80' },
+    { name: 'Panama City', country: 'Panama', image: 'https://images.unsplash.com/photo-1555400082-8c436de7b8f1?w=100&q=80' },
+    { name: 'Quito', country: 'Ecuador', image: 'https://images.unsplash.com/photo-1593096578423-7fd47ba6b5e4?w=100&q=80' },
+    { name: 'Havana', country: 'Cuba', image: 'https://images.unsplash.com/photo-1500759285222-a95626b934cb?w=100&q=80' },
+    { name: 'Galapagos', country: 'Ecuador', image: 'https://images.unsplash.com/photo-1544979590-37e9b47eb705?w=100&q=80' },
   ],
   'Asia': [
-    { name: 'Tokyo', country: 'Japan' },
-    { name: 'Bangkok', country: 'Thailand' },
-    { name: 'Singapore', country: 'Singapore' },
-    { name: 'Bali', country: 'Indonesia' },
-    { name: 'Hong Kong', country: 'China' },
-    { name: 'Seoul', country: 'South Korea' },
-    { name: 'Dubai', country: 'UAE' },
-    { name: 'Phuket', country: 'Thailand' },
-    { name: 'Hanoi', country: 'Vietnam' },
-    { name: 'Kyoto', country: 'Japan' },
-    { name: 'Mumbai', country: 'India' },
-    { name: 'Beijing', country: 'China' },
-    { name: 'Kuala Lumpur', country: 'Malaysia' },
-    { name: 'Siem Reap', country: 'Cambodia' },
-    { name: 'Taipei', country: 'Taiwan' },
+    { name: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=100&q=80' },
+    { name: 'Bangkok', country: 'Thailand', image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=100&q=80' },
+    { name: 'Singapore', country: 'Singapore', image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=100&q=80' },
+    { name: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=100&q=80' },
+    { name: 'Hong Kong', country: 'China', image: 'https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=100&q=80' },
+    { name: 'Seoul', country: 'South Korea', image: 'https://images.unsplash.com/photo-1538485399081-7191377e8241?w=100&q=80' },
+    { name: 'Dubai', country: 'UAE', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=100&q=80' },
+    { name: 'Phuket', country: 'Thailand', image: 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?w=100&q=80' },
+    { name: 'Hanoi', country: 'Vietnam', image: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=100&q=80' },
+    { name: 'Kyoto', country: 'Japan', image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=100&q=80' },
+    { name: 'Mumbai', country: 'India', image: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=100&q=80' },
+    { name: 'Beijing', country: 'China', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&q=80' },
+    { name: 'Kuala Lumpur', country: 'Malaysia', image: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=100&q=80' },
+    { name: 'Siem Reap', country: 'Cambodia', image: 'https://images.unsplash.com/photo-1600000897444-86af56e8e442?w=100&q=80' },
+    { name: 'Taipei', country: 'Taiwan', image: 'https://images.unsplash.com/photo-1470004914212-05527e49370b?w=100&q=80' },
   ],
   'Australia & The Pacific': [
-    { name: 'Sydney', country: 'Australia' },
-    { name: 'Melbourne', country: 'Australia' },
-    { name: 'Auckland', country: 'New Zealand' },
-    { name: 'Queenstown', country: 'New Zealand' },
-    { name: 'Fiji', country: 'Fiji' },
-    { name: 'Brisbane', country: 'Australia' },
-    { name: 'Perth', country: 'Australia' },
-    { name: 'Gold Coast', country: 'Australia' },
-    { name: 'Wellington', country: 'New Zealand' },
-    { name: 'Cairns', country: 'Australia' },
-    { name: 'Great Barrier Reef', country: 'Australia' },
-    { name: 'Rotorua', country: 'New Zealand' },
-    { name: 'Bora Bora', country: 'French Polynesia' },
-    { name: 'Tahiti', country: 'French Polynesia' },
-    { name: 'Adelaide', country: 'Australia' },
+    { name: 'Sydney', country: 'Australia', image: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=100&q=80' },
+    { name: 'Melbourne', country: 'Australia', image: 'https://images.unsplash.com/photo-1514395462725-fb4566210144?w=100&q=80' },
+    { name: 'Auckland', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=100&q=80' },
+    { name: 'Queenstown', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1589871973318-9ca1258faa5d?w=100&q=80' },
+    { name: 'Fiji', country: 'Fiji', image: 'https://images.unsplash.com/photo-1584890784785-e77e1c5d0a52?w=100&q=80' },
+    { name: 'Brisbane', country: 'Australia', image: 'https://images.unsplash.com/photo-1566734904496-9309bb1798ae?w=100&q=80' },
+    { name: 'Perth', country: 'Australia', image: 'https://images.unsplash.com/photo-1573935448851-6f7a52d6e84c?w=100&q=80' },
+    { name: 'Gold Coast', country: 'Australia', image: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=100&q=80' },
+    { name: 'Wellington', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1589871973318-9ca1258faa5d?w=100&q=80' },
+    { name: 'Cairns', country: 'Australia', image: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=100&q=80' },
+    { name: 'Great Barrier Reef', country: 'Australia', image: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=100&q=80' },
+    { name: 'Rotorua', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1507697364665-69eec30ea71e?w=100&q=80' },
+    { name: 'Bora Bora', country: 'French Polynesia', image: 'https://images.unsplash.com/photo-1589197331516-4d84b72ebde3?w=100&q=80' },
+    { name: 'Tahiti', country: 'French Polynesia', image: 'https://images.unsplash.com/photo-1516815231560-8f41ec531527?w=100&q=80' },
+    { name: 'Adelaide', country: 'Australia', image: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=100&q=80' },
   ],
 };
 
@@ -792,11 +792,14 @@ export default function LandingPage({
 
               {/* Mega Menu Dropdown */}
               {showDestinationsMenu && (
-                <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in">
+                <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in">
                   {/* Regions List */}
-                  <div className="w-56 bg-gray-50 border-r border-gray-200">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Places to See</h3>
+                  <div className="w-60 bg-white border-r border-gray-100">
+                    <div className="px-5 py-4 border-b border-gray-100">
+                      <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                        Top Destinations
+                      </h3>
                     </div>
                     <div className="py-2">
                       {REGION_LIST.map((region) => (
@@ -804,40 +807,47 @@ export default function LandingPage({
                           key={region}
                           onMouseEnter={() => handleRegionHover(region)}
                           onClick={() => handleRegionHover(region)}
-                          className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center justify-between group ${
+                          className={`w-full px-5 py-3 text-left text-sm transition-colors flex items-center justify-between ${
                             activeRegion === region
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-gray-700 hover:bg-gray-100'
+                              ? 'text-blue-600 font-semibold bg-blue-50/50'
+                              : 'text-gray-600 hover:text-gray-900 font-medium'
                           }`}
                         >
                           <span>{region}</span>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${
-                            activeRegion === region ? 'text-blue-500 translate-x-1' : 'text-gray-400 group-hover:translate-x-1'
-                          }`} />
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Cities Grid Panel */}
+                  {/* Cities Grid Panel with Images */}
                   {activeRegion && (
-                    <div className="w-[420px] p-4 animate-slide-in-right">
-                      <div className="mb-3">
-                        <h3 className="text-sm font-semibold text-gray-900">{activeRegion}</h3>
-                        <p className="text-xs text-gray-500">Popular destinations</p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
+                    <div className="w-[580px] p-5 bg-gray-50/50 animate-fade-in">
+                      <div className="grid grid-cols-3 gap-x-4 gap-y-3">
                         {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
                           <button
                             key={idx}
                             onMouseEnter={() => handleCityHover(city)}
                             onClick={() => handleCityClick(city)}
-                            className="px-3 py-2 text-left rounded-lg hover:bg-blue-50 transition-colors group"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group text-left"
                           >
-                            <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 truncate">
-                              {city.name}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">{city.country}</p>
+                            {/* Circular Image */}
+                            <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-blue-200 transition-all">
+                              <img
+                                src={city.image}
+                                alt={city.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                            {/* Text */}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-blue-700 group-hover:text-blue-800 truncate">
+                                {city.name} Tours
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                Destination in {city.country}
+                              </p>
+                            </div>
                           </button>
                         ))}
                       </div>
