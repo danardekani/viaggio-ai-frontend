@@ -369,12 +369,12 @@ export default function ProductDisplayPage({
             {/* IMAGE GALLERY */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {/* Main Image */}
-              <div className="relative aspect-[16/9] bg-gray-100">
+              <div className="relative aspect-[3/2] max-h-[500px] bg-gray-100">
                 {images.length > 0 ? (
                   <img
                     src={images[currentImageIndex]}
                     alt={fullTourData?.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain bg-gray-900"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
