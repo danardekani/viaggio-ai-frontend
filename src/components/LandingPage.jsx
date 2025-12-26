@@ -57,6 +57,30 @@ const FEATURED_DESTINATIONS = [
     deal: 'Broadway & more deals', 
     image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&q=80'
   },
+  { 
+    name: 'New York', 
+    country: 'USA', 
+    deal: 'Broadway & more deals', 
+    image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&q=80'
+  },
+  { 
+    name: 'London', 
+    country: 'United Kingdom', 
+    deal: 'Royal palaces & more', 
+    image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&q=80'
+  },
+  { 
+    name: 'Lisbon', 
+    country: 'Portugal', 
+    deal: 'Coastal adventures', 
+    image: 'https://images.unsplash.com/photo-1585208798174-6cedd86e019a?w=400&q=80'
+  },
+  { 
+    name: 'Bangkok', 
+    country: 'Thailand', 
+    deal: 'Temples & street food', 
+    image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=400&q=80'
+  },
 ];
 
 // ============================================================================
@@ -1172,7 +1196,7 @@ export default function LandingPage({
       {/* ================================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-4 sm:mt-8">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Deals</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Experiences</h2>
           <div className="flex gap-2">
             <button className="p-1.5 sm:p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
