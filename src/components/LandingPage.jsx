@@ -105,6 +105,124 @@ const FEATURED_DESTINATIONS = [
 ];
 
 // ============================================================================
+// TOP DESTINATIONS DATA - Organized by region with 15 cities each (3x5 grid)
+// ============================================================================
+
+const TOP_DESTINATIONS_DATA = {
+  'North America': [
+    { name: 'New York', country: 'USA' },
+    { name: 'Los Angeles', country: 'USA' },
+    { name: 'Miami', country: 'USA' },
+    { name: 'Las Vegas', country: 'USA' },
+    { name: 'San Francisco', country: 'USA' },
+    { name: 'Chicago', country: 'USA' },
+    { name: 'New Orleans', country: 'USA' },
+    { name: 'Toronto', country: 'Canada' },
+    { name: 'Vancouver', country: 'Canada' },
+    { name: 'Montreal', country: 'Canada' },
+    { name: 'Cancun', country: 'Mexico' },
+    { name: 'Mexico City', country: 'Mexico' },
+    { name: 'Honolulu', country: 'USA' },
+    { name: 'Orlando', country: 'USA' },
+    { name: 'Washington DC', country: 'USA' },
+  ],
+  'Europe': [
+    { name: 'Paris', country: 'France' },
+    { name: 'London', country: 'UK' },
+    { name: 'Rome', country: 'Italy' },
+    { name: 'Barcelona', country: 'Spain' },
+    { name: 'Amsterdam', country: 'Netherlands' },
+    { name: 'Prague', country: 'Czech Republic' },
+    { name: 'Lisbon', country: 'Portugal' },
+    { name: 'Vienna', country: 'Austria' },
+    { name: 'Berlin', country: 'Germany' },
+    { name: 'Athens', country: 'Greece' },
+    { name: 'Dublin', country: 'Ireland' },
+    { name: 'Florence', country: 'Italy' },
+    { name: 'Venice', country: 'Italy' },
+    { name: 'Santorini', country: 'Greece' },
+    { name: 'Edinburgh', country: 'Scotland' },
+  ],
+  'Africa': [
+    { name: 'Marrakech', country: 'Morocco' },
+    { name: 'Cape Town', country: 'South Africa' },
+    { name: 'Cairo', country: 'Egypt' },
+    { name: 'Nairobi', country: 'Kenya' },
+    { name: 'Casablanca', country: 'Morocco' },
+    { name: 'Johannesburg', country: 'South Africa' },
+    { name: 'Zanzibar', country: 'Tanzania' },
+    { name: 'Victoria Falls', country: 'Zimbabwe' },
+    { name: 'Luxor', country: 'Egypt' },
+    { name: 'Fes', country: 'Morocco' },
+    { name: 'Kruger Park', country: 'South Africa' },
+    { name: 'Serengeti', country: 'Tanzania' },
+    { name: 'Accra', country: 'Ghana' },
+    { name: 'Dakar', country: 'Senegal' },
+    { name: 'Kigali', country: 'Rwanda' },
+  ],
+  'Central & South America': [
+    { name: 'Rio de Janeiro', country: 'Brazil' },
+    { name: 'Buenos Aires', country: 'Argentina' },
+    { name: 'Lima', country: 'Peru' },
+    { name: 'Cusco', country: 'Peru' },
+    { name: 'Cartagena', country: 'Colombia' },
+    { name: 'Bogota', country: 'Colombia' },
+    { name: 'Santiago', country: 'Chile' },
+    { name: 'Medellin', country: 'Colombia' },
+    { name: 'Sao Paulo', country: 'Brazil' },
+    { name: 'Montevideo', country: 'Uruguay' },
+    { name: 'San Jose', country: 'Costa Rica' },
+    { name: 'Panama City', country: 'Panama' },
+    { name: 'Quito', country: 'Ecuador' },
+    { name: 'Havana', country: 'Cuba' },
+    { name: 'Galapagos', country: 'Ecuador' },
+  ],
+  'Asia': [
+    { name: 'Tokyo', country: 'Japan' },
+    { name: 'Bangkok', country: 'Thailand' },
+    { name: 'Singapore', country: 'Singapore' },
+    { name: 'Bali', country: 'Indonesia' },
+    { name: 'Hong Kong', country: 'China' },
+    { name: 'Seoul', country: 'South Korea' },
+    { name: 'Dubai', country: 'UAE' },
+    { name: 'Phuket', country: 'Thailand' },
+    { name: 'Hanoi', country: 'Vietnam' },
+    { name: 'Kyoto', country: 'Japan' },
+    { name: 'Mumbai', country: 'India' },
+    { name: 'Beijing', country: 'China' },
+    { name: 'Kuala Lumpur', country: 'Malaysia' },
+    { name: 'Siem Reap', country: 'Cambodia' },
+    { name: 'Taipei', country: 'Taiwan' },
+  ],
+  'Australia & The Pacific': [
+    { name: 'Sydney', country: 'Australia' },
+    { name: 'Melbourne', country: 'Australia' },
+    { name: 'Auckland', country: 'New Zealand' },
+    { name: 'Queenstown', country: 'New Zealand' },
+    { name: 'Fiji', country: 'Fiji' },
+    { name: 'Brisbane', country: 'Australia' },
+    { name: 'Perth', country: 'Australia' },
+    { name: 'Gold Coast', country: 'Australia' },
+    { name: 'Wellington', country: 'New Zealand' },
+    { name: 'Cairns', country: 'Australia' },
+    { name: 'Great Barrier Reef', country: 'Australia' },
+    { name: 'Rotorua', country: 'New Zealand' },
+    { name: 'Bora Bora', country: 'French Polynesia' },
+    { name: 'Tahiti', country: 'French Polynesia' },
+    { name: 'Adelaide', country: 'Australia' },
+  ],
+};
+
+const REGION_LIST = [
+  'North America',
+  'Europe', 
+  'Africa',
+  'Central & South America',
+  'Asia',
+  'Australia & The Pacific',
+];
+
+// ============================================================================
 // LANDING PAGE COMPONENT
 // ============================================================================
 
@@ -147,6 +265,12 @@ export default function LandingPage({
 
   // Cart sidebar state
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
+  
+  // Top Destinations mega menu state
+  const [showDestinationsMenu, setShowDestinationsMenu] = useState(false);
+  const [activeRegion, setActiveRegion] = useState(null);
+  const destinationsMenuRef = useRef(null);
+  const menuTimeoutRef = useRef(null);
   
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -369,6 +493,64 @@ export default function LandingPage({
   }, [showSuggestions, suggestions, selectedIndex, handleSelectSuggestion]);
 
   // ============================================================================
+  // TOP DESTINATIONS MEGA MENU HANDLERS
+  // ============================================================================
+
+  // Handle click outside to close menu
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (destinationsMenuRef.current && !destinationsMenuRef.current.contains(e.target)) {
+        setShowDestinationsMenu(false);
+        setActiveRegion(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle mouse enter on the destinations button
+  const handleDestinationsMouseEnter = useCallback(() => {
+    if (menuTimeoutRef.current) {
+      clearTimeout(menuTimeoutRef.current);
+    }
+    setShowDestinationsMenu(true);
+  }, []);
+
+  // Handle mouse leave from the entire menu area
+  const handleDestinationsMouseLeave = useCallback(() => {
+    menuTimeoutRef.current = setTimeout(() => {
+      setShowDestinationsMenu(false);
+      setActiveRegion(null);
+    }, 150);
+  }, []);
+
+  // Handle region hover - show cities panel
+  const handleRegionHover = useCallback((region) => {
+    setActiveRegion(region);
+  }, []);
+
+  // Handle city hover - prewarm cache
+  const handleCityHover = useCallback((city) => {
+    const destinationString = `${city.name}, ${city.country}`;
+    console.log(`Prewarming cache for: ${destinationString}`);
+    prewarmDestination(destinationString, backendUrl);
+  }, [backendUrl]);
+
+  // Handle city click - search and navigate to SDP
+  const handleCityClick = useCallback((city) => {
+    const destinationString = `${city.name}, ${city.country}`;
+    setShowDestinationsMenu(false);
+    setActiveRegion(null);
+    
+    // Trigger the search
+    onSearch?.({
+      type: 'tours',
+      destination: destinationString,
+      travelers: travelers
+    });
+  }, [onSearch, travelers]);
+
+  // ============================================================================
   // SEARCH HANDLERS
   // ============================================================================
 
@@ -587,9 +769,83 @@ export default function LandingPage({
 
         {/* Top Navigation */}
         <nav className="relative z-10 flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
+          <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
+            </div>
+
+            {/* Top Destinations Dropdown */}
+            <div 
+              ref={destinationsMenuRef}
+              className="relative hidden sm:block"
+              onMouseEnter={handleDestinationsMouseEnter}
+              onMouseLeave={handleDestinationsMouseLeave}
+            >
+              <button
+                onClick={() => setShowDestinationsMenu(!showDestinationsMenu)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
+              >
+                Top Destinations
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showDestinationsMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Mega Menu Dropdown */}
+              {showDestinationsMenu && (
+                <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in">
+                  {/* Regions List */}
+                  <div className="w-56 bg-gray-50 border-r border-gray-200">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Places to See</h3>
+                    </div>
+                    <div className="py-2">
+                      {REGION_LIST.map((region) => (
+                        <button
+                          key={region}
+                          onMouseEnter={() => handleRegionHover(region)}
+                          onClick={() => handleRegionHover(region)}
+                          className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center justify-between group ${
+                            activeRegion === region
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <span>{region}</span>
+                          <ChevronRight className={`w-4 h-4 transition-transform ${
+                            activeRegion === region ? 'text-blue-500 translate-x-1' : 'text-gray-400 group-hover:translate-x-1'
+                          }`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cities Grid Panel */}
+                  {activeRegion && (
+                    <div className="w-[420px] p-4 animate-slide-in-right">
+                      <div className="mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900">{activeRegion}</h3>
+                        <p className="text-xs text-gray-500">Popular destinations</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
+                          <button
+                            key={idx}
+                            onMouseEnter={() => handleCityHover(city)}
+                            onClick={() => handleCityClick(city)}
+                            className="px-3 py-2 text-left rounded-lg hover:bg-blue-50 transition-colors group"
+                          >
+                            <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 truncate">
+                              {city.name}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{city.country}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <button
