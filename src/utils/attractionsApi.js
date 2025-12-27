@@ -27,15 +27,23 @@ export async function fetchAttractions(backendUrl, destinationId, options = {}) 
 
 /**
  * Fetch tours for a specific landmark/attraction
+ * IMPORTANT: Viator API requires BOTH destinationId AND seoId (attractionId)
+ *
  * @param {string} backendUrl - Backend API URL
  * @param {string} seoId - Attraction SEO ID
+ * @param {number} destinationId - Destination ID (REQUIRED by Viator API)
  * @param {object} options - Optional parameters
  * @returns {Promise<object>} - Tours data
  */
-export async function fetchToursByAttraction(backendUrl, seoId, options = {}) {
+export async function fetchToursByAttraction(backendUrl, seoId, destinationId, options = {}) {
+  if (!destinationId) {
+    throw new Error('destinationId is required for attraction search');
+  }
+
   const { start = 1, count = 50, sortBy = 'popular' } = options;
 
   const params = new URLSearchParams({
+    destinationId: destinationId.toString(),  // Required by Viator API
     start: start.toString(),
     count: count.toString(),
     sortBy

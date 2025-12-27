@@ -774,6 +774,7 @@ export default function App() {
   };
 
   // Handle attraction/landmark searches using the attractions API
+  // Viator API requires BOTH destinationId AND attractionId for search
   const handleAttractionSearch = async (searchParams) => {
     setLoading(true);
     setShowLandingPage(false);
@@ -796,10 +797,16 @@ export default function App() {
     }));
 
     try {
-      const data = await fetchToursByAttraction(BACKEND_URL, searchParams.attractionId, {
-        count: 100,
-        sortBy: 'popular'
-      });
+      // Pass destinationId - required by Viator API
+      const data = await fetchToursByAttraction(
+        BACKEND_URL,
+        searchParams.attractionId,
+        searchParams.destinationId,  // Required by Viator API
+        {
+          count: 100,
+          sortBy: 'popular'
+        }
+      );
 
       const tours = data.tours || [];
       console.log(`✅ Found ${tours.length} tours for ${searchParams.attractionName}`);
