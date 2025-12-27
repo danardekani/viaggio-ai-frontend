@@ -18,6 +18,7 @@ import {
   Building
 } from 'lucide-react';
 import ViaChat from './ViaChat';
+import MobileDestinationsSheet from './MobileDestinationsSheet';
 import { prewarmDestination } from '../utils/searchCache';
 
 // ============================================================================
@@ -269,7 +270,8 @@ export default function LandingPage({
   // Top Destinations mega menu state
   const [showDestinationsMenu, setShowDestinationsMenu] = useState(false);
   const [activeRegion, setActiveRegion] = useState(null);
-  
+  const [showMobileDestinations, setShowMobileDestinations] = useState(false);
+
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -740,7 +742,16 @@ export default function LandingPage({
               <span className="text-lg sm:text-xl font-bold text-white tracking-tight">Viaggio</span>
             </div>
 
-            {/* Top Destinations Dropdown - Click to open/close */}
+            {/* Mobile Top Destinations Button */}
+            <button
+              onClick={() => setShowMobileDestinations(true)}
+              className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Explore</span>
+            </button>
+
+            {/* Top Destinations Dropdown - Desktop only */}
             <div className="relative hidden sm:block">
               <button
                 onClick={() => {
@@ -1647,6 +1658,19 @@ export default function LandingPage({
             )}
           </div>
         </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* MOBILE DESTINATIONS SHEET */}
+      {/* ================================================================== */}
+      {showMobileDestinations && (
+        <MobileDestinationsSheet
+          destinationsData={TOP_DESTINATIONS_DATA}
+          regionList={REGION_LIST}
+          onCityClick={handleCityClick}
+          onCityHover={handleCityHover}
+          onClose={() => setShowMobileDestinations(false)}
+        />
       )}
 
       {/* Animation Styles */}
