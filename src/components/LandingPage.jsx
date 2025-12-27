@@ -925,17 +925,17 @@ export default function LandingPage({
                   />
 
                   {/* The actual dropdown menu */}
-                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50 p-5">
-                    <div className="pb-3 mb-3 border-b border-gray-100">
+                  <div className="absolute top-full left-0 mt-2 w-[720px] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50 p-6">
+                    <div className="pb-4 mb-4 border-b border-gray-100">
                       <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                         Popular Landmarks
                       </h3>
-                      <p className="text-xs text-gray-500 mt-1">Explore iconic attractions worldwide</p>
+                      <p className="text-sm text-gray-500 mt-1">Explore iconic attractions worldwide</p>
                     </div>
 
                     {/* 4x4 Grid of Landmarks */}
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-4 gap-4">
                       {POPULAR_LANDMARKS.map((landmark, idx) => (
                         <button
                           key={idx}
@@ -944,7 +944,7 @@ export default function LandingPage({
                           className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-blue-50 hover:shadow-md transition-all group text-center"
                         >
                           {/* Circular Image */}
-                          <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-gray-100 group-hover:ring-blue-200 shadow-md transition-all">
+                          <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-100 group-hover:ring-blue-200 shadow-md transition-all">
                             <img
                               src={landmark.image}
                               alt={landmark.name}
@@ -954,10 +954,10 @@ export default function LandingPage({
                           </div>
                           {/* Text */}
                           <div className="w-full">
-                            <p className="text-xs font-bold text-gray-900 group-hover:text-blue-700 truncate">
+                            <p className="text-sm font-bold text-gray-900 group-hover:text-blue-700">
                               {landmark.name}
                             </p>
-                            <p className="text-[10px] text-gray-500 truncate">
+                            <p className="text-xs text-gray-500">
                               {landmark.location}
                             </p>
                           </div>
