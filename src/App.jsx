@@ -14,6 +14,7 @@ import MobileTripSheet from './components/MobileTripSheet';
 import SearchPanel from './components/SearchPanel';
 import WhereIsThis from './components/WhereIsThis';
 import { getCachedSearch, setCachedSearch, prewarmDestinations } from './utils/searchCache';
+import { fetchToursByAttraction } from './utils/attractionsApi';
 
 // Lazy load larger components for code splitting
 const CheckoutPage = lazy(() => import('./components/CheckoutPage'));
@@ -761,11 +762,53 @@ export default function App() {
     }
   };
 
-  const handleLandingPageSearch = (searchParams) => {
+  const handleLandingPageSearch = async (searchParams) => {
     if (searchParams.type === 'hotels') {
       handleHotelSearch(searchParams);
+    } else if (searchParams.type === 'attraction' && searchParams.attractionId) {
+      // Handle attraction/landmark search
+      await handleAttractionSearch(searchParams);
     } else {
       handleResultsPageSearch(searchParams);
+    }
+  };
+
+  // Handle attraction/landmark searches using the attractions API
+  const handleAttractionSearch = async (searchParams) => {
+    setLoading(true);
+    setShowLandingPage(false);
+    setShowResultsPage(true);
+
+    // Set search params with display info for the results page
+    const displayDestination = `${searchParams.attractionName}`;
+    setCurrentSearchParams({
+      ...searchParams,
+      destination: displayDestination,
+      searchType: 'attraction'
+    });
+
+    setConversationContext(prev => ({
+      ...prev,
+      destination: displayDestination,
+      travelers: searchParams.travelers || prev.travelers,
+      searchType: 'attraction',
+      attractionName: searchParams.attractionName
+    }));
+
+    try {
+      const data = await fetchToursByAttraction(BACKEND_URL, searchParams.attractionId, {
+        count: 100,
+        sortBy: 'popular'
+      });
+
+      const tours = data.tours || [];
+      console.log(`✅ Found ${tours.length} tours for ${searchParams.attractionName}`);
+      setSearchResults(tours);
+    } catch (error) {
+      console.error('Attraction search error:', error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
     }
   };
 
