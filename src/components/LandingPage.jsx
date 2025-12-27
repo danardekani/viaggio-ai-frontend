@@ -619,6 +619,7 @@ export default function LandingPage({
     onSearch?.({
       type: 'attraction',
       attractionId: landmark.seoId,
+      destinationId: landmark.destinationId,
       attractionName: landmark.name,
       destination: landmark.destinationName || landmark.location,
       travelers: travelers
