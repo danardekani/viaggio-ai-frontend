@@ -199,7 +199,6 @@ const TOP_DESTINATIONS_DATA = {
     { name: 'Melbourne', country: 'Australia', image: 'https://images.unsplash.com/photo-1514395462725-fb4566210144?w=100&q=80' },
     { name: 'Auckland', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1595125990323-885cec5217ff?w=100&q=80' },
     { name: 'Queenstown', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1469521669194-babb45599def?w=100&q=80' },
-    { name: 'Fiji', country: 'Fiji', image: 'https://images.unsplash.com/photo-1584890784785-e77e1c5d0a52?w=100&q=80' },
     { name: 'Brisbane', country: 'Australia', image: 'https://images.unsplash.com/photo-1566734904496-9309bb1798ae?w=100&q=80' },
     { name: 'Perth', country: 'Australia', image: 'https://images.unsplash.com/photo-1573935448851-6f7a52d6e84c?w=100&q=80' },
     { name: 'Gold Coast', country: 'Australia', image: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=100&q=80' },
