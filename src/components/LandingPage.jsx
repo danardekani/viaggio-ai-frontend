@@ -861,8 +861,8 @@ export default function LandingPage({
 
                     {/* Cities Grid Panel with Images */}
                     {activeRegion && (
-                      <div className="w-[720px] p-5 bg-gray-50/50">
-                        <div className="grid grid-cols-3 gap-x-6 gap-y-3">
+                      <div className="w-[900px] p-6 bg-gray-50/50">
+                        <div className="grid grid-cols-3 gap-x-8 gap-y-4">
                           {TOP_DESTINATIONS_DATA[activeRegion]?.map((city, idx) => (
                             <button
                               key={idx}
@@ -871,7 +871,7 @@ export default function LandingPage({
                               className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group text-left"
                             >
                               {/* Circular Image */}
-                              <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-blue-200 transition-all">
+                              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-blue-200 transition-all">
                                 <img
                                   src={city.image}
                                   alt={city.name}
