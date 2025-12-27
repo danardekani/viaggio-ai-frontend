@@ -229,7 +229,7 @@ const REGION_LIST = [
 // ============================================================================
 
 const POPULAR_LANDMARKS = [
-  { name: 'Eiffel Tower', location: 'Paris, France', image: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce65f4?w=100&h=100&fit=crop&q=80' },
+  { name: 'Eiffel Tower', location: 'Paris, France', image: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=100&h=100&fit=crop&q=80' },
   { name: 'Colosseum', location: 'Rome, Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&h=100&fit=crop&q=80' },
   { name: 'Machu Picchu', location: 'Cusco, Peru', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=100&h=100&fit=crop&q=80' },
   { name: 'Great Wall', location: 'Beijing, China', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&h=100&fit=crop&q=80' },
@@ -240,8 +240,8 @@ const POPULAR_LANDMARKS = [
   { name: 'Christ the Redeemer', location: 'Rio de Janeiro, Brazil', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&h=100&fit=crop&q=80' },
   { name: 'Pyramids of Giza', location: 'Cairo, Egypt', image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=100&h=100&fit=crop&q=80' },
   { name: 'Sagrada Familia', location: 'Barcelona, Spain', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&h=100&fit=crop&q=80' },
-  { name: 'Petra', location: 'Petra, Jordan', image: 'https://images.unsplash.com/photo-1579606032821-4e6161c81571?w=100&h=100&fit=crop&q=80' },
-  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', image: 'https://images.unsplash.com/photo-1600000897444-86af56e8e442?w=100&h=100&fit=crop&q=80' },
+  { name: 'Petra', location: 'Petra, Jordan', image: 'https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=100&h=100&fit=crop&q=80' },
+  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', image: 'https://images.unsplash.com/photo-1508159452718-d22f6734a00d?w=100&h=100&fit=crop&q=80' },
   { name: 'Santorini', location: 'Santorini, Greece', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&h=100&fit=crop&q=80' },
   { name: 'Golden Gate Bridge', location: 'San Francisco, USA', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&h=100&fit=crop&q=80' },
   { name: 'Mount Fuji', location: 'Tokyo, Japan', image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=100&h=100&fit=crop&q=80' },
