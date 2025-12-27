@@ -203,7 +203,6 @@ const TOP_DESTINATIONS_DATA = {
     { name: 'Cairns', country: 'Australia', image: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=100&q=80' },
     { name: 'Great Barrier Reef', country: 'Australia', image: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=100&q=80' },
     { name: 'Bora Bora', country: 'French Polynesia', image: 'https://images.unsplash.com/photo-1589197331516-4d84b72ebde3?w=100&q=80' },
-    { name: 'Tahiti', country: 'French Polynesia', image: 'https://images.unsplash.com/photo-1516815231560-8f41ec531527?w=100&q=80' },
     { name: 'Adelaide', country: 'Australia', image: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=100&q=80' },
     { name: 'Auckland', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=100&h=100&fit=crop&q=80' },
     { name: 'Fiji', country: 'Fiji', image: 'https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=100&h=100&fit=crop&q=80' },
