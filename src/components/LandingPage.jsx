@@ -925,44 +925,51 @@ export default function LandingPage({
                   />
 
                   {/* The actual dropdown menu */}
-                  <div className="absolute top-full left-0 mt-2 w-[720px] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50 p-6">
-                    <div className="pb-4 mb-4 border-b border-gray-100">
-                      <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                        Popular Landmarks
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">Explore iconic attractions worldwide</p>
+                  <div className="absolute top-full left-0 mt-2 flex bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50">
+                    {/* Header Panel */}
+                    <div className="w-60 bg-white border-r border-gray-100">
+                      <div className="px-5 py-4 border-b border-gray-100">
+                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                          Popular Landmarks
+                        </h3>
+                      </div>
+                      <div className="px-5 py-4">
+                        <p className="text-sm text-gray-600">Explore iconic attractions and monuments worldwide</p>
+                      </div>
                     </div>
 
                     {/* 4x4 Grid of Landmarks */}
-                    <div className="grid grid-cols-4 gap-4">
-                      {POPULAR_LANDMARKS.map((landmark, idx) => (
-                        <button
-                          key={idx}
-                          onMouseEnter={() => handleLandmarkHover(landmark)}
-                          onClick={() => handleLandmarkClick(landmark)}
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-blue-50 hover:shadow-md transition-all group text-center"
-                        >
-                          {/* Circular Image */}
-                          <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-100 group-hover:ring-blue-200 shadow-md transition-all">
-                            <img
-                              src={landmark.image}
-                              alt={landmark.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                          {/* Text */}
-                          <div className="w-full">
-                            <p className="text-sm font-bold text-gray-900 group-hover:text-blue-700">
-                              {landmark.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {landmark.location}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
+                    <div className="w-[900px] p-6 bg-gray-50/50">
+                      <div className="grid grid-cols-4 gap-x-6 gap-y-4">
+                        {POPULAR_LANDMARKS.map((landmark, idx) => (
+                          <button
+                            key={idx}
+                            onMouseEnter={() => handleLandmarkHover(landmark)}
+                            onClick={() => handleLandmarkClick(landmark)}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group text-left"
+                          >
+                            {/* Circular Image */}
+                            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-blue-200 transition-all">
+                              <img
+                                src={landmark.image}
+                                alt={landmark.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                            {/* Text */}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-blue-700 group-hover:text-blue-800">
+                                {landmark.name}
+                              </p>
+                              <p className="text-xs text-gray-500 font-medium">
+                                {landmark.location}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </>
