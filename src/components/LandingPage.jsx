@@ -16,11 +16,13 @@ import {
   ChevronDown,
   Hotel,
   Building,
-  Compass
+  Compass,
+  Landmark
 } from 'lucide-react';
 import ViaChat from './ViaChat';
 import MobileDestinationsSheet from './MobileDestinationsSheet';
 import { prewarmDestination } from '../utils/searchCache';
+import { fetchCombinedAutocomplete } from '../utils/attractionsApi';
 
 // ============================================================================
 // CONSTANTS
@@ -241,25 +243,26 @@ const REGION_LIST = [
 
 // ============================================================================
 // POPULAR LANDMARKS DATA - 16 iconic landmarks worldwide (4x4 grid)
+// seoId values correspond to Viator attraction IDs for direct tour lookups
 // ============================================================================
 
 const POPULAR_LANDMARKS = [
-  { name: 'Eiffel Tower', location: 'Paris, France', image: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=100&h=100&fit=crop&q=80' },
-  { name: 'Colosseum', location: 'Rome, Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&h=100&fit=crop&q=80' },
-  { name: 'Machu Picchu', location: 'Cusco, Peru', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=100&h=100&fit=crop&q=80' },
-  { name: 'Great Wall', location: 'Beijing, China', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&h=100&fit=crop&q=80' },
-  { name: 'Taj Mahal', location: 'Agra, India', image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=100&h=100&fit=crop&q=80' },
-  { name: 'Statue of Liberty', location: 'New York, USA', image: 'https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?w=100&h=100&fit=crop&q=80' },
-  { name: 'Big Ben', location: 'London, UK', image: 'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=100&h=100&fit=crop&q=80' },
-  { name: 'Sydney Opera House', location: 'Sydney, Australia', image: 'https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=100&h=100&fit=crop&q=80' },
-  { name: 'Christ the Redeemer', location: 'Rio de Janeiro, Brazil', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&h=100&fit=crop&q=80' },
-  { name: 'Pyramids of Giza', location: 'Cairo, Egypt', image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=100&h=100&fit=crop&q=80' },
-  { name: 'Sagrada Familia', location: 'Barcelona, Spain', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&h=100&fit=crop&q=80' },
-  { name: 'Petra', location: 'Petra, Jordan', image: 'https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=100&h=100&fit=crop&q=80' },
-  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', image: 'https://images.unsplash.com/photo-1508159452718-d22f6734a00d?w=100&h=100&fit=crop&q=80' },
-  { name: 'Santorini', location: 'Santorini, Greece', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&h=100&fit=crop&q=80' },
-  { name: 'Golden Gate Bridge', location: 'San Francisco, USA', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&h=100&fit=crop&q=80' },
-  { name: 'Mount Fuji', location: 'Tokyo, Japan', image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=100&h=100&fit=crop&q=80' },
+  { name: 'Eiffel Tower', location: 'Paris, France', seoId: '299', destinationName: 'Paris', image: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=100&h=100&fit=crop&q=80' },
+  { name: 'Colosseum', location: 'Rome, Italy', seoId: '5130', destinationName: 'Rome', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&h=100&fit=crop&q=80' },
+  { name: 'Machu Picchu', location: 'Cusco, Peru', seoId: '5765', destinationName: 'Cusco', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=100&h=100&fit=crop&q=80' },
+  { name: 'Great Wall', location: 'Beijing, China', seoId: '4564', destinationName: 'Beijing', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&h=100&fit=crop&q=80' },
+  { name: 'Taj Mahal', location: 'Agra, India', seoId: '5765', destinationName: 'Agra', image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=100&h=100&fit=crop&q=80' },
+  { name: 'Statue of Liberty', location: 'New York, USA', seoId: '3604', destinationName: 'New York', image: 'https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?w=100&h=100&fit=crop&q=80' },
+  { name: 'Big Ben', location: 'London, UK', seoId: '7451', destinationName: 'London', image: 'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=100&h=100&fit=crop&q=80' },
+  { name: 'Sydney Opera House', location: 'Sydney, Australia', seoId: '4561', destinationName: 'Sydney', image: 'https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=100&h=100&fit=crop&q=80' },
+  { name: 'Christ the Redeemer', location: 'Rio de Janeiro, Brazil', seoId: '5018', destinationName: 'Rio de Janeiro', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&h=100&fit=crop&q=80' },
+  { name: 'Pyramids of Giza', location: 'Cairo, Egypt', seoId: '4368', destinationName: 'Cairo', image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=100&h=100&fit=crop&q=80' },
+  { name: 'Sagrada Familia', location: 'Barcelona, Spain', seoId: '2694', destinationName: 'Barcelona', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&h=100&fit=crop&q=80' },
+  { name: 'Petra', location: 'Petra, Jordan', seoId: '23027', destinationName: 'Petra', image: 'https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=100&h=100&fit=crop&q=80' },
+  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', seoId: '4474', destinationName: 'Siem Reap', image: 'https://images.unsplash.com/photo-1508159452718-d22f6734a00d?w=100&h=100&fit=crop&q=80' },
+  { name: 'Santorini', location: 'Santorini, Greece', seoId: '801', destinationName: 'Santorini', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&h=100&fit=crop&q=80' },
+  { name: 'Golden Gate Bridge', location: 'San Francisco, USA', seoId: '1848', destinationName: 'San Francisco', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&h=100&fit=crop&q=80' },
+  { name: 'Mount Fuji', location: 'Tokyo, Japan', seoId: '5765', destinationName: 'Tokyo', image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=100&h=100&fit=crop&q=80' },
 ];
 
 // ============================================================================
@@ -397,18 +400,59 @@ export default function LandingPage({
     const timer = setTimeout(async () => {
       setLoadingSuggestions(true);
       try {
-        const response = await fetch(
-          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(destination)}`,
-          { signal: controller.signal }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setSuggestions(data.suggestions || []);
-          setShowSuggestions(true);
+        // Use combined autocomplete to get both destinations and attractions
+        const data = await fetchCombinedAutocomplete(backendUrl, destination, 6);
+
+        // Merge destinations and attractions into a unified list
+        const combinedSuggestions = [];
+
+        // Add destinations first (with type marker)
+        if (data.destinations?.length) {
+          data.destinations.forEach(dest => {
+            combinedSuggestions.push({
+              ...dest,
+              type: 'destination',
+              displayName: dest.displayName || dest.name,
+            });
+          });
         }
+
+        // Add attractions (with type marker)
+        if (data.attractions?.length) {
+          data.attractions.forEach(attr => {
+            combinedSuggestions.push({
+              type: 'attraction',
+              attractionId: attr.seoId || attr.id,
+              displayName: attr.name,
+              parentName: attr.destinationName || attr.location,
+              destinationName: attr.destinationName,
+            });
+          });
+        }
+
+        setSuggestions(combinedSuggestions);
+        setShowSuggestions(combinedSuggestions.length > 0);
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error('Autocomplete error:', error);
+          // Fallback to destinations-only endpoint
+          try {
+            const response = await fetch(
+              `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(destination)}`,
+              { signal: controller.signal }
+            );
+            if (response.ok) {
+              const data = await response.json();
+              const fallbackSuggestions = (data.suggestions || []).map(s => ({
+                ...s,
+                type: 'destination'
+              }));
+              setSuggestions(fallbackSuggestions);
+              setShowSuggestions(fallbackSuggestions.length > 0);
+            }
+          } catch (fallbackError) {
+            console.error('Fallback autocomplete error:', fallbackError);
+          }
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -426,10 +470,23 @@ export default function LandingPage({
   const handleSelectSuggestion = useCallback((suggestion) => {
     justSelectedRef.current = true;
     setDestination(suggestion.displayName || suggestion.name);
-    setSelectedDestinationId(suggestion.destinationId);
     setShowSuggestions(false);
     setSuggestions([]);
-  }, []);
+
+    if (suggestion.type === 'attraction') {
+      // For attractions, trigger search immediately
+      onSearch?.({
+        type: 'attraction',
+        attractionId: suggestion.attractionId,
+        attractionName: suggestion.displayName,
+        destination: suggestion.destinationName || suggestion.parentName,
+        travelers: travelers
+      });
+    } else {
+      // For destinations, just set the ID for later search
+      setSelectedDestinationId(suggestion.destinationId);
+    }
+  }, [onSearch, travelers]);
 
   // ============================================================================
   // HOTEL DESTINATION AUTOCOMPLETE
@@ -569,14 +626,16 @@ export default function LandingPage({
     prewarmDestination(backendUrl, landmark.name);
   }, [backendUrl]);
 
-  // Handle landmark click - search and navigate to SDP
+  // Handle landmark click - search using attraction API
   const handleLandmarkClick = useCallback((landmark) => {
     setShowLandmarksMenu(false);
 
-    // Trigger the search using landmark name
+    // Trigger attraction-specific search using seoId
     onSearch?.({
-      type: 'tours',
-      destination: landmark.name,
+      type: 'attraction',
+      attractionId: landmark.seoId,
+      attractionName: landmark.name,
+      destination: landmark.destinationName || landmark.location,
       travelers: travelers
     });
   }, [onSearch, travelers]);
@@ -1112,10 +1171,11 @@ export default function LandingPage({
                                 ? suggestion.displayName
                                 : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
                               const parentName = suggestion?.parentName || null;
+                              const isAttraction = suggestion.type === 'attraction';
 
                               return (
                                 <button
-                                  key={suggestion?.destinationId || index}
+                                  key={suggestion?.destinationId || suggestion?.attractionId || index}
                                   type="button"
                                   onClick={() => handleSelectSuggestion(suggestion)}
                                   className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
@@ -1124,13 +1184,20 @@ export default function LandingPage({
                                     index === suggestions.length - 1 ? 'rounded-b-xl' : ''
                                   }`}
                                 >
-                                  <MapPin className="w-4 h-4 text-gray-400" />
-                                  <div>
+                                  {isAttraction ? (
+                                    <Landmark className="w-4 h-4 text-orange-500" />
+                                  ) : (
+                                    <MapPin className="w-4 h-4 text-blue-500" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900">{displayName}</p>
                                     {parentName && (
                                       <p className="text-xs text-gray-500">{parentName}</p>
                                     )}
                                   </div>
+                                  {isAttraction && (
+                                    <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">Landmark</span>
+                                  )}
                                 </button>
                               );
                             })}
@@ -1545,10 +1612,11 @@ export default function LandingPage({
                                 ? suggestion.displayName
                                 : (typeof suggestion?.name === 'string' ? suggestion.name : 'Unknown');
                               const parentName = suggestion?.parentName || null;
+                              const isAttraction = suggestion.type === 'attraction';
 
                               return (
                                 <button
-                                  key={suggestion?.destinationId || index}
+                                  key={suggestion?.destinationId || suggestion?.attractionId || index}
                                   type="button"
                                   onClick={() => handleSelectSuggestion(suggestion)}
                                   className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
@@ -1557,13 +1625,20 @@ export default function LandingPage({
                                     index === suggestions.length - 1 ? 'rounded-b-xl' : ''
                                   }`}
                                 >
-                                  <MapPin className="w-4 h-4 text-orange-400" />
-                                  <div>
+                                  {isAttraction ? (
+                                    <Landmark className="w-4 h-4 text-orange-500" />
+                                  ) : (
+                                    <MapPin className="w-4 h-4 text-blue-500" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900">{displayName}</p>
                                     {parentName && (
                                       <p className="text-xs text-gray-500">{parentName}</p>
                                     )}
                                   </div>
+                                  {isAttraction && (
+                                    <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">Landmark</span>
+                                  )}
                                 </button>
                               );
                             })}
