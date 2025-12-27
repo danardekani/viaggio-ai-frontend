@@ -15,7 +15,8 @@ import {
   Loader2,
   ChevronDown,
   Hotel,
-  Building
+  Building,
+  Compass
 } from 'lucide-react';
 import ViaChat from './ViaChat';
 import MobileDestinationsSheet from './MobileDestinationsSheet';
@@ -762,7 +763,7 @@ export default function LandingPage({
               onClick={() => setShowMobileDestinations(true)}
               className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
             >
-              <MapPin className="w-4 h-4" />
+              <Compass className="w-4 h-4" />
               <span>Explore</span>
             </button>
 
