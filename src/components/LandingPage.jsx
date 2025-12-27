@@ -203,7 +203,7 @@ const TOP_DESTINATIONS_DATA = {
     { name: 'Brisbane', country: 'Australia', image: 'https://images.unsplash.com/photo-1566734904496-9309bb1798ae?w=100&q=80' },
     { name: 'Perth', country: 'Australia', image: 'https://images.unsplash.com/photo-1573935448851-6f7a52d6e84c?w=100&q=80' },
     { name: 'Gold Coast', country: 'Australia', image: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=100&q=80' },
-    { name: 'Wellington', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1589871973318-9ca1258faa5d?w=100&q=80' },
+    { name: 'Wellington', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=100&q=80' },
     { name: 'Cairns', country: 'Australia', image: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=100&q=80' },
     { name: 'Great Barrier Reef', country: 'Australia', image: 'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=100&q=80' },
     { name: 'Rotorua', country: 'New Zealand', image: 'https://images.unsplash.com/photo-1507697364665-69eec30ea71e?w=100&q=80' },
@@ -498,7 +498,7 @@ export default function LandingPage({
   const handleCityHover = useCallback((city) => {
     const destinationString = `${city.name}, ${city.country}`;
     console.log(`Prewarming cache for: ${destinationString}`);
-    prewarmDestination(destinationString, backendUrl);
+    prewarmDestination(backendUrl, destinationString);
   }, [backendUrl]);
 
   // Handle city click - search and navigate to SDP
