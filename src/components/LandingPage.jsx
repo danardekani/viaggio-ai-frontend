@@ -217,11 +217,34 @@ const TOP_DESTINATIONS_DATA = {
 
 const REGION_LIST = [
   'North America',
-  'Europe', 
+  'Europe',
   'Africa',
   'Central & South America',
   'Asia',
   'Australia & The Pacific',
+];
+
+// ============================================================================
+// POPULAR LANDMARKS DATA - 16 iconic landmarks worldwide (4x4 grid)
+// ============================================================================
+
+const POPULAR_LANDMARKS = [
+  { name: 'Eiffel Tower', location: 'Paris, France', image: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce65f4?w=100&h=100&fit=crop&q=80' },
+  { name: 'Colosseum', location: 'Rome, Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&h=100&fit=crop&q=80' },
+  { name: 'Machu Picchu', location: 'Cusco, Peru', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=100&h=100&fit=crop&q=80' },
+  { name: 'Great Wall', location: 'Beijing, China', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&h=100&fit=crop&q=80' },
+  { name: 'Taj Mahal', location: 'Agra, India', image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=100&h=100&fit=crop&q=80' },
+  { name: 'Statue of Liberty', location: 'New York, USA', image: 'https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?w=100&h=100&fit=crop&q=80' },
+  { name: 'Big Ben', location: 'London, UK', image: 'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=100&h=100&fit=crop&q=80' },
+  { name: 'Sydney Opera House', location: 'Sydney, Australia', image: 'https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=100&h=100&fit=crop&q=80' },
+  { name: 'Christ the Redeemer', location: 'Rio de Janeiro, Brazil', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&h=100&fit=crop&q=80' },
+  { name: 'Pyramids of Giza', location: 'Cairo, Egypt', image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=100&h=100&fit=crop&q=80' },
+  { name: 'Sagrada Familia', location: 'Barcelona, Spain', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&h=100&fit=crop&q=80' },
+  { name: 'Petra', location: 'Petra, Jordan', image: 'https://images.unsplash.com/photo-1579606032821-4e6161c81571?w=100&h=100&fit=crop&q=80' },
+  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', image: 'https://images.unsplash.com/photo-1600000897444-86af56e8e442?w=100&h=100&fit=crop&q=80' },
+  { name: 'Santorini', location: 'Santorini, Greece', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&h=100&fit=crop&q=80' },
+  { name: 'Golden Gate Bridge', location: 'San Francisco, USA', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&h=100&fit=crop&q=80' },
+  { name: 'Mount Fuji', location: 'Tokyo, Japan', image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=100&h=100&fit=crop&q=80' },
 ];
 
 // ============================================================================
@@ -272,6 +295,9 @@ export default function LandingPage({
   const [showDestinationsMenu, setShowDestinationsMenu] = useState(false);
   const [activeRegion, setActiveRegion] = useState(null);
   const [showMobileDestinations, setShowMobileDestinations] = useState(false);
+
+  // Popular Landmarks menu state
+  const [showLandmarksMenu, setShowLandmarksMenu] = useState(false);
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -509,11 +535,33 @@ export default function LandingPage({
     const destinationString = `${city.name}, ${city.country}`;
     setShowDestinationsMenu(false);
     setActiveRegion(null);
-    
+
     // Trigger the search
     onSearch?.({
       type: 'tours',
       destination: destinationString,
+      travelers: travelers
+    });
+  }, [onSearch, travelers]);
+
+  // ============================================================================
+  // POPULAR LANDMARKS MENU HANDLERS
+  // ============================================================================
+
+  // Handle landmark hover - prewarm cache
+  const handleLandmarkHover = useCallback((landmark) => {
+    console.log(`Prewarming cache for landmark: ${landmark.name}`);
+    prewarmDestination(backendUrl, landmark.name);
+  }, [backendUrl]);
+
+  // Handle landmark click - search and navigate to SDP
+  const handleLandmarkClick = useCallback((landmark) => {
+    setShowLandmarksMenu(false);
+
+    // Trigger the search using landmark name
+    onSearch?.({
+      type: 'tours',
+      destination: landmark.name,
       travelers: travelers
     });
   }, [onSearch, travelers]);
@@ -736,7 +784,7 @@ export default function LandingPage({
         ))}
 
         {/* Top Navigation */}
-        <nav className={`relative flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 ${showDestinationsMenu ? 'z-50' : 'z-10'}`}>
+        <nav className={`relative flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 ${showDestinationsMenu || showLandmarksMenu ? 'z-50' : 'z-10'}`}>
           <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -759,6 +807,10 @@ export default function LandingPage({
                   setShowDestinationsMenu(!showDestinationsMenu);
                   if (!showDestinationsMenu) {
                     setActiveRegion('North America');
+                  }
+                  // Close landmarks menu if open
+                  if (showLandmarksMenu) {
+                    setShowLandmarksMenu(false);
                   }
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
@@ -841,6 +893,77 @@ export default function LandingPage({
                         </div>
                       </div>
                     )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Popular Landmarks Dropdown - Desktop only */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => {
+                  setShowLandmarksMenu(!showLandmarksMenu);
+                  // Close destinations menu if open
+                  if (showDestinationsMenu) {
+                    setShowDestinationsMenu(false);
+                    setActiveRegion(null);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium"
+              >
+                Popular Landmarks
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showLandmarksMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Landmarks Dropdown */}
+              {showLandmarksMenu && (
+                <>
+                  {/* Invisible overlay to catch outside clicks */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowLandmarksMenu(false)}
+                  />
+
+                  {/* The actual dropdown menu */}
+                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in z-50 p-5">
+                    <div className="pb-3 mb-3 border-b border-gray-100">
+                      <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Popular Landmarks
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">Explore iconic attractions worldwide</p>
+                    </div>
+
+                    {/* 4x4 Grid of Landmarks */}
+                    <div className="grid grid-cols-4 gap-3">
+                      {POPULAR_LANDMARKS.map((landmark, idx) => (
+                        <button
+                          key={idx}
+                          onMouseEnter={() => handleLandmarkHover(landmark)}
+                          onClick={() => handleLandmarkClick(landmark)}
+                          className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-blue-50 hover:shadow-md transition-all group text-center"
+                        >
+                          {/* Circular Image */}
+                          <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-gray-100 group-hover:ring-blue-200 shadow-md transition-all">
+                            <img
+                              src={landmark.image}
+                              alt={landmark.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          {/* Text */}
+                          <div className="w-full">
+                            <p className="text-xs font-bold text-gray-900 group-hover:text-blue-700 truncate">
+                              {landmark.name}
+                            </p>
+                            <p className="text-[10px] text-gray-500 truncate">
+                              {landmark.location}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
