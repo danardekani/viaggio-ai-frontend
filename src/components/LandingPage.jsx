@@ -407,8 +407,8 @@ export default function LandingPage({
           data.attractions.forEach(attr => {
             combinedSuggestions.push({
               type: 'attraction',
-              attractionId: attr.seoId || attr.id,
-              destinationId: attr.destinationId,  // Required by Viator API
+              seoId: attr.seoId,  // Use seoId for Viator product search
+              destinationId: attr.destinationId,
               displayName: attr.name,
               parentName: attr.destinationName || attr.location,
               destinationName: attr.destinationName,
@@ -461,12 +461,12 @@ export default function LandingPage({
 
     if (suggestion.type === 'attraction') {
       // For attractions, trigger search immediately
-      // Viator API requires BOTH destinationId AND attractionId
+      // Viator /products/search requires seoId (not attractionId)
       onSearch?.({
         type: 'attraction',
-        attractionId: suggestion.attractionId,
+        seoId: suggestion.seoId,  // Use seoId for Viator product search
         attractionName: suggestion.displayName,
-        destinationId: suggestion.destinationId,  // Required by Viator API
+        destinationId: suggestion.destinationId,
         destination: suggestion.destinationName || suggestion.parentName,
         travelers: travelers
       });
@@ -619,13 +619,13 @@ export default function LandingPage({
     setShowLandmarksMenu(false);
 
     // Trigger attraction-specific search using seoId and destinationId
-    // Viator API requires BOTH destinationId AND attractionId for search
+    // Viator /products/search requires seoId (not attractionId)
     onSearch?.({
       type: 'attraction',
       attractionId: landmark.seoId,
       destinationId: landmark.destinationId,
       attractionName: landmark.name,
-      destinationId: landmark.destinationId,  // Required by Viator API
+      destinationId: landmark.destinationId,
       destination: landmark.destinationName || landmark.location,
       travelers: travelers
     });
@@ -1166,7 +1166,7 @@ export default function LandingPage({
 
                               return (
                                 <button
-                                  key={suggestion?.destinationId || suggestion?.attractionId || index}
+                                  key={suggestion?.destinationId || suggestion?.seoId || index}
                                   type="button"
                                   onClick={() => handleSelectSuggestion(suggestion)}
                                   className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
@@ -1607,7 +1607,7 @@ export default function LandingPage({
 
                               return (
                                 <button
-                                  key={suggestion?.destinationId || suggestion?.attractionId || index}
+                                  key={suggestion?.destinationId || suggestion?.seoId || index}
                                   type="button"
                                   onClick={() => handleSelectSuggestion(suggestion)}
                                   className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
