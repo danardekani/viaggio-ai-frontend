@@ -765,7 +765,7 @@ export default function App() {
   const handleLandingPageSearch = async (searchParams) => {
     if (searchParams.type === 'hotels') {
       handleHotelSearch(searchParams);
-    } else if (searchParams.type === 'attraction' && searchParams.attractionId) {
+    } else if (searchParams.type === 'attraction' && searchParams.seoId) {
       // Handle attraction/landmark search
       await handleAttractionSearch(searchParams);
     } else {
@@ -774,7 +774,7 @@ export default function App() {
   };
 
   // Handle attraction/landmark searches using the attractions API
-  // Viator API requires BOTH destinationId AND attractionId for search
+  // Viator /products/search requires seoId (not attractionId) + destinationId
   const handleAttractionSearch = async (searchParams) => {
     setLoading(true);
     setShowLandingPage(false);
@@ -797,11 +797,11 @@ export default function App() {
     }));
 
     try {
-      // Pass destinationId - required by Viator API
+      // Pass seoId and destinationId - both required by Viator API
       const data = await fetchToursByAttraction(
         BACKEND_URL,
-        searchParams.attractionId,
-        searchParams.destinationId,  // Required by Viator API
+        searchParams.seoId,  // Use seoId for Viator product search
+        searchParams.destinationId,
         {
           count: 100,
           sortBy: 'popular'
