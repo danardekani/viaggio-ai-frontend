@@ -622,10 +622,9 @@ export default function LandingPage({
     // Viator /products/search requires seoId (not attractionId)
     onSearch?.({
       type: 'attraction',
-      attractionId: landmark.seoId,
+      seoId: landmark.seoId,
       destinationId: landmark.destinationId,
       attractionName: landmark.name,
-      destinationId: landmark.destinationId,
       destination: landmark.destinationName || landmark.location,
       travelers: travelers
     });

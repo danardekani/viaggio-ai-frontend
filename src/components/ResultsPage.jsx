@@ -300,14 +300,14 @@ export default function ResultsPage({
     { key: 'multiDay', label: '1+ days', minMinutes: 1440 }
   ];
 
-  // Viator-compliant category tags
+  // Viator-compliant category tags with keywords for text-based fallback matching
   const categoryOptions = [
-    { id: 21483, label: 'Food & Drink', emoji: '🍽️' },
-    { id: 21511, label: 'Walking Tours', emoji: '🚶' },
-    { id: 11926, label: 'Day Trips', emoji: '🌅' },
-    { id: 21480, label: 'Museums', emoji: '🏛️' },
-    { id: 21567, label: 'Photography', emoji: '📸' },
-    { id: 21485, label: 'Adventure', emoji: '🎯' },
+    { id: 21483, label: 'Food & Drink', emoji: '🍽️', keywords: ['food', 'drink', 'culinary', 'wine', 'tasting', 'cooking', 'dinner', 'lunch', 'cuisine', 'gastronomy', 'restaurant'] },
+    { id: 21511, label: 'Walking Tours', emoji: '🚶', keywords: ['walking', 'walk', 'stroll', 'on foot', 'guided walk', 'city walk'] },
+    { id: 11926, label: 'Day Trips', emoji: '🌅', keywords: ['day trip', 'day tour', 'excursion', 'full day', 'full-day'] },
+    { id: 21480, label: 'Museums', emoji: '🏛️', keywords: ['museum', 'gallery', 'art', 'exhibition', 'cultural'] },
+    { id: 21567, label: 'Photography', emoji: '📸', keywords: ['photo', 'photography', 'photoshoot', 'instagram'] },
+    { id: 21485, label: 'Adventure', emoji: '🎯', keywords: ['adventure', 'outdoor', 'hiking', 'biking', 'kayak', 'climbing', 'zip', 'rafting', 'extreme'] },
   ];
   
   // Pagination
@@ -459,8 +459,33 @@ export default function ResultsPage({
     }
     if (filters.categories.length > 0) {
       filtered = filtered.filter(t => {
-        const tourTags = t.tags || t.tagIds || [];
-        return filters.categories.some(catId => tourTags.includes(catId));
+        // Get tag IDs from various possible formats
+        let tourTagIds = [];
+
+        // Format 1: Array of tag IDs directly
+        if (Array.isArray(t.tagIds)) {
+          tourTagIds = t.tagIds;
+        }
+        // Format 2: Array of tag objects with tagId property (Viator API format)
+        else if (Array.isArray(t.tags)) {
+          tourTagIds = t.tags.map(tag => typeof tag === 'object' ? tag.tagId : tag).filter(Boolean);
+        }
+        // Format 3: productTags array
+        else if (Array.isArray(t.productTags)) {
+          tourTagIds = t.productTags.map(tag => typeof tag === 'object' ? tag.tagId : tag).filter(Boolean);
+        }
+
+        // Check if any selected category matches by tag ID
+        const matchByTagId = filters.categories.some(catId => tourTagIds.includes(catId));
+        if (matchByTagId) return true;
+
+        // Fallback: Text-based keyword matching on tour name and description
+        const tourText = `${t.name || ''} ${t.title || ''} ${t.description || ''} ${t.shortDescription || ''}`.toLowerCase();
+        return filters.categories.some(catId => {
+          const category = categoryOptions.find(c => c.id === catId);
+          if (!category?.keywords) return false;
+          return category.keywords.some(keyword => tourText.includes(keyword.toLowerCase()));
+        });
       });
     }
 
