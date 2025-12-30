@@ -612,7 +612,7 @@ export default function ResultsPage({
   // Apply filters by triggering a new API search
   const applyFiltersWithSearch = useCallback(() => {
     const flags = buildApiFlags();
-    onNewSearch({
+    const searchRequest = {
       type: 'tours',
       destination: searchParams?.destination || searchDestination,
       destinationId: searchParams?.destinationId || selectedDestinationId,
@@ -621,7 +621,9 @@ export default function ResultsPage({
       minPrice: filters.minPrice || undefined,
       maxPrice: filters.maxPrice || undefined,
       minRating: filters.minRating || undefined
-    });
+    };
+    console.log('🔍 Applying filters with API search:', searchRequest);
+    onNewSearch(searchRequest);
   }, [buildApiFlags, onNewSearch, searchParams, searchDestination, selectedDestinationId, travelers, filters.minPrice, filters.maxPrice, filters.minRating]);
 
   // Helper function to parse duration string to minutes
