@@ -681,7 +681,7 @@ export default function App() {
           destination: searchParams.destination,
           destinationId: searchParams.destinationId,
           searchTerms: searchParams.searchTerms,
-          resultCount: 50,  // Initial batch size
+          resultCount: 200,  // Fetch 200 tours (~17 pages at 12/page)
           sortBy: searchParams.sortBy || 'popular',
           startDate: searchParams.startDate,
           endDate: searchParams.endDate,
@@ -808,7 +808,7 @@ export default function App() {
         searchParams.seoId,  // Use seoId for Viator product search
         searchParams.destinationId,
         {
-          count: 50,  // Initial batch
+          count: 200,  // Fetch 200 tours for landmarks too
           sortBy: 'popular'
         }
       );
