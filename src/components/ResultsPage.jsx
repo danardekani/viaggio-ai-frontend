@@ -247,6 +247,7 @@ const TourCard = memo(function TourCard({
 export default function ResultsPage({
   searchParams,
   results = [],
+  totalCount: initialTotalCount,  // Total available from API/cache
   isLoading,
   onNewSearch,
   onBackToHome,
@@ -266,6 +267,18 @@ export default function ResultsPage({
   
   // Travelers (editable)
   const [travelers, setTravelers] = useState(initialTravelers);
+
+  // Load More state
+  const [displayedTours, setDisplayedTours] = useState(results);
+  const [serverTotalCount, setServerTotalCount] = useState(initialTotalCount || results.length);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const BATCH_SIZE = 50; // Tours to load per "Load More" click
+
+  // Update displayed tours when results prop changes (new search)
+  useEffect(() => {
+    setDisplayedTours(results);
+    setServerTotalCount(initialTotalCount || results.length);
+  }, [results, initialTotalCount]);
 
   // Filters - check prefilter for initial state (not flags, since we want all results)
   const [filters, setFilters] = useState({
@@ -383,7 +396,7 @@ export default function ResultsPage({
 
   // Filter and sort results
   const sortedResults = useMemo(() => {
-    let filtered = [...results];
+    let filtered = [...displayedTours];
 
     // Apply filters
     if (filters.minPrice) {
@@ -440,7 +453,7 @@ export default function ResultsPage({
     }
 
     return filtered;
-  }, [results, filters, sortBy]);
+  }, [displayedTours, filters, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(sortedResults.length / resultsPerPage);
@@ -519,6 +532,37 @@ export default function ResultsPage({
       categories: []
     });
   }, []);
+
+  // Load More tours from API
+  const loadMoreTours = useCallback(async () => {
+    if (loadingMore || displayedTours.length >= serverTotalCount) return;
+
+    setLoadingMore(true);
+    try {
+      const response = await fetch(`${backendUrl}/api/tours/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination: searchParams?.destination,
+          destinationId: searchParams?.destinationId,
+          searchTerms: searchParams?.searchTerms || '',
+          resultCount: displayedTours.length + BATCH_SIZE, // Request more tours
+          sortBy: sortBy
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newTours = data.tours || [];
+        setDisplayedTours(newTours);
+        setServerTotalCount(data.totalCount || newTours.length);
+      }
+    } catch (error) {
+      console.error('Failed to load more tours:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [backendUrl, searchParams, displayedTours.length, serverTotalCount, sortBy, loadingMore, BATCH_SIZE]);
 
   const handleSearch = useCallback((e) => {
     e?.preventDefault();
@@ -912,7 +956,7 @@ export default function ResultsPage({
                   {searchParams?.destination ? `Top ${searchParams.destination} Tours` : 'Tours'}
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500">
-                  {sortedResults.length} {sortedResults.length === 1 ? 'tour' : 'tours'} available
+                  Showing {sortedResults.length.toLocaleString()} of {serverTotalCount.toLocaleString()} tours available
                 </p>
               </div>
 
@@ -997,10 +1041,10 @@ export default function ResultsPage({
             )}
 
             {/* Results Grid */}
-            {!isLoading && paginatedResults.length > 0 && (
+            {!isLoading && sortedResults.length > 0 && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                  {paginatedResults.map((tour) => (
+                  {sortedResults.map((tour) => (
                     <TourCard
                       key={tour.id || tour.productCode}
                       tour={tour}
@@ -1016,51 +1060,38 @@ export default function ResultsPage({
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-8">
+                {/* Load More Button */}
+                {displayedTours.length < serverTotalCount && (
+                  <div className="flex flex-col items-center gap-3 mt-8">
+                    <p className="text-sm text-gray-500">
+                      Showing {sortedResults.length.toLocaleString()} of {serverTotalCount.toLocaleString()} tours
+                    </p>
                     <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={loadMoreTours}
+                      disabled={loadingMore}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:bg-blue-400 transition-colors flex items-center gap-2"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      {loadingMore ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          Load More Tours
+                          <ChevronDown className="w-5 h-5" />
+                        </>
+                      )}
                     </button>
-                    
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
-                            currentPage === pageNum
-                              ? 'bg-blue-600 text-white'
-                              : 'border border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
+                  </div>
+                )}
+
+                {/* All Tours Loaded Message */}
+                {displayedTours.length >= serverTotalCount && serverTotalCount > 0 && (
+                  <div className="text-center mt-8">
+                    <p className="text-sm text-gray-500">
+                      ✓ All {serverTotalCount.toLocaleString()} tours loaded
+                    </p>
                   </div>
                 )}
               </>
