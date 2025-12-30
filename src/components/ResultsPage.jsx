@@ -589,6 +589,41 @@ export default function ResultsPage({
     });
   }, []);
 
+  // Build API flags from current filter state
+  const buildApiFlags = useCallback(() => {
+    const flags = [];
+    if (filters.freeCancel) flags.push('FREE_CANCELLATION');
+    if (filters.skipLine) flags.push('SKIP_THE_LINE');
+    if (filters.privateTour) flags.push('PRIVATE_TOUR');
+    if (filters.likelyToSellOut) flags.push('LIKELY_TO_SELL_OUT');
+    if (filters.specialOffer) flags.push('SPECIAL_OFFER');
+    if (filters.kidFriendly) flags.push('KID_FRIENDLY');
+    if (filters.newOnViator) flags.push('NEW_ON_VIATOR');
+    return flags;
+  }, [filters]);
+
+  // Check if any API-level filters are active (these need server-side filtering)
+  const hasApiFilters = useMemo(() => {
+    return filters.freeCancel || filters.skipLine || filters.privateTour ||
+           filters.likelyToSellOut || filters.specialOffer || filters.kidFriendly ||
+           filters.newOnViator;
+  }, [filters]);
+
+  // Apply filters by triggering a new API search
+  const applyFiltersWithSearch = useCallback(() => {
+    const flags = buildApiFlags();
+    onNewSearch({
+      type: 'tours',
+      destination: searchParams?.destination || searchDestination,
+      destinationId: searchParams?.destinationId || selectedDestinationId,
+      travelers,
+      flags: flags.length > 0 ? flags : undefined,
+      minPrice: filters.minPrice || undefined,
+      maxPrice: filters.maxPrice || undefined,
+      minRating: filters.minRating || undefined
+    });
+  }, [buildApiFlags, onNewSearch, searchParams, searchDestination, selectedDestinationId, travelers, filters.minPrice, filters.maxPrice, filters.minRating]);
+
   // Helper function to parse duration string to minutes
   const parseDurationToMinutes = (durationStr) => {
     if (!durationStr) return 0;
@@ -1032,6 +1067,32 @@ export default function ResultsPage({
                 ))}
               </div>
             </div>
+
+            {/* Apply Filters Button - triggers API search with selected flags */}
+            {hasApiFilters && (
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={applyFiltersWithSearch}
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      Search with Filters
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Click to find all matching tours
+                </p>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -1536,14 +1597,27 @@ export default function ResultsPage({
                 </button>
               )}
             </div>
-            
+
             {/* Fixed Footer */}
-            <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0 space-y-2">
+              {hasApiFilters && (
+                <button
+                  onClick={() => {
+                    applyFiltersWithSearch();
+                    setShowMobileFilters(false);
+                  }}
+                  disabled={isLoading}
+                  className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
+                >
+                  <Search className="w-4 h-4" />
+                  Search with Filters
+                </button>
+              )}
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold"
+                className={`w-full py-3 ${hasApiFilters ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white'} rounded-xl font-semibold`}
               >
-                Show {sortedResults.length} results
+                {hasApiFilters ? 'Show current results' : `Show ${sortedResults.length} results`}
               </button>
             </div>
           </div>
