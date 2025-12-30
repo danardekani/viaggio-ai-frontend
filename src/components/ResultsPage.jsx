@@ -273,8 +273,7 @@ export default function ResultsPage({
     minPrice: '',
     maxPrice: '',
     minRating: '',
-    minDuration: '',
-    maxDuration: '',
+    duration: [],  // Array of duration keys: 'under1h', '1to4h', '4hToDay', 'multiDay'
     timeOfDay: [],
     freeCancel: false,
     skipLine: false,
@@ -282,7 +281,7 @@ export default function ResultsPage({
     likelyToSellOut: false,
     specialOffer: searchParams?.prefilter === 'SPECIAL_OFFER' || searchParams?.flags?.includes('SPECIAL_OFFER') || false,
     kidFriendly: false,
-    multiDay: false,
+    newOnViator: false,
     categories: []
   });
 
@@ -292,6 +291,14 @@ export default function ResultsPage({
     { key: 'afternoon', label: 'Afternoon', emoji: '☀️', hours: [12, 17] },
     { key: 'evening', label: 'Evening', emoji: '🌆', hours: [17, 21] },
     { key: 'night', label: 'Night', emoji: '🌙', hours: [21, 6] }
+  ];
+
+  // Duration options (in minutes) - matches Viator's filter options
+  const durationOptions = [
+    { key: 'under1h', label: 'Up to 1 hour', maxMinutes: 60 },
+    { key: '1to4h', label: '1 to 4 hours', minMinutes: 60, maxMinutes: 240 },
+    { key: '4hToDay', label: '4 hours to 1 day', minMinutes: 240, maxMinutes: 1440 },
+    { key: 'multiDay', label: '1+ days', minMinutes: 1440 }
   ];
 
   // Viator-compliant category tags
@@ -368,8 +375,7 @@ export default function ResultsPage({
       filters.minPrice !== '' ||
       filters.maxPrice !== '' ||
       filters.minRating !== '' ||
-      filters.minDuration !== '' ||
-      filters.maxDuration !== '' ||
+      filters.duration.length > 0 ||
       filters.timeOfDay.length > 0 ||
       filters.freeCancel ||
       filters.skipLine ||
@@ -377,7 +383,7 @@ export default function ResultsPage({
       filters.likelyToSellOut ||
       filters.specialOffer ||
       filters.kidFriendly ||
-      filters.multiDay ||
+      filters.newOnViator ||
       filters.categories.length > 0
     );
   }, [filters]);
@@ -396,6 +402,41 @@ export default function ResultsPage({
     if (filters.minRating) {
       filtered = filtered.filter(t => t.rating >= parseFloat(filters.minRating));
     }
+
+    // Duration filter - tour duration in minutes
+    if (filters.duration.length > 0) {
+      filtered = filtered.filter(t => {
+        const tourMinutes = t.durationMinutes || (t.duration ? parseDurationToMinutes(t.duration) : 0);
+        return filters.duration.some(durationKey => {
+          const option = durationOptions.find(d => d.key === durationKey);
+          if (!option) return false;
+          const minOk = !option.minMinutes || tourMinutes >= option.minMinutes;
+          const maxOk = !option.maxMinutes || tourMinutes <= option.maxMinutes;
+          return minOk && maxOk;
+        });
+      });
+    }
+
+    // Time of day filter - based on tour start time
+    if (filters.timeOfDay.length > 0) {
+      filtered = filtered.filter(t => {
+        // Check if tour has start time info
+        const startHour = t.startTimeHour || (t.startTime ? parseInt(t.startTime.split(':')[0]) : null);
+        if (startHour === null) return true; // Include tours without time info
+        return filters.timeOfDay.some(timeKey => {
+          const option = timeOfDayOptions.find(tod => tod.key === timeKey);
+          if (!option) return false;
+          const [minHour, maxHour] = option.hours;
+          if (minHour < maxHour) {
+            return startHour >= minHour && startHour < maxHour;
+          } else {
+            // Night spans midnight
+            return startHour >= minHour || startHour < maxHour;
+          }
+        });
+      });
+    }
+
     if (filters.freeCancel) {
       filtered = filtered.filter(t => t.flags?.includes('FREE_CANCELLATION'));
     }
@@ -413,6 +454,9 @@ export default function ResultsPage({
     }
     if (filters.kidFriendly) {
       filtered = filtered.filter(t => t.flags?.includes('KID_FRIENDLY'));
+    }
+    if (filters.newOnViator) {
+      filtered = filtered.filter(t => t.flags?.includes('NEW_ON_VIATOR'));
     }
     if (filters.categories.length > 0) {
       filtered = filtered.filter(t => {
@@ -441,7 +485,7 @@ export default function ResultsPage({
     }
 
     return filtered;
-  }, [results, filters, sortBy]);
+  }, [results, filters, sortBy, durationOptions, timeOfDayOptions]);
 
   // Pagination
   const totalPages = Math.ceil(sortedResults.length / resultsPerPage);
@@ -507,8 +551,7 @@ export default function ResultsPage({
       minPrice: '',
       maxPrice: '',
       minRating: '',
-      minDuration: '',
-      maxDuration: '',
+      duration: [],
       timeOfDay: [],
       freeCancel: false,
       skipLine: false,
@@ -516,10 +559,28 @@ export default function ResultsPage({
       likelyToSellOut: false,
       specialOffer: false,
       kidFriendly: false,
-      multiDay: false,
+      newOnViator: false,
       categories: []
     });
   }, []);
+
+  // Helper function to parse duration string to minutes
+  const parseDurationToMinutes = (durationStr) => {
+    if (!durationStr) return 0;
+    const str = durationStr.toLowerCase();
+    let totalMinutes = 0;
+
+    // Match patterns like "2 hours", "30 minutes", "1 day", "2h 30m"
+    const dayMatch = str.match(/(\d+)\s*d(ay)?s?/);
+    const hourMatch = str.match(/(\d+)\s*h(our)?s?/);
+    const minMatch = str.match(/(\d+)\s*m(in(ute)?)?s?/);
+
+    if (dayMatch) totalMinutes += parseInt(dayMatch[1]) * 1440;
+    if (hourMatch) totalMinutes += parseInt(hourMatch[1]) * 60;
+    if (minMatch) totalMinutes += parseInt(minMatch[1]);
+
+    return totalMinutes;
+  };
 
   const handleSearch = useCallback((e) => {
     e?.preventDefault();
@@ -802,6 +863,55 @@ export default function ResultsPage({
               </div>
             </div>
 
+            {/* Duration Filter */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Duration</h3>
+              <div className="space-y-2">
+                {durationOptions.map((option) => (
+                  <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.duration.includes(option.key)}
+                      onChange={(e) => setFilters(f => ({
+                        ...f,
+                        duration: e.target.checked
+                          ? [...f.duration, option.key]
+                          : f.duration.filter(k => k !== option.key)
+                      }))}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-600">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Time of Day Filter */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Time of day</h3>
+              <div className="flex flex-wrap gap-2">
+                {timeOfDayOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => setFilters(f => ({
+                      ...f,
+                      timeOfDay: f.timeOfDay.includes(option.key)
+                        ? f.timeOfDay.filter(k => k !== option.key)
+                        : [...f.timeOfDay, option.key]
+                    }))}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      filters.timeOfDay.includes(option.key)
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+                    }`}
+                  >
+                    <span>{option.emoji}</span>
+                    <span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Feature Filters */}
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Features</h3>
@@ -814,6 +924,15 @@ export default function ResultsPage({
                     className="rounded text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-600">Free cancellation</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.likelyToSellOut}
+                    onChange={(e) => setFilters(f => ({ ...f, likelyToSellOut: e.target.checked }))}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">🔥 Likely to sell out</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -850,6 +969,15 @@ export default function ResultsPage({
                     className="rounded text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-600">Kid-friendly</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.newOnViator}
+                    onChange={(e) => setFilters(f => ({ ...f, newOnViator: e.target.checked }))}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">✨ New on Viator</span>
                 </label>
               </div>
             </div>
@@ -1228,6 +1356,55 @@ export default function ResultsPage({
                 </div>
               </div>
 
+              {/* Duration Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Duration</h3>
+                <div className="space-y-2">
+                  {durationOptions.map((option) => (
+                    <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.duration.includes(option.key)}
+                        onChange={(e) => setFilters(f => ({
+                          ...f,
+                          duration: e.target.checked
+                            ? [...f.duration, option.key]
+                            : f.duration.filter(k => k !== option.key)
+                        }))}
+                        className="rounded text-blue-600"
+                      />
+                      <span className="text-sm text-gray-600">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time of Day Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Time of day</h3>
+                <div className="flex flex-wrap gap-2">
+                  {timeOfDayOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => setFilters(f => ({
+                        ...f,
+                        timeOfDay: f.timeOfDay.includes(option.key)
+                          ? f.timeOfDay.filter(k => k !== option.key)
+                          : [...f.timeOfDay, option.key]
+                      }))}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                        filters.timeOfDay.includes(option.key)
+                          ? 'bg-blue-100 text-blue-700 border-2 border-blue-400'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                    >
+                      <span>{option.emoji}</span>
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Feature Filters */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Features</h3>
@@ -1244,6 +1421,15 @@ export default function ResultsPage({
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
+                      checked={filters.likelyToSellOut}
+                      onChange={(e) => setFilters(f => ({ ...f, likelyToSellOut: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">🔥 Likely to sell out</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
                       checked={filters.skipLine}
                       onChange={(e) => setFilters(f => ({ ...f, skipLine: e.target.checked }))}
                       className="rounded text-blue-600"
@@ -1253,11 +1439,38 @@ export default function ResultsPage({
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
+                      checked={filters.privateTour}
+                      onChange={(e) => setFilters(f => ({ ...f, privateTour: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">Private tour</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
                       checked={filters.specialOffer}
                       onChange={(e) => setFilters(f => ({ ...f, specialOffer: e.target.checked }))}
                       className="rounded text-blue-600"
                     />
                     <span className="text-sm text-gray-600">Special offers</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.kidFriendly}
+                      onChange={(e) => setFilters(f => ({ ...f, kidFriendly: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">Kid-friendly</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.newOnViator}
+                      onChange={(e) => setFilters(f => ({ ...f, newOnViator: e.target.checked }))}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">✨ New on Viator</span>
                   </label>
                 </div>
               </div>
