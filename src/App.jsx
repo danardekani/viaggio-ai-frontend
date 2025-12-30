@@ -51,6 +51,7 @@ export default function App() {
   const [showProductPage, setShowProductPage] = useState(false);
   const [selectedProductTour, setSelectedProductTour] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
+  const [totalTourCount, setTotalTourCount] = useState(0);  // NEW: Track total available tours
   const [hotelSearchResults, setHotelSearchResults] = useState([]);
   const [currentSearchParams, setCurrentSearchParams] = useState(null);
   const [currentHotelSearchParams, setCurrentHotelSearchParams] = useState(null);
@@ -173,6 +174,7 @@ export default function App() {
     
     // Set results directly without making another API call
     setSearchResults(preloadedData.tours);
+    setTotalTourCount(preloadedData.totalCount || preloadedData.tours.length);  // NEW: Set total count
     setCurrentSearchParams({
       type: 'tours',
       destination: destination,
@@ -644,6 +646,7 @@ export default function App() {
       // Show cached results immediately
       console.log(`⚡ Using cached results for "${searchParams.destination}" (${cached.isFresh ? 'fresh' : 'stale'})`);
       setSearchResults(cached.data.tours || []);
+      setTotalTourCount(cached.data.totalCount || cached.data.tours?.length || 0);  // NEW: Set total count from cache
       setConversationContext(prev => ({
         ...prev,
         destination: searchParams.destination,
@@ -678,7 +681,7 @@ export default function App() {
           destination: searchParams.destination,
           destinationId: searchParams.destinationId,
           searchTerms: searchParams.searchTerms,
-          resultCount: 100,
+          resultCount: 50,  // Initial batch size
           sortBy: searchParams.sortBy || 'popular',
           startDate: searchParams.startDate,
           endDate: searchParams.endDate,
@@ -701,6 +704,7 @@ export default function App() {
 
       // Update results (this will refresh if we showed stale data)
       setSearchResults(tours);
+      setTotalTourCount(data.totalCount || tours.length);  // NEW: Set total count from API
       setConversationContext(prev => ({
         ...prev,
         destination: searchParams.destination,
@@ -714,6 +718,7 @@ export default function App() {
       // Only clear results if we didn't have cached data
       if (!cached) {
         setSearchResults([]);
+        setTotalTourCount(0);
       }
     } finally {
       setLoading(false);
@@ -803,7 +808,7 @@ export default function App() {
         searchParams.seoId,  // Use seoId for Viator product search
         searchParams.destinationId,
         {
-          count: 100,
+          count: 50,  // Initial batch
           sortBy: 'popular'
         }
       );
@@ -811,9 +816,11 @@ export default function App() {
       const tours = data.tours || [];
       console.log(`✅ Found ${tours.length} tours for ${searchParams.attractionName}`);
       setSearchResults(tours);
+      setTotalTourCount(data.totalCount || tours.length);  // NEW: Set total count
     } catch (error) {
       console.error('Attraction search error:', error);
       setSearchResults([]);
+      setTotalTourCount(0);
     } finally {
       setLoading(false);
     }
@@ -834,6 +841,7 @@ export default function App() {
     setShowResultsPage(false);
     setShowHotelResultsPage(false);
     setSearchResults([]);
+    setTotalTourCount(0);  // NEW: Reset total count
     setHotelSearchResults([]);
     setCurrentSearchParams(null);
     setCurrentHotelSearchParams(null);
@@ -922,6 +930,7 @@ export default function App() {
         <ResultsPage
           searchParams={currentSearchParams}
           results={searchResults}
+          totalCount={totalTourCount}  // NEW: Pass total count to ResultsPage
           isLoading={loading}
           onNewSearch={handleResultsPageSearch}
           onBackToHome={handleBackToHome}
