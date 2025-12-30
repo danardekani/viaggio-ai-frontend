@@ -635,12 +635,17 @@ export default function App() {
     setCurrentSearchParams(searchParams);
 
     // Check cache first (stale-while-revalidate pattern)
+    // Include flags in cache key so filtered searches get their own cache
     const cacheOptions = {
       destinationId: searchParams.destinationId,
       sortBy: searchParams.sortBy,
-      searchTerms: searchParams.searchTerms
+      searchTerms: searchParams.searchTerms,
+      flags: searchParams.flags?.sort().join(',') || ''  // Include flags in cache key
     };
-    const cached = await getCachedSearch(searchParams.destination, cacheOptions);
+
+    // Skip cache if we have flags - always fetch fresh filtered results
+    const hasFlags = searchParams.flags && searchParams.flags.length > 0;
+    const cached = hasFlags ? null : await getCachedSearch(searchParams.destination, cacheOptions);
 
     if (cached) {
       // Show cached results immediately
@@ -667,6 +672,9 @@ export default function App() {
       console.log(`🔄 Refreshing stale cache for "${searchParams.destination}"...`);
     } else {
       // No cache - show loading state
+      if (hasFlags) {
+        console.log(`🔍 Fetching filtered results (flags: ${searchParams.flags.join(', ')})`);
+      }
       setLoading(true);
       setShowLandingPage(false);
       setShowResultsPage(true);
@@ -674,30 +682,34 @@ export default function App() {
 
     // Fetch fresh data
     try {
+      const requestBody = {
+        destination: searchParams.destination,
+        destinationId: searchParams.destinationId,
+        searchTerms: searchParams.searchTerms,
+        resultCount: 200,  // Fetch 200 tours (~17 pages at 12/page)
+        sortBy: searchParams.sortBy || 'popular',
+        startDate: searchParams.startDate,
+        endDate: searchParams.endDate,
+        flags: searchParams.flags,
+        minPrice: searchParams.minPrice,
+        maxPrice: searchParams.maxPrice,
+        minDuration: searchParams.minDuration,
+        maxDuration: searchParams.maxDuration,
+        minRating: searchParams.minRating
+      };
+      console.log('📤 Sending search request to backend:', requestBody);
+
       const response = await fetch(`${BACKEND_URL}/api/tours/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destination: searchParams.destination,
-          destinationId: searchParams.destinationId,
-          searchTerms: searchParams.searchTerms,
-          resultCount: 200,  // Fetch 200 tours (~17 pages at 12/page)
-          sortBy: searchParams.sortBy || 'popular',
-          startDate: searchParams.startDate,
-          endDate: searchParams.endDate,
-          flags: searchParams.flags,
-          minPrice: searchParams.minPrice,
-          maxPrice: searchParams.maxPrice,
-          minDuration: searchParams.minDuration,
-          maxDuration: searchParams.maxDuration,
-          minRating: searchParams.minRating
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) throw new Error('Search failed');
 
       const data = await response.json();
       const tours = data.tours || [];
+      console.log(`📥 Received ${tours.length} tours from backend (total: ${data.totalCount || 'unknown'})`);
 
       // Update cache
       setCachedSearch(searchParams.destination, cacheOptions, data);
