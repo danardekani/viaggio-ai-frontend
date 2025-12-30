@@ -232,22 +232,22 @@ const REGION_LIST = [
 // ============================================================================
 
 const POPULAR_LANDMARKS = [
-  { name: 'Eiffel Tower', location: 'Paris, France', seoId: '299', destinationId: 684, destinationName: 'Paris', image: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=100&h=100&fit=crop&q=80' },
-  { name: 'Colosseum', location: 'Rome, Italy', seoId: '5130', destinationId: 511, destinationName: 'Rome', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&h=100&fit=crop&q=80' },
-  { name: 'Machu Picchu', location: 'Cusco, Peru', seoId: '5765', destinationId: 910, destinationName: 'Cusco', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=100&h=100&fit=crop&q=80' },
-  { name: 'Great Wall', location: 'Beijing, China', seoId: '4564', destinationId: 321, destinationName: 'Beijing', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&h=100&fit=crop&q=80' },
-  { name: 'Taj Mahal', location: 'Agra, India', seoId: '5765', destinationId: 953, destinationName: 'Agra', image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=100&h=100&fit=crop&q=80' },
-  { name: 'Statue of Liberty', location: 'New York, USA', seoId: '3604', destinationId: 687, destinationName: 'New York', image: 'https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?w=100&h=100&fit=crop&q=80' },
-  { name: 'Big Ben', location: 'London, UK', seoId: '7451', destinationId: 737, destinationName: 'London', image: 'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=100&h=100&fit=crop&q=80' },
-  { name: 'Sydney Opera House', location: 'Sydney, Australia', seoId: '4561', destinationId: 357, destinationName: 'Sydney', image: 'https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=100&h=100&fit=crop&q=80' },
-  { name: 'Christ the Redeemer', location: 'Rio de Janeiro, Brazil', seoId: '5018', destinationId: 712, destinationName: 'Rio de Janeiro', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&h=100&fit=crop&q=80' },
-  { name: 'Pyramids of Giza', location: 'Cairo, Egypt', seoId: '4368', destinationId: 801, destinationName: 'Cairo', image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=100&h=100&fit=crop&q=80' },
-  { name: 'Sagrada Familia', location: 'Barcelona, Spain', seoId: '2694', destinationId: 562, destinationName: 'Barcelona', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&h=100&fit=crop&q=80' },
-  { name: 'Petra', location: 'Petra, Jordan', seoId: '23027', destinationId: 22628, destinationName: 'Petra', image: 'https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=100&h=100&fit=crop&q=80' },
-  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', seoId: '4474', destinationId: 927, destinationName: 'Siem Reap', image: 'https://images.unsplash.com/photo-1508159452718-d22f6734a00d?w=100&h=100&fit=crop&q=80' },
-  { name: 'Santorini', location: 'Santorini, Greece', seoId: '801', destinationId: 847, destinationName: 'Santorini', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&h=100&fit=crop&q=80' },
-  { name: 'Golden Gate Bridge', location: 'San Francisco, USA', seoId: '1848', destinationId: 651, destinationName: 'San Francisco', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&h=100&fit=crop&q=80' },
-  { name: 'Mount Fuji', location: 'Tokyo, Japan', seoId: '5765', destinationId: 334, destinationName: 'Tokyo', image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=100&h=100&fit=crop&q=80' },
+  { name: 'Eiffel Tower', location: 'Paris, France', seoId: '89', destinationId: 479, destinationName: 'Paris', image: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=100&h=100&fit=crop&q=80' },
+  { name: 'Colosseum', location: 'Rome, Italy', seoId: '701', destinationId: 511, destinationName: 'Rome', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=100&h=100&fit=crop&q=80' },
+  { name: 'Machu Picchu', location: 'Cusco, Peru', seoId: '3358', destinationId: 927, destinationName: 'Cusco', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=100&h=100&fit=crop&q=80' },
+  { name: 'Great Wall', location: 'Beijing, China', seoId: '10136', destinationId: 321, destinationName: 'Beijing', image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=100&h=100&fit=crop&q=80' },
+  { name: 'Taj Mahal', location: 'Agra, India', seoId: '3010', destinationId: 4547, destinationName: 'Agra', image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=100&h=100&fit=crop&q=80' },
+  { name: 'Statue of Liberty', location: 'New York, USA', seoId: '16', destinationId: 687, destinationName: 'New York', image: 'https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?w=100&h=100&fit=crop&q=80' },
+  { name: 'Big Ben', location: 'London, UK', seoId: '1395', destinationId: 737, destinationName: 'London', image: 'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=100&h=100&fit=crop&q=80' },
+  { name: 'Sydney Opera House', location: 'Sydney, Australia', seoId: '106', destinationId: 357, destinationName: 'Sydney', image: 'https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=100&h=100&fit=crop&q=80' },
+  { name: 'Christ the Redeemer', location: 'Rio de Janeiro, Brazil', seoId: '1325', destinationId: 712, destinationName: 'Rio de Janeiro', image: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=100&h=100&fit=crop&q=80' },
+  { name: 'Pyramids of Giza', location: 'Cairo, Egypt', seoId: '1506', destinationId: 782, destinationName: 'Cairo', image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=100&h=100&fit=crop&q=80' },
+  { name: 'Sagrada Familia', location: 'Barcelona, Spain', seoId: '845', destinationId: 562, destinationName: 'Barcelona', image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=100&h=100&fit=crop&q=80' },
+  { name: 'Petra', location: 'Petra, Jordan', seoId: '2710', destinationId: 24520, destinationName: 'Petra', image: 'https://images.unsplash.com/photo-1548786811-dd6e453ccca7?w=100&h=100&fit=crop&q=80' },
+  { name: 'Angkor Wat', location: 'Siem Reap, Cambodia', seoId: '2271', destinationId: 5480, destinationName: 'Siem Reap', image: 'https://images.unsplash.com/photo-1508159452718-d22f6734a00d?w=100&h=100&fit=crop&q=80' },
+  { name: 'Santorini', location: 'Santorini, Greece', seoId: '5126', destinationId: 959, destinationName: 'Santorini', image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=100&h=100&fit=crop&q=80' },
+  { name: 'Golden Gate Bridge', location: 'San Francisco, USA', seoId: '1063', destinationId: 651, destinationName: 'San Francisco', image: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=100&h=100&fit=crop&q=80' },
+  { name: 'Mount Fuji', location: 'Tokyo, Japan', seoId: '86', destinationId: 334, destinationName: 'Tokyo', image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=100&h=100&fit=crop&q=80' },
 ];
 
 // ============================================================================
@@ -622,7 +622,7 @@ export default function LandingPage({
     // Viator /products/search requires seoId (not attractionId)
     onSearch?.({
       type: 'attraction',
-      seoId: landmark.seoId,
+      seoId: landmark.seoId,  // Use seoId for Viator product search  
       destinationId: landmark.destinationId,
       attractionName: landmark.name,
       destination: landmark.destinationName || landmark.location,

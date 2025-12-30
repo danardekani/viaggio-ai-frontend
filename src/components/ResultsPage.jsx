@@ -247,6 +247,7 @@ const TourCard = memo(function TourCard({
 export default function ResultsPage({
   searchParams,
   results = [],
+  totalCount,  // Total available from API/cache
   isLoading,
   onNewSearch,
   onBackToHome,
@@ -1065,7 +1066,10 @@ export default function ResultsPage({
                   {searchParams?.destination ? `Top ${searchParams.destination} Tours` : 'Tours'}
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500">
-                  {sortedResults.length} {sortedResults.length === 1 ? 'tour' : 'tours'} available
+                  {totalCount && totalCount > sortedResults.length 
+                    ? `Showing ${sortedResults.length.toLocaleString()} of ${totalCount.toLocaleString()} tours available`
+                    : `${sortedResults.length.toLocaleString()} ${sortedResults.length === 1 ? 'tour' : 'tours'} available`
+                  }
                 </p>
               </div>
 
