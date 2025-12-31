@@ -635,23 +635,36 @@ export default function App() {
     setCurrentSearchParams(searchParams);
 
     // Check cache first (stale-while-revalidate pattern)
-    // Include flags in cache key so filtered searches get their own cache
-    const cacheOptions = {
+    const hasFlags = searchParams.flags && searchParams.flags.length > 0;
+
+    // For optimistic UI: check cache WITHOUT flags first to show something immediately
+    // Then we'll fetch with flags in background
+    const baseCacheOptions = {
       destinationId: searchParams.destinationId,
       sortBy: searchParams.sortBy,
       searchTerms: searchParams.searchTerms,
-      flags: searchParams.flags?.sort().join(',') || ''  // Include flags in cache key
+      flags: ''  // Check base cache (no flags)
     };
 
-    // Skip cache if we have flags - always fetch fresh filtered results
-    const hasFlags = searchParams.flags && searchParams.flags.length > 0;
-    const cached = hasFlags ? null : await getCachedSearch(searchParams.destination, cacheOptions);
+    const cachedBase = await getCachedSearch(searchParams.destination, baseCacheOptions);
+
+    // Also check if we have a cached version WITH these exact flags
+    const flaggedCacheOptions = {
+      ...baseCacheOptions,
+      flags: searchParams.flags?.sort().join(',') || ''
+    };
+    const cachedFlagged = hasFlags ? await getCachedSearch(searchParams.destination, flaggedCacheOptions) : null;
+
+    // Use the best available cache: flagged > base
+    const cached = cachedFlagged || cachedBase;
+    const isExactMatch = !!cachedFlagged;
 
     if (cached) {
-      // Show cached results immediately
-      console.log(`⚡ Using cached results for "${searchParams.destination}" (${cached.isFresh ? 'fresh' : 'stale'})`);
+      // Show cached results immediately (client-side filtering will apply if needed)
+      const cacheType = isExactMatch ? 'exact match' : 'base results';
+      console.log(`⚡ Using cached ${cacheType} for "${searchParams.destination}" (${cached.isFresh ? 'fresh' : 'stale'})`);
       setSearchResults(cached.data.tours || []);
-      setTotalTourCount(cached.data.totalCount || cached.data.tours?.length || 0);  // NEW: Set total count from cache
+      setTotalTourCount(cached.data.totalCount || cached.data.tours?.length || 0);
       setConversationContext(prev => ({
         ...prev,
         destination: searchParams.destination,
@@ -662,16 +675,16 @@ export default function App() {
       setShowLandingPage(false);
       setShowResultsPage(true);
 
-      // If cache is fresh, we're done
-      if (cached.isFresh) {
+      // If we have exact match with fresh cache, we're done
+      if (isExactMatch && cached.isFresh) {
         setLoading(false);
         return;
       }
 
-      // If stale, continue to fetch fresh data in background (don't show loading)
-      console.log(`🔄 Refreshing stale cache for "${searchParams.destination}"...`);
+      // Otherwise, fetch in background (don't show loading since we have results)
+      console.log(`🔄 Fetching ${hasFlags ? 'filtered' : 'fresh'} results in background...`);
     } else {
-      // No cache - show loading state
+      // No cache at all - show loading state
       if (hasFlags) {
         console.log(`🔍 Fetching filtered results (flags: ${searchParams.flags.join(', ')})`);
       }
@@ -711,8 +724,8 @@ export default function App() {
       const tours = data.tours || [];
       console.log(`📥 Received ${tours.length} tours from backend (total: ${data.totalCount || 'unknown'})`);
 
-      // Update cache
-      setCachedSearch(searchParams.destination, cacheOptions, data);
+      // Update cache with the flags used in this search
+      setCachedSearch(searchParams.destination, flaggedCacheOptions, data);
 
       // Update results (this will refresh if we showed stale data)
       setSearchResults(tours);

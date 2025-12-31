@@ -1199,8 +1199,8 @@ export default function ResultsPage({
               </div>
             </div>
 
-            {/* Loading State */}
-            {isLoading && (
+            {/* Loading State - only show skeletons when no results to display */}
+            {isLoading && sortedResults.length === 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse">
@@ -1246,8 +1246,8 @@ export default function ResultsPage({
               </div>
             )}
 
-            {/* Results Grid */}
-            {!isLoading && paginatedResults.length > 0 && (
+            {/* Results Grid - keep visible during background fetch */}
+            {paginatedResults.length > 0 && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                   {paginatedResults.map((tour) => (
