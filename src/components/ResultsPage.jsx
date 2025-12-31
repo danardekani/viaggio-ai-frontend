@@ -321,7 +321,12 @@ export default function ResultsPage({
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  
+
+  // Background API fetch state for optimistic UI
+  const [isBackgroundFetching, setIsBackgroundFetching] = useState(false);
+  const prevFlagsRef = useRef(null);
+  const filterDebounceRef = useRef(null);
+
   // QuickView Modal State
   const [quickViewTour, setQuickViewTour] = useState(null);
   const [quickViewLoading, setQuickViewLoading] = useState(false);
@@ -623,8 +628,53 @@ export default function ResultsPage({
       minRating: filters.minRating || undefined
     };
     console.log('🔍 Applying filters with API search:', searchRequest);
+    setIsBackgroundFetching(true);
     onNewSearch(searchRequest);
   }, [buildApiFlags, onNewSearch, searchParams, searchDestination, selectedDestinationId, travelers, filters.minPrice, filters.maxPrice, filters.minRating]);
+
+  // Auto-trigger API search when feature filters change (optimistic UI)
+  useEffect(() => {
+    const currentFlags = buildApiFlags().sort().join(',');
+
+    // Skip on initial render
+    if (prevFlagsRef.current === null) {
+      prevFlagsRef.current = currentFlags;
+      return;
+    }
+
+    // Check if flags actually changed
+    if (currentFlags === prevFlagsRef.current) {
+      return;
+    }
+
+    // Update ref
+    prevFlagsRef.current = currentFlags;
+
+    // Clear any pending debounce
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current);
+    }
+
+    // Debounce the API call by 400ms
+    filterDebounceRef.current = setTimeout(() => {
+      console.log('🔄 Auto-triggering API search for filter change:', currentFlags || '(no flags)');
+      applyFiltersWithSearch();
+    }, 400);
+
+    // Cleanup
+    return () => {
+      if (filterDebounceRef.current) {
+        clearTimeout(filterDebounceRef.current);
+      }
+    };
+  }, [buildApiFlags, applyFiltersWithSearch]);
+
+  // Reset background fetching state when loading completes
+  useEffect(() => {
+    if (!isLoading) {
+      setIsBackgroundFetching(false);
+    }
+  }, [isLoading]);
 
   // Helper function to parse duration string to minutes
   const parseDurationToMinutes = (durationStr) => {
@@ -1069,32 +1119,6 @@ export default function ResultsPage({
                 ))}
               </div>
             </div>
-
-            {/* Apply Filters Button - triggers API search with selected flags */}
-            {hasApiFilters && (
-              <div className="pt-4 border-t border-gray-200">
-                <button
-                  onClick={applyFiltersWithSearch}
-                  disabled={isLoading}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      Search with Filters
-                    </>
-                  )}
-                </button>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  Click to find all matching tours
-                </p>
-              </div>
-            )}
           </div>
         </aside>
 
@@ -1128,11 +1152,17 @@ export default function ResultsPage({
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   {searchParams?.destination ? `Top ${searchParams.destination} Tours` : 'Tours'}
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500">
-                  {totalCount && totalCount > sortedResults.length 
-                    ? `Showing ${sortedResults.length.toLocaleString()} of ${totalCount.toLocaleString()} tours available`
-                    : `${sortedResults.length.toLocaleString()} ${sortedResults.length === 1 ? 'tour' : 'tours'} available`
-                  }
+                <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2">
+                  {isBackgroundFetching ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Updating results...</span>
+                    </>
+                  ) : totalCount && totalCount > sortedResults.length ? (
+                    `Showing ${sortedResults.length.toLocaleString()} of ${totalCount.toLocaleString()} tours available`
+                  ) : (
+                    `${sortedResults.length.toLocaleString()} ${sortedResults.length === 1 ? 'tour' : 'tours'} available`
+                  )}
                 </p>
               </div>
 
@@ -1601,25 +1631,19 @@ export default function ResultsPage({
             </div>
 
             {/* Fixed Footer */}
-            <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0 space-y-2">
-              {hasApiFilters && (
-                <button
-                  onClick={() => {
-                    applyFiltersWithSearch();
-                    setShowMobileFilters(false);
-                  }}
-                  disabled={isLoading}
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
-                >
-                  <Search className="w-4 h-4" />
-                  Search with Filters
-                </button>
-              )}
+            <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className={`w-full py-3 ${hasApiFilters ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white'} rounded-xl font-semibold`}
+                className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
               >
-                {hasApiFilters ? 'Show current results' : `Show ${sortedResults.length} results`}
+                {isBackgroundFetching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Updating results...
+                  </>
+                ) : (
+                  `Show ${sortedResults.length} results`
+                )}
               </button>
             </div>
           </div>
