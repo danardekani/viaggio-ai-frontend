@@ -656,6 +656,42 @@ export default function ResultsPage({
     }
   }, [searchDestination, selectedDestinationId, travelers, onNewSearch]);
 
+  const handleSearchWithFilters = useCallback(() => {
+    // Build flags array from boolean filters
+    const flags = [];
+    if (filters.freeCancel) flags.push('FREE_CANCELLATION');
+    if (filters.skipLine) flags.push('SKIP_THE_LINE');
+    if (filters.privateTour) flags.push('PRIVATE_TOUR');
+    if (filters.likelyToSellOut) flags.push('LIKELY_TO_SELL_OUT');
+    if (filters.specialOffer) flags.push('SPECIAL_OFFER');
+    if (filters.kidFriendly) flags.push('KID_FRIENDLY');
+
+    // Build search parameters with filters
+    const searchParamsWithFilters = {
+      type: 'tours',
+      destination: searchParams?.destination || searchDestination,
+      destinationId: searchParams?.destinationId || selectedDestinationId,
+      travelers,
+      sortBy: sortBy || 'popular',
+      minPrice: filters.minPrice ? parseFloat(filters.minPrice) : undefined,
+      maxPrice: filters.maxPrice ? parseFloat(filters.maxPrice) : undefined,
+      minRating: filters.minRating ? parseFloat(filters.minRating) : undefined,
+      minDuration: filters.minDuration ? parseFloat(filters.minDuration) : undefined,
+      maxDuration: filters.maxDuration ? parseFloat(filters.maxDuration) : undefined,
+      flags: flags.length > 0 ? flags : undefined,
+      // Note: categories would need to be handled differently if API supports tagIds
+    };
+
+    // Remove undefined values
+    Object.keys(searchParamsWithFilters).forEach(key => {
+      if (searchParamsWithFilters[key] === undefined) {
+        delete searchParamsWithFilters[key];
+      }
+    });
+
+    onNewSearch(searchParamsWithFilters);
+  }, [filters, searchParams, searchDestination, selectedDestinationId, travelers, sortBy, onNewSearch]);
+
   const handleSearchKeyDown = useCallback((e) => {
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -1095,6 +1131,16 @@ export default function ResultsPage({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Filter Footer - Search Button */}
+          <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+            <button
+              onClick={handleSearchWithFilters}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Search with Filters
+            </button>
           </div>
         </aside>
 
