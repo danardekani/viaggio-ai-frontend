@@ -839,12 +839,11 @@ export default function App() {
   };
 
   const handleLandingPageDeals = (cityName) => {
-    // Search for ALL tours in the city, but pre-select the Special Offer filter
-    // This allows users to uncheck it and see all tours
+    // Search for special offer tours - API-level filtering for complete results
     handleResultsPageSearch({
       type: 'tours',
       destination: cityName,
-      prefilter: 'SPECIAL_OFFER'  // This tells ResultsPage to pre-check the filter, but API gets all results
+      flags: ['SPECIAL_OFFER']  // API filters by special offers, ResultsPage pre-checks the checkbox
     });
   };
 
