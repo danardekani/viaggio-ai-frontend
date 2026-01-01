@@ -669,12 +669,10 @@ export default function ResultsPage({
     };
   }, [buildApiFlags, applyFiltersWithSearch]);
 
-  // Reset background fetching state when loading completes
+  // Reset background fetching state when loading completes or results update
   useEffect(() => {
-    if (!isLoading) {
-      setIsBackgroundFetching(false);
-    }
-  }, [isLoading]);
+    setIsBackgroundFetching(false);
+  }, [isLoading, results]);
 
   // Helper function to parse duration string to minutes
   const parseDurationToMinutes = (durationStr) => {
