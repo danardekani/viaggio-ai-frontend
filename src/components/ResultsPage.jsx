@@ -24,9 +24,25 @@ import {
   Calendar,
   Shield,
   Eye,
-  Home
+  Home,
+  Landmark
 } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
+
+// Debounce hook for autocomplete
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // Memoized TourCard component - Vertical card layout for grid display
 const TourCard = memo(function TourCard({
@@ -334,13 +350,16 @@ export default function ResultsPage({
 
   // Search form state
   const [searchDestination, setSearchDestination] = useState(searchParams?.destination || '');
-  const [selectedDestinationId, setSelectedDestinationId] = useState(null);
+  const [selectedDestinationId, setSelectedDestinationId] = useState(searchParams?.destinationId || null);
+  const [selectedAttraction, setSelectedAttraction] = useState(searchParams?.attraction || null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [searchTerms, setSearchTerms] = useState(searchParams?.searchTerms || '');
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
+  const debouncedSearchDestination = useDebounce(searchDestination, 300);
 
   // Chat State
   const [chatOpen, setChatOpen] = useState(false);
@@ -692,17 +711,90 @@ export default function ResultsPage({
     return totalMinutes;
   };
 
+  /**
+   * Extract keywords from the input that were typed before the selected suggestion.
+   * E.g., if user typed "food and wine tours in Rome" and selected "Rome",
+   * this extracts "food and wine" as search terms.
+   */
+  const extractKeywordsFromInput = useCallback((currentInput, selectedName) => {
+    if (!currentInput || !selectedName) return '';
+
+    const name = selectedName.toLowerCase();
+
+    // Common patterns: "keyword tours in destination", "keyword in destination"
+    const patterns = [
+      new RegExp(`(.+?)\\s+(?:tours?|trips?|experiences?)\\s+(?:in|at|near|around|of|to)\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'),
+      new RegExp(`(.+?)\\s+(?:in|at|near|around|of|to)\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'),
+    ];
+
+    for (const pattern of patterns) {
+      const match = currentInput.match(pattern);
+      if (match && match[1]) {
+        // Clean up: remove trailing "tours", "and", etc.
+        let keywords = match[1].trim()
+          .replace(/\s+(tours?|trips?|experiences?|and)\s*$/i, '')
+          .trim();
+        return keywords;
+      }
+    }
+
+    return '';
+  }, []);
+
+  const handleSelectSuggestion = useCallback((suggestion) => {
+    const currentInput = searchDestination;
+    const isAttraction = suggestion.resultType === 'attraction';
+
+    // Extract any keywords typed before the destination/attraction name
+    const extractedKeywords = extractKeywordsFromInput(currentInput, suggestion.name || suggestion.displayName);
+
+    if (isAttraction) {
+      setSearchDestination(suggestion.displayName);
+      setSelectedAttraction({
+        seoId: suggestion.seoId || suggestion.attractionId,
+        destinationId: suggestion.destinationId,
+        name: suggestion.name,
+        displayName: suggestion.displayName
+      });
+      setSelectedDestinationId(suggestion.destinationId);
+    } else {
+      setSearchDestination(suggestion.displayName || suggestion.name);
+      setSelectedDestinationId(suggestion.destinationId);
+      setSelectedAttraction(null);
+    }
+
+    if (extractedKeywords) {
+      setSearchTerms(extractedKeywords);
+    }
+
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+  }, [searchDestination, extractKeywordsFromInput]);
+
   const handleSearch = useCallback((e) => {
     e?.preventDefault();
     if (searchDestination.trim()) {
-      onNewSearch({
+      const searchRequest = {
         type: 'tours',
         destination: searchDestination,
         destinationId: selectedDestinationId,
-        travelers
-      });
+        travelers,
+        searchTerms: searchTerms || undefined
+      };
+
+      // If an attraction/landmark was selected, include its data
+      if (selectedAttraction) {
+        searchRequest.attraction = {
+          seoId: selectedAttraction.seoId,
+          destinationId: selectedAttraction.destinationId,
+          name: selectedAttraction.name
+        };
+      }
+
+      onNewSearch(searchRequest);
     }
-  }, [searchDestination, selectedDestinationId, travelers, onNewSearch]);
+  }, [searchDestination, selectedDestinationId, selectedAttraction, travelers, searchTerms, onNewSearch]);
 
   const handleSearchKeyDown = useCallback((e) => {
     if (showSuggestions && suggestions.length > 0) {
@@ -714,43 +806,79 @@ export default function ResultsPage({
         setSelectedIndex(i => Math.max(i - 1, 0));
       } else if (e.key === 'Enter' && selectedIndex >= 0) {
         e.preventDefault();
-        const suggestion = suggestions[selectedIndex];
-        setSearchDestination(suggestion.displayName || suggestion.name);
-        setSelectedDestinationId(suggestion.destinationId);
+        handleSelectSuggestion(suggestions[selectedIndex]);
+      } else if (e.key === 'Enter' && selectedIndex === -1) {
+        // Allow search with current text if no suggestion selected
+        handleSearch(e);
+      } else if (e.key === 'Escape') {
         setShowSuggestions(false);
+        setSelectedIndex(-1);
       }
     }
-  }, [showSuggestions, suggestions, selectedIndex]);
+  }, [showSuggestions, suggestions, selectedIndex, handleSelectSuggestion, handleSearch]);
 
-  // Fetch destination suggestions
+  const handleSearchInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearchDestination(value);
+    setSelectedDestinationId(null);
+    setSelectedAttraction(null);
+    if (value.length >= 2) {
+      setShowSuggestions(true);
+    }
+  }, []);
+
+  // Fetch combined autocomplete (destinations + attractions/landmarks)
   useEffect(() => {
-    if (!searchDestination || searchDestination.length < 2) {
+    // Skip if destination already selected or input too short
+    if (!debouncedSearchDestination || debouncedSearchDestination.length < 2 || selectedDestinationId || selectedAttraction) {
       setSuggestions([]);
-      setShowSuggestions(false);
       return;
     }
 
-    const timer = setTimeout(async () => {
+    const controller = new AbortController();
+
+    const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
+        // Use combined autocomplete endpoint to get both destinations AND attractions
         const response = await fetch(
-          `${backendUrl}/api/destinations/autocomplete?query=${encodeURIComponent(searchDestination)}`
+          `${backendUrl}/api/tours/autocomplete/combined?q=${encodeURIComponent(debouncedSearchDestination)}&limit=6`,
+          { signal: controller.signal }
         );
-        if (response.ok) {
-          const data = await response.json();
-          setSuggestions(data.destinations || []);
-          setShowSuggestions(true);
-          setSelectedIndex(-1);
-        }
-      } catch (error) {
-        console.error('Autocomplete error:', error);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    }, 300);
+        const data = await response.json();
 
-    return () => clearTimeout(timer);
-  }, [searchDestination, backendUrl]);
+        // Merge destinations and attractions into a single list
+        const destinations = (data.destinations || []).map(d => ({
+          ...d,
+          resultType: 'destination'
+        }));
+        const attractions = (data.attractions || []).map(a => ({
+          ...a,
+          resultType: 'attraction'
+        }));
+
+        // Interleave results: show top destinations and top attractions
+        const combined = [...destinations.slice(0, 4), ...attractions.slice(0, 4)];
+
+        setSuggestions(combined);
+        setShowSuggestions(true);
+        setSelectedIndex(-1);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Autocomplete error:', error);
+          setSuggestions([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingSuggestions(false);
+        }
+      }
+    };
+
+    fetchSuggestions();
+
+    return () => controller.abort();
+  }, [debouncedSearchDestination, selectedDestinationId, selectedAttraction, backendUrl]);
 
   // Chat handlers
   const handleChatSend = useCallback(async () => {
@@ -822,21 +950,21 @@ export default function ResultsPage({
             </button>
 
             {/* Search Form - Centered */}
-            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 max-w-xl mx-auto">
+            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 max-w-xl mx-auto relative">
               <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchDestination}
-                onChange={(e) => {
-                  setSearchDestination(e.target.value);
-                  setSelectedDestinationId(null);
-                }}
+                onChange={handleSearchInputChange}
                 onKeyDown={handleSearchKeyDown}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Where to?"
+                placeholder="Search destinations, landmarks, or 'food tours in Rome'..."
                 className="flex-1 bg-transparent border-none outline-none text-sm min-w-0"
               />
+              {loadingSuggestions && (
+                <Loader2 className="w-4 h-4 text-gray-400 animate-spin flex-shrink-0" />
+              )}
               <select
                 value={travelers}
                 onChange={(e) => setTravelers(parseInt(e.target.value))}
@@ -869,36 +997,53 @@ export default function ResultsPage({
           </div>
         </div>
 
-        {/* Suggestions Dropdown */}
+        {/* Suggestions Dropdown - Shows both destinations and landmarks */}
         {showSuggestions && suggestions.length > 0 && (
           <div
             ref={suggestionsRef}
             className="absolute left-1/2 -translate-x-1/2 w-full max-w-xl bg-white rounded-xl shadow-lg border border-gray-200 mt-1 overflow-hidden z-50"
           >
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={suggestion.destinationId || index}
-                type="button"
-                onClick={() => {
-                  setSearchDestination(suggestion.displayName || suggestion.name);
-                  setSelectedDestinationId(suggestion.destinationId);
-                  setShowSuggestions(false);
-                }}
-                className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-                  index === selectedIndex ? 'bg-blue-50' : ''
-                }`}
-              >
-                <MapPin className="w-4 h-4 text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {suggestion.displayName || suggestion.name}
-                  </p>
-                  {suggestion.parentName && (
-                    <p className="text-xs text-gray-500">{suggestion.parentName}</p>
+            {suggestions.map((suggestion, index) => {
+              const isAttraction = suggestion.resultType === 'attraction';
+              const uniqueKey = isAttraction
+                ? `attraction-${suggestion.attractionId || suggestion.seoId}`
+                : `dest-${suggestion.destinationId}`;
+
+              return (
+                <button
+                  key={uniqueKey || index}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(suggestion)}
+                  className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                    index === selectedIndex ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  {isAttraction ? (
+                    <Landmark className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                  ) : (
+                    <Globe className="w-4 h-4 text-blue-500 flex-shrink-0" />
                   )}
-                </div>
-              </button>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {suggestion.displayName || suggestion.name}
+                    </p>
+                    {isAttraction && suggestion.productCount > 0 && (
+                      <p className="text-xs text-gray-500">{suggestion.productCount} tours available</p>
+                    )}
+                    {!isAttraction && suggestion.parentName && (
+                      <p className="text-xs text-gray-500">{suggestion.parentName}</p>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    isAttraction
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {isAttraction ? 'Landmark' : suggestion.type || 'Destination'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </header>
