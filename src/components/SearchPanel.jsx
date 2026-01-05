@@ -235,14 +235,78 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
     const value = e.target.value;
     setToursFilters(prev => ({ ...prev, destination: value }));
     setSelectedDestinationId(null);
+    setSelectedAttraction(null);
     if (value.length >= 2) {
       setShowSuggestions(true);
     }
   };
 
+  /**
+   * Extract keywords from the input that were typed before the selected suggestion.
+   * E.g., if user typed "food and wine tours in Rome" and selected "Rome",
+   * this extracts "food and wine" as search terms.
+   */
+  const extractKeywordsFromInput = (currentInput, selectedName) => {
+    if (!currentInput || !selectedName) return '';
+
+    const name = selectedName.toLowerCase();
+
+    // Common patterns: "keyword tours in destination", "keyword in destination", "destination keyword"
+    const patterns = [
+      new RegExp(`(.+?)\\s+(?:tours?|trips?|experiences?)\\s+(?:in|at|near|around|of|to)\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'),
+      new RegExp(`(.+?)\\s+(?:in|at|near|around|of|to)\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'),
+    ];
+
+    for (const pattern of patterns) {
+      const match = currentInput.match(pattern);
+      if (match && match[1]) {
+        // Clean up: remove trailing "tours", "and", etc.
+        let keywords = match[1].trim()
+          .replace(/\s+(tours?|trips?|experiences?|and)\s*$/i, '')
+          .trim();
+        return keywords;
+      }
+    }
+
+    return '';
+  };
+
   const handleSelectSuggestion = (suggestion) => {
-    setToursFilters(prev => ({ ...prev, destination: suggestion.displayName }));
-    setSelectedDestinationId(suggestion.destinationId);
+    const currentInput = toursFilters.destination;
+
+    // Check if this is an attraction (landmark) or a destination
+    const isAttraction = suggestion.resultType === 'attraction';
+
+    // Extract any keywords typed before the destination/attraction name
+    const extractedKeywords = extractKeywordsFromInput(currentInput, suggestion.name || suggestion.displayName);
+
+    if (isAttraction) {
+      // For attractions: set the attraction data and use its destination
+      setToursFilters(prev => ({
+        ...prev,
+        destination: suggestion.displayName,
+        // Auto-populate search terms if keywords were extracted
+        searchTerms: extractedKeywords || prev.searchTerms
+      }));
+      setSelectedAttraction({
+        seoId: suggestion.seoId || suggestion.attractionId,
+        destinationId: suggestion.destinationId,
+        name: suggestion.name,
+        displayName: suggestion.displayName
+      });
+      setSelectedDestinationId(suggestion.destinationId);
+    } else {
+      // For destinations: standard behavior
+      setToursFilters(prev => ({
+        ...prev,
+        destination: suggestion.displayName,
+        // Auto-populate search terms if keywords were extracted
+        searchTerms: extractedKeywords || prev.searchTerms
+      }));
+      setSelectedDestinationId(suggestion.destinationId);
+      setSelectedAttraction(null);
+    }
+
     setSuggestions([]);
     setShowSuggestions(false);
     setSelectedIndex(-1);
@@ -339,12 +403,13 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
   // ==================== SEARCH HANDLERS ====================
   const handleToursSearch = () => {
     if (!toursFilters.destination) return;
-    
+
     const activeFlags = Object.entries(toursFilters.flags)
       .filter(([_, active]) => active)
       .map(([flag]) => flag);
 
-    onSearch({
+    // Build search params - include attraction data if searching by landmark
+    const searchParams = {
       type: 'tours',
       destination: toursFilters.destination,
       destinationId: selectedDestinationId,
@@ -359,7 +424,18 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
       maxDuration: toursFilters.maxDuration ? parseInt(toursFilters.maxDuration) : undefined,
       minRating: toursFilters.minRating ? parseFloat(toursFilters.minRating) : undefined,
       flags: activeFlags.length > 0 ? activeFlags : undefined
-    });
+    };
+
+    // If an attraction/landmark was selected, include its data for attraction-specific search
+    if (selectedAttraction) {
+      searchParams.attraction = {
+        seoId: selectedAttraction.seoId,
+        destinationId: selectedAttraction.destinationId,
+        name: selectedAttraction.name
+      };
+    }
+
+    onSearch(searchParams);
   };
 
   const handleHotelsSearch = () => {
@@ -569,7 +645,7 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
                   type="text"
                   id="tours-destination"
                   name="tours-destination"
-                  placeholder="Where to? (start typing...)"
+                  placeholder="Search destinations or landmarks..."
                   autoComplete="off"
                   value={toursFilters.destination}
                   onChange={handleDestinationChange}
@@ -585,17 +661,24 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
                   <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
                 )}
                 
-                {/* Autocomplete Dropdown */}
+                {/* Autocomplete Dropdown - Shows both destinations and landmarks */}
                 {showSuggestions && suggestions.length > 0 && (
-                  <div 
+                  <div
                     ref={suggestionsRef}
                     className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
                   >
                     {suggestions.map((suggestion, index) => {
-                      const typeInfo = getDestinationType(suggestion.type);
+                      const isAttraction = suggestion.resultType === 'attraction';
+                      const typeInfo = isAttraction
+                        ? { label: 'Landmark', color: 'bg-rose-100 text-rose-700' }
+                        : getDestinationType(suggestion.type);
+                      const uniqueKey = isAttraction
+                        ? `attraction-${suggestion.attractionId || suggestion.seoId}`
+                        : `dest-${suggestion.destinationId}`;
+
                       return (
                         <button
-                          key={suggestion.destinationId || index}
+                          key={uniqueKey || index}
                           type="button"
                           onClick={() => handleSelectSuggestion(suggestion)}
                           className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
@@ -605,8 +688,17 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="text-sm text-gray-900">{suggestion.displayName}</span>
+                            {isAttraction ? (
+                              <Landmark className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                            ) : (
+                              <Globe className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-900">{suggestion.displayName}</span>
+                              {isAttraction && suggestion.productCount > 0 && (
+                                <span className="text-xs text-gray-500">{suggestion.productCount} tours available</span>
+                              )}
+                            </div>
                           </div>
                           <span className={`text-xs px-1.5 py-0.5 rounded ${typeInfo.color}`}>
                             {typeInfo.label}
