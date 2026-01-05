@@ -632,6 +632,20 @@ export default function App() {
   // ============================================================================
 
   const handleResultsPageSearch = async (searchParams) => {
+    // Route attraction searches to the attraction handler
+    if (searchParams.type === 'attraction' && searchParams.seoId) {
+      // Extract attraction name from the attraction object or destination
+      const attractionName = searchParams.attraction?.name || searchParams.destination;
+      const destinationId = searchParams.attraction?.destinationId || searchParams.destinationId;
+
+      await handleAttractionSearch({
+        ...searchParams,
+        attractionName,
+        destinationId
+      });
+      return;
+    }
+
     setCurrentSearchParams(searchParams);
 
     // Check cache first (stale-while-revalidate pattern)
