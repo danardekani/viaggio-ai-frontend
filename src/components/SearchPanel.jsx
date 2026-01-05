@@ -426,8 +426,10 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
       flags: activeFlags.length > 0 ? activeFlags : undefined
     };
 
-    // If an attraction/landmark was selected, include its data for attraction-specific search
+    // If an attraction/landmark was selected, set type to 'attraction' for proper routing
     if (selectedAttraction) {
+      searchParams.type = 'attraction';
+      searchParams.seoId = selectedAttraction.seoId;
       searchParams.attraction = {
         seoId: selectedAttraction.seoId,
         destinationId: selectedAttraction.destinationId,

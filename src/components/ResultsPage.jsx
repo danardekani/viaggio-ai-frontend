@@ -783,8 +783,10 @@ export default function ResultsPage({
         searchTerms: searchTerms || undefined
       };
 
-      // If an attraction/landmark was selected, include its data
+      // If an attraction/landmark was selected, set type to 'attraction' for proper routing
       if (selectedAttraction) {
+        searchRequest.type = 'attraction';
+        searchRequest.seoId = selectedAttraction.seoId;
         searchRequest.attraction = {
           seoId: selectedAttraction.seoId,
           destinationId: selectedAttraction.destinationId,
