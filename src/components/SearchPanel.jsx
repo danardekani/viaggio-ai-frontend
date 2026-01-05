@@ -11,7 +11,9 @@ import {
   SlidersHorizontal,
   X,
   Loader2,
-  Building
+  Building,
+  Landmark,
+  Globe
 } from 'lucide-react';
 import DealsDiscovery from './DealsDiscovery';
 
@@ -41,6 +43,7 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [selectedDestinationId, setSelectedDestinationId] = useState(null);
+  const [selectedAttraction, setSelectedAttraction] = useState(null); // For landmark searches
   const destinationInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   
@@ -99,9 +102,10 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
   // ==================== TOURS AUTOCOMPLETE ====================
   const debouncedDestination = useDebounce(toursFilters.destination, 300);
 
-  // Fetch tours autocomplete suggestions with AbortController
+  // Fetch combined autocomplete (destinations + attractions/landmarks) with AbortController
   useEffect(() => {
-    if (!debouncedDestination || debouncedDestination.length < 2 || selectedDestinationId) {
+    // Skip if destination already selected or input too short
+    if (!debouncedDestination || debouncedDestination.length < 2 || selectedDestinationId || selectedAttraction) {
       setSuggestions([]);
       return;
     }
@@ -111,12 +115,28 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
     const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
+        // Use combined autocomplete endpoint to get both destinations AND attractions
         const response = await fetch(
-          `${backendUrl}/api/tours/destinations/autocomplete?q=${encodeURIComponent(debouncedDestination)}&limit=8`,
+          `${backendUrl}/api/tours/autocomplete/combined?q=${encodeURIComponent(debouncedDestination)}&limit=6`,
           { signal: controller.signal }
         );
         const data = await response.json();
-        setSuggestions(data.suggestions || []);
+
+        // Merge destinations and attractions into a single list
+        // Destinations first, then attractions (landmarks)
+        const destinations = (data.destinations || []).map(d => ({
+          ...d,
+          resultType: 'destination'
+        }));
+        const attractions = (data.attractions || []).map(a => ({
+          ...a,
+          resultType: 'attraction'
+        }));
+
+        // Interleave results: show top destinations and top attractions
+        const combined = [...destinations.slice(0, 4), ...attractions.slice(0, 4)];
+
+        setSuggestions(combined);
         setShowSuggestions(true);
         setSelectedIndex(-1);
       } catch (error) {
@@ -134,7 +154,7 @@ const SearchPanel = memo(function SearchPanel({ onSearch, isLoading, backendUrl 
     fetchSuggestions();
 
     return () => controller.abort();
-  }, [debouncedDestination, selectedDestinationId, backendUrl]);
+  }, [debouncedDestination, selectedDestinationId, selectedAttraction, backendUrl]);
 
   // Close tours suggestions when clicking outside
   useEffect(() => {
